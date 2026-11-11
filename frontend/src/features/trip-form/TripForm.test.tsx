@@ -167,7 +167,8 @@ describe('departure time zone (RR-18, RR-29)', () => {
       http.get('*/api/v1/timezone', () => HttpResponse.json({ time_zone: 'Pacific/Honolulu' })),
     )
     const onSubmit = renderForm()
-    await userEvent.type(screen.getByRole('group', { name: 'Departure' }), '{Control>}a{/Control}')
+    const departure = await screen.findByRole('group', { name: 'Departure' }, { timeout: 5000 })
+    await userEvent.type(departure, '{Control>}a{/Control}')
     await userEvent.keyboard('{Backspace}111220260900')
     await chooseOriginAndDestination()
     expect(await screen.findByText('Local time at the origin (HST)')).toBeInTheDocument()
