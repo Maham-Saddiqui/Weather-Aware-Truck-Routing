@@ -77,6 +77,16 @@ def overlap(shape: Shape, other: Shape) -> Fraction:
     return Fraction(shared, len(shape.cells) + len(other.cells))
 
 
+def _same_route(route: ProviderRoute, other: ProviderRoute, book: ShapeBook) -> bool:
+    """The provider's own distance and time to the second only match for the very same road, even
+    when two calls drew it with different vertices; otherwise the shapes decide."""
+    same_measures = (route.distance_m, route.travel_time_s) == (
+        other.distance_m,
+        other.travel_time_s,
+    )
+    return same_measures or overlap(book.of(route), book.of(other)) >= NEAR_DUPLICATE_OVERLAP
+
+
 def drop_near_duplicates(
     routes: Sequence[ProviderRoute], book: ShapeBook | None = None
 ) -> tuple[ProviderRoute, ...]:
@@ -84,8 +94,7 @@ def drop_near_duplicates(
     book = book or ShapeBook()
     kept: list[ProviderRoute] = []
     for route in routes:
-        shape = book.of(route)
-        if all(overlap(shape, book.of(other)) < NEAR_DUPLICATE_OVERLAP for other in kept):
+        if not any(_same_route(route, other, book) for other in kept):
             kept.append(route)
     return tuple(kept)
 

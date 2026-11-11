@@ -1,5 +1,11 @@
+from dataclasses import replace
+
 from domain.dedupe import choose_variety, drop_near_duplicates, route_id
 from domain.types import GeoPoint, ProviderRoute, RouteGeometry
+from tests.fakes.routing import straight_route
+
+SEATTLE = GeoPoint(47.6, -122.3)
+MIAMI = GeoPoint(25.8, -80.2)
 
 POINTS_PER_ROUTE = 100
 
@@ -90,3 +96,26 @@ def test_section5_variety_keeps_every_route_when_the_limit_allows() -> None:
 
 def test_section5_variety_of_no_routes_is_empty() -> None:
     assert choose_variety([], limit=3) == ()
+
+
+def test_section5_routes_with_the_same_distance_and_time_are_one_route_whatever_the_line() -> None:
+    first = straight_route(SEATTLE, MIAMI, distance_miles=3556)
+    other_line_same_measures = straight_route(SEATTLE, MIAMI, distance_miles=3556, bend_lat=6.0)
+
+    assert drop_near_duplicates([first, other_line_same_measures]) == (first,)
+
+
+def test_section5_routes_differing_by_one_second_or_one_metre_are_not_taken_as_equal() -> None:
+    first = straight_route(SEATTLE, MIAMI, distance_miles=3556, bend_lat=3.0)
+    one_second_slower = replace(
+        straight_route(SEATTLE, MIAMI, distance_miles=3556, bend_lat=6.0),
+        travel_time_s=first.travel_time_s + 1,
+    )
+    one_metre_longer = replace(
+        straight_route(SEATTLE, MIAMI, distance_miles=3556, bend_lat=-6.0),
+        distance_m=first.distance_m + 1,
+    )
+
+    kept = drop_near_duplicates([first, one_second_slower, one_metre_longer])
+
+    assert kept == (first, one_second_slower, one_metre_longer)
