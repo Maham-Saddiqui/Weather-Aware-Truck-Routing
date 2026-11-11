@@ -10,6 +10,7 @@ import httpx
 from domain.heatmap import cell_of
 from domain.types import GeoPoint, HourlyWeather
 from providers.http import QueryParams, get_with_one_retry
+from providers.provider_call import OPEN_METEO, UNREADABLE_ANSWER, ProviderCall
 from providers.trip_notes import current_notes
 from providers.weather.budget import WeatherBudget
 from providers.weather.cache import CellKey, WindowCache
@@ -93,17 +94,19 @@ class OpenMeteoWeather:
                 windows[cell] = text
 
     def _fetch(self, cells: Sequence[CellKey]) -> dict[CellKey, str]:
+        call = ProviderCall(OPEN_METEO)
         try:
             response = get_with_one_retry(
-                self._client, self._base_url + "/v1/forecast", self._params(cells)
+                self._client, self._base_url + "/v1/forecast", self._params(cells), call
             )
         except httpx.RequestError:
             raise WeatherUnavailable("The weather service could not be reached") from None
-        if response.status_code == HTTP_TOO_MANY_REQUESTS:
-            raise WeatherBusy("The weather service is busy")
         if response.status_code != HTTP_OK:
+            call.status_failed(response.status_code)
+            if response.status_code == HTTP_TOO_MANY_REQUESTS:
+                raise WeatherBusy("The weather service is busy")
             raise WeatherUnavailable(f"The weather service answered {response.status_code}")
-        return _compact_by_cell(cells, response.text)
+        return _compact_by_cell(cells, response.text, call)
 
     def _params(self, cells: Sequence[CellKey]) -> QueryParams:
         start = self._clock().astimezone(UTC).replace(minute=0, second=0, microsecond=0)
@@ -130,7 +133,7 @@ def _chunks(cells: Sequence[CellKey], size: int) -> Iterable[Sequence[CellKey]]:
     return (cells[start : start + size] for start in range(0, len(cells), size))
 
 
-def _compact_by_cell(cells: Sequence[CellKey], text: str) -> dict[CellKey, str]:
+def _compact_by_cell(cells: Sequence[CellKey], text: str, call: ProviderCall) -> dict[CellKey, str]:
     try:
         body = json.loads(text, parse_float=Decimal)
         locations: list[JsonObject] = body if isinstance(body, list) else [body]
@@ -150,4 +153,5 @@ def _compact_by_cell(cells: Sequence[CellKey], text: str) -> dict[CellKey, str]:
         OSError,
         RecursionError,
     ):
+        call.failed(UNREADABLE_ANSWER)
         raise WeatherUnavailable("The weather service sent an answer we cannot read") from None
