@@ -69,6 +69,21 @@ describe('risk palette (FE-09)', () => {
   })
 })
 
+describe('map zoom buttons (NFR-03)', () => {
+  it('are at least 44 px wide and tall on touch screens and phone-width windows', () => {
+    const rules = theme.components?.MuiCssBaseline?.styleOverrides as Record<string, unknown>
+    const touch = rules['@media (pointer: coarse), (max-width: 719.95px)'] as Record<
+      string,
+      Record<string, number>
+    >
+
+    expect(touch['.maplibregl-map .maplibregl-ctrl-group button']).toEqual({
+      width: 44,
+      height: 44,
+    })
+  })
+})
+
 describe('route palette (FE-15)', () => {
   it('gives each of the three routes its own hue, none of them a risk colour', () => {
     const hues = theme.palette.route

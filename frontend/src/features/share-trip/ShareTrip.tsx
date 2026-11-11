@@ -13,8 +13,34 @@ const MESSAGES: Record<ShareStatus, string> = {
   failed: 'The link could not be copied. Select it below and copy it yourself.',
 }
 
-export function ShareTrip({ hasTrip }: { hasTrip: boolean }) {
-  const { status, canShare, share } = useShareTrip()
+interface ShareButtonsProps {
+  canShare: boolean
+  status: ShareStatus
+  onShare: () => void
+  onCopy: () => void
+}
+
+// Both actions are always visible together: the share sheet where the device has one, and a plain copy everywhere.
+function ShareButtons({ canShare, status, onShare, onCopy }: ShareButtonsProps) {
+  return (
+    <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+      {canShare && (
+        <Button variant="outlined" size="small" startIcon={<ShareIcon />} onClick={onShare}>
+          Share trip
+        </Button>
+      )}
+      <Button variant="outlined" size="small" startIcon={<ContentCopyIcon />} onClick={onCopy}>
+        Copy link
+      </Button>
+      <Typography variant="caption" role="status" color="text.secondary">
+        {MESSAGES[status]}
+      </Typography>
+    </Stack>
+  )
+}
+
+export function ShareTrip() {
+  const { status, canShare, share, copy } = useShareTrip()
   const linkField = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -23,21 +49,16 @@ export function ShareTrip({ hasTrip }: { hasTrip: boolean }) {
 
   return (
     <Stack spacing={1}>
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-        <Button
-          variant="outlined"
-          disabled={!hasTrip}
-          startIcon={canShare ? <ShareIcon /> : <ContentCopyIcon />}
-          onClick={() => {
-            void share()
-          }}
-        >
-          {canShare ? 'Share trip' : 'Copy link'}
-        </Button>
-        <Typography variant="caption" role="status" color="text.secondary">
-          {MESSAGES[status]}
-        </Typography>
-      </Stack>
+      <ShareButtons
+        canShare={canShare}
+        status={status}
+        onShare={() => {
+          void share()
+        }}
+        onCopy={() => {
+          void copy()
+        }}
+      />
       {status === 'failed' && (
         <TextField
           label="Trip link"

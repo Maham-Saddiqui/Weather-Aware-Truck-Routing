@@ -1,9 +1,10 @@
 import Stack from '@mui/material/Stack'
-import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { TripRequest } from '../../shared/types'
 import { ExampleTrips } from './ExampleTrips'
 import { TripFormFields } from './TripFormFields'
 import { TripSummary } from './TripSummary'
+import { useSummaryToggle } from './useSummaryToggle'
 import { useTripForm } from './useTripForm'
 
 interface TripFormProps {
@@ -11,34 +12,28 @@ interface TripFormProps {
   needsReview: boolean
   isBusy: boolean
   onSubmit: (trip: TripRequest) => void
+  summaryActions?: ReactNode
 }
 
-export function TripForm({ initialTrip, needsReview, isBusy, onSubmit }: TripFormProps) {
-  const [isCollapsed, setIsCollapsed] = useState(initialTrip !== null && !needsReview)
-  const showsSummary = isCollapsed
-  const root = useRef<HTMLDivElement>(null)
-  const mustMoveFocus = useRef(false)
-  const collapse = (shouldCollapse: boolean) => {
-    mustMoveFocus.current = true
-    setIsCollapsed(shouldCollapse)
-  }
+export function TripForm({
+  initialTrip,
+  needsReview,
+  isBusy,
+  onSubmit,
+  summaryActions,
+}: TripFormProps) {
+  const { root, showsSummary, collapse } = useSummaryToggle(initialTrip !== null && !needsReview)
   const form = useTripForm(initialTrip, needsReview, (trip) => {
     collapse(true)
     onSubmit(trip)
   })
-
-  // The button or field the driver just used disappears, so focus moves to what replaced it.
-  useEffect(() => {
-    if (!mustMoveFocus.current) return
-    mustMoveFocus.current = false
-    root.current?.querySelector<HTMLElement>(showsSummary ? 'button' : 'input')?.focus()
-  }, [showsSummary])
 
   return (
     <div ref={root}>
       {showsSummary ? (
         <TripSummary
           values={form.values}
+          actions={summaryActions}
           departureZone={form.originZone.state === 'found' ? form.originZone.timeZone : null}
           onEdit={() => {
             collapse(false)

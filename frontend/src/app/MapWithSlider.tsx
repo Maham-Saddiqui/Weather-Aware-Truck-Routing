@@ -7,17 +7,32 @@ import { MapPane } from './MapPane'
 import type { TripPlannerState } from './useTripPlanner'
 
 const SLIDER_HEIGHT_PX = 40
-// On a phone the map is the main thing on screen: at least this share of the visible height, and never shorter than the fixed minimum.
-const PHONE_MAP_MIN_VIEWPORT_SHARE_PERCENT = 55
+// On a phone the map takes this share of the visible height (never less than the fixed minimum) and stays pinned
+// at the top of the screen while the slider and the results scroll underneath it.
+const PHONE_MAP_VIEWPORT_SHARE_PERCENT = 45
+const PHONE_MAP_LAYER = 2
 
+// On a phone the area dissolves, so the pinned map belongs to the whole page column and not just to this wrapper.
 const MapArea = styled('div')(({ theme }) => ({
-  position: 'relative',
-  [theme.breakpoints.up('md')]: { minHeight: MAP_MIN_HEIGHT_PX },
+  display: 'contents',
+  [theme.breakpoints.up('md')]: {
+    display: 'block',
+    position: 'relative',
+    minHeight: MAP_MIN_HEIGHT_PX,
+  },
 }))
 
 const MapFrame = styled('div')(({ theme }) => ({
-  height: `max(${String(PHONE_MAP_MIN_VIEWPORT_SHARE_PERCENT)}svh, ${String(PHONE_MAP_HEIGHT_PX)}px)`,
-  [theme.breakpoints.up('md')]: { position: 'absolute', inset: 0, height: 'auto' },
+  position: 'sticky',
+  top: 0,
+  zIndex: PHONE_MAP_LAYER,
+  height: `max(${String(PHONE_MAP_VIEWPORT_SHARE_PERCENT)}svh, ${String(PHONE_MAP_HEIGHT_PX)}px)`,
+  [theme.breakpoints.up('md')]: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 'auto',
+    height: 'auto',
+  },
 }))
 
 const SliderDock = styled('div')(({ theme }) => ({

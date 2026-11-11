@@ -34,21 +34,27 @@ describe('route name pills on the map (REQ-08)', () => {
     pills('route-north')
 
     expect(screen.getByText('Route 2 · 18 h 0 min')).toBeVisible()
-    expect(screen.queryByText(/^Route 1/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Route 1 ·/)).not.toBeInTheDocument()
   })
 
-  it('names the other route when the selection moves', () => {
+  it('names the selected route too, with a short pill that has no travel time', () => {
+    pills('route-north')
+
+    expect(screen.getByText('Route 1')).toBeVisible()
+  })
+
+  it('moves the short pill and the long pill when the selection moves', () => {
     pills('route-south')
 
     expect(screen.getByText('Route 1 · 18 h 0 min')).toBeVisible()
-    expect(screen.queryByText(/^Route 2/)).not.toBeInTheDocument()
+    expect(screen.getByText('Route 2')).toBeVisible()
   })
 
   it('selects the route when its pill is clicked', () => {
     const onSelectRoute = pills('route-north')
 
     act(() => {
-      markerClicks.handlers[0]?.()
+      markerClicks.handlers[1]?.()
     })
 
     expect(onSelectRoute).toHaveBeenCalledWith('route-south')
