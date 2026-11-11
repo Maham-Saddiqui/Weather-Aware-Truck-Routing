@@ -30,6 +30,11 @@ OWNED_PREFIXES = {
         "backend/tests/contract/",
     ),
     "c": (
+        "frontend/src/App.tsx",
+        "frontend/src/App.test.tsx",
+        "frontend/src/main.tsx",
+        "frontend/src/index.css",
+        "frontend/src/test-setup.ts",
         "frontend/src/app/",
         "frontend/src/features/trip-form/",
         "frontend/src/features/route-results/",
