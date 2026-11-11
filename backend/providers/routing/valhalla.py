@@ -10,7 +10,8 @@ from typing import Any
 import httpx
 
 from domain.types import GeoPoint, ProgressEntry, ProviderRoute, RouteGeometry
-from domain.units import round_half_up
+from domain.units import WHOLE_NUMBER, round_half_up
+from providers.http import send_with_one_retry
 from providers.routing.polyline import decode_polyline
 from providers.routing.port import (
     NoRouteFound,
@@ -21,12 +22,9 @@ from providers.routing.port import (
 
 SHAPE_PRECISION = 6
 MIN_SECONDS_BETWEEN_REQUESTS = 1.0
-CONNECT_TIMEOUT_S = 3.0
 READ_TIMEOUT_S = 15.0
-USER_AGENT = "weather-aware-truck-routing"
 KILOGRAMS_PER_TONNE = 1000
 METRES_PER_KILOMETRE = Decimal(1000)
-WHOLE_NUMBER = Decimal(1)
 EARTH_RADIUS_M = 6_371_000.0
 PROGRESS_POINT_STRIDE = 10
 NO_ROUTE_ERROR_CODES = frozenset({171, 442})
@@ -67,30 +65,17 @@ class ValhallaRouting:
         self._limiter = limiter
 
     def routes(self, query: RouteQuery) -> tuple[ProviderRoute, ...]:
-        response = self._send(_request_body(query))
-        return _routes_from(self._payload_of(response))
-
-    def _send(self, body: dict[str, Any]) -> httpx.Response:
+        body = _request_body(query)
         try:
-            return self._post(body)
-        except httpx.TransportError:
-            return self._post_again(body)
-
-    def _post_again(self, body: dict[str, Any]) -> httpx.Response:
-        """One retry for network errors only (architecture section 10); the limiter spaces it."""
-        try:
-            return self._post(body)
+            response = send_with_one_retry(lambda: self._post(body))
         except httpx.TransportError as error:
             raise RoutingUnavailable("The backup routing service did not answer.") from error
+        return _routes_from(self._payload_of(response))
 
     def _post(self, body: dict[str, Any]) -> httpx.Response:
+        """Every attempt, a retry included, waits for its turn at the limiter."""
         self._limiter.wait_for_turn()
-        return self._client.post(
-            self._url,
-            json=body,
-            headers={"User-Agent": USER_AGENT},
-            timeout=httpx.Timeout(READ_TIMEOUT_S, connect=CONNECT_TIMEOUT_S),
-        )
+        return self._client.post(self._url, json=body)
 
     def _payload_of(self, response: httpx.Response) -> dict[str, Any]:
         payload = _parse(response.text)

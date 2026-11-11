@@ -6,10 +6,9 @@ from itertools import pairwise
 
 from domain.constants import METRES_PER_MILE
 from domain.types import CheckpointSpacing, GeoPoint, ProgressEntry, ProviderRoute
-from domain.units import round_half_up
+from domain.units import WHOLE_NUMBER, round_half_up
 
 MICROSECONDS_PER_SECOND = Decimal(1_000_000)
-WHOLE_NUMBER = Decimal(1)
 
 
 @dataclass(frozen=True, slots=True)
