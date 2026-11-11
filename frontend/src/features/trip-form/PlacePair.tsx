@@ -1,9 +1,21 @@
 import SwapVertIcon from '@mui/icons-material/SwapVert'
-import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
+import { styled } from '@mui/material/styles'
 import type { Place } from '../../shared/types'
 import { PlaceField } from './PlaceField'
+
+// Sits in the gap between the two fields, on the helper-text line, so both fields keep the full width.
+const SwapButton = styled(IconButton)(({ theme }) => ({
+  position: 'absolute',
+  right: theme.spacing(8),
+  top: '50%',
+  transform: 'translateY(-50%)',
+  zIndex: 1,
+  border: `1px solid ${theme.palette.divider}`,
+  backgroundColor: theme.palette.background.paper,
+  '&:hover': { backgroundColor: theme.palette.action.hover },
+}))
 
 interface PlacePairProps {
   origin: Place | null
@@ -23,26 +35,17 @@ export function PlacePair({
   onSwap,
 }: PlacePairProps) {
   return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) auto',
-        gap: 1,
-        alignItems: 'center',
-      }}
-    >
-      <Stack spacing={2}>
-        <PlaceField label="Origin" value={origin} error={errors.origin} onChange={onChangeOrigin} />
-        <PlaceField
-          label="Destination"
-          value={destination}
-          error={errors.destination}
-          onChange={onChangeDestination}
-        />
-      </Stack>
-      <IconButton aria-label="Swap origin and destination" onClick={onSwap}>
+    <Stack useFlexGap spacing={2} sx={{ position: 'relative' }}>
+      <PlaceField label="Origin" value={origin} error={errors.origin} onChange={onChangeOrigin} />
+      <SwapButton aria-label="Swap origin and destination" onClick={onSwap}>
         <SwapVertIcon />
-      </IconButton>
-    </Box>
+      </SwapButton>
+      <PlaceField
+        label="Destination"
+        value={destination}
+        error={errors.destination}
+        onChange={onChangeDestination}
+      />
+    </Stack>
   )
 }
