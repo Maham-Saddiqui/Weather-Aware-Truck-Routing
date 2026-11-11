@@ -72,6 +72,15 @@ An independent audit checked every rule against the code (139 rows). Where the c
 | PERF-09 (bundle-size check in the check command) | Added: `scripts/check_bundle_size.py` builds the front end and fails past 200 KB (first load) or 350 KB (map chunk), gzip. | Closes the audit finding. | done |
 | GEN-03 (rules duplicated in the browser) | The "How risk works" dialog repeats the band edges and limits by hand. | It is explanatory text; a test cites RR-03 to RR-08 and RR-22 to RR-24 against its numbers. A test tying it to the server constants is still to be written. | to do |
 
+## Standards audit follow-ups done (2026-11-11)
+
+| Rule | What was done | Why it looks different from the document | Code |
+|---|---|---|---|
+| BE-11 | With DEBUG off, a missing or empty `DJANGO_ALLOWED_HOSTS` or `ALLOWED_ORIGINS` stops the server at start-up with "Missing required environment variable: NAME". | The check runs when the web application loads (`config/wsgi.py` calling `config/startup.py`), not while `settings.py` is read, because the type checker's Django plugin imports the settings with DEBUG off and a required-variable error there crashed it. The behaviour a deployment sees is the same: the server does not start. | `backend/config/startup.py`, `backend/config/wsgi.py` |
+| GEN-23 | The long-trip fallback steps (two alternatives, one, none) are a closed `StrEnum` instead of loose strings; logged values are unchanged. | Wrong states can no longer be written. | `backend/providers/trip_notes.py`, `backend/services/routing_choice.py` |
+| GEN-04 | The three backend test files over 300 lines were split by topic; the test count did not drop (811 collected, 4 of them new). | Keeps files short and focused. | `backend/tests/` |
+| SEC (dependencies) | The server's production dependencies were scanned with pip-audit on 2026-11-11: "No known vulnerabilities found". The CI job repeats this as a report-only step. | Recorded for the audit trail. | `.github/workflows/ci.yml` |
+
 ## Applied after the first batch (owner approved on 2026-11-11)
 
 | Date | Section | What changed | Why | Code |
