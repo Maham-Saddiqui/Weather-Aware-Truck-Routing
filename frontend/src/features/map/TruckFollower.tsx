@@ -20,13 +20,19 @@ interface TruckFollowerProps {
   route: Route
   heatmap: Heatmap
   hourOffset: number
+  showTruckRequest?: number
 }
 
 // The announcement region stays mounted and its words change only when the button appears or goes,
 // so playback never repeats it (FE-07).
-export function TruckFollower({ route, heatmap, hourOffset }: TruckFollowerProps) {
+export function TruckFollower({
+  route,
+  heatmap,
+  hourOffset,
+  showTruckRequest,
+}: TruckFollowerProps) {
   const truck = truckAtHour(route, heatmap, hourOffset)
-  const follow = useFollowTruck(truck?.position ?? null, route)
+  const follow = useFollowTruck(truck?.position ?? null, route, showTruckRequest)
   return (
     <>
       <HiddenAnnouncement role="status">

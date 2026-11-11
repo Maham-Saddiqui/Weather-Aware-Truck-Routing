@@ -10,6 +10,7 @@ interface PlaybackInput {
   hourOffset: number
   playUntilHour: number
   onChangeHourOffset: (hourOffset: number) => void
+  onPlay?: () => void
 }
 
 export interface Playback {
@@ -51,6 +52,7 @@ export function usePlayback({
   hourOffset,
   playUntilHour,
   onChangeHourOffset,
+  onPlay,
 }: PlaybackInput): Playback {
   const isUnavailable = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [wantsToPlay, setWantsToPlay] = useState(false)
@@ -66,10 +68,11 @@ export function usePlayback({
   const togglePlaying = () => {
     if (isFinished) {
       onChangeHourOffset(0)
-      setWantsToPlay(true)
-      return
     }
-    setWantsToPlay(!isPlaying)
+    if (isFinished || !isPlaying) {
+      onPlay?.()
+    }
+    setWantsToPlay(isFinished || !isPlaying)
   }
 
   return {

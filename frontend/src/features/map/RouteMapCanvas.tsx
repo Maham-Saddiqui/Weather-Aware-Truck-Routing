@@ -64,15 +64,36 @@ function useRouteClicks(onSelectRoute: (routeId: string) => void) {
   }
 }
 
-export function RouteMapCanvas({
+function MapContents({
   heatmap,
   hourOffset,
+  showTruckRequest,
   onSelectRoute,
   endpointLabels,
   ...scene
 }: RouteMapCanvasProps) {
+  return (
+    <>
+      <AttributionControl position="bottom-right" compact={false} />
+      <NavigationControl position="top-right" showCompass={false} />
+      <BlankMissingImages />
+      <ReadableLabels />
+      {heatmap && <HeatmapLayer heatmap={heatmap} hourOffset={hourOffset} />}
+      <RouteScene {...scene} onSelectRoute={onSelectRoute} />
+      <RouteMarkers
+        {...scene}
+        heatmap={heatmap}
+        hourOffset={hourOffset}
+        showTruckRequest={showTruckRequest}
+        endpointLabels={endpointLabels}
+      />
+    </>
+  )
+}
+
+export function RouteMapCanvas(props: RouteMapCanvasProps) {
   const failure = useMapFailure()
-  const routeClicks = useRouteClicks(onSelectRoute)
+  const routeClicks = useRouteClicks(props.onSelectRoute)
   return (
     <Box sx={FRAME_STYLE}>
       {' '}
@@ -86,18 +107,7 @@ export function RouteMapCanvas({
         onLoad={failure.markLoaded}
         onError={failure.report}
       >
-        <AttributionControl position="bottom-right" compact={false} />
-        <NavigationControl position="top-right" showCompass={false} />
-        <BlankMissingImages />
-        <ReadableLabels />
-        {heatmap && <HeatmapLayer heatmap={heatmap} hourOffset={hourOffset} />}
-        <RouteScene {...scene} onSelectRoute={onSelectRoute} />
-        <RouteMarkers
-          {...scene}
-          heatmap={heatmap}
-          hourOffset={hourOffset}
-          endpointLabels={endpointLabels}
-        />
+        <MapContents {...props} />
       </Map>
       <MapLegend />
       {failure.hasFailed && <MapUnavailable />}

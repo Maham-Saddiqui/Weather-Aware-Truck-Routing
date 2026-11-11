@@ -21,11 +21,11 @@ function isInView(map: MapRef, truck: LatLon, isPanelOverMap: boolean): boolean 
 }
 
 // The map's own easing carries no original event; only the driver's hands do.
-function usePausedByDriver(map: MapRef | undefined, route: object) {
+function usePausedByDriver(map: MapRef | undefined, route: object, showTruckRequest: number) {
   const [isPaused, setIsPaused] = useState(false)
-  const [pausedRoute, setPausedRoute] = useState(route)
-  if (pausedRoute !== route) {
-    setPausedRoute(route)
+  const [seen, setSeen] = useState({ route, showTruckRequest })
+  if (seen.route !== route || seen.showTruckRequest !== showTruckRequest) {
+    setSeen({ route, showTruckRequest })
     setIsPaused(false)
   }
   useEffect(() => {
@@ -61,12 +61,17 @@ function useIsTruckInView(map: MapRef | undefined, truck: LatLon | null, isPanel
 }
 
 // Works through the map's own API and events, so a forecast hour never redraws the route lines (FE-08).
-// Easing keeps the zoom the driver chose. A hand move stops the following until showTruck or a new route.
-export function useFollowTruck(truck: LatLon | null, route: object): FollowTruck {
+// Easing keeps the zoom the driver chose. A hand move stops the following until showTruck, a new route or
+// a new showTruckRequest (the driver pressing Play).
+export function useFollowTruck(
+  truck: LatLon | null,
+  route: object,
+  showTruckRequest = 0,
+): FollowTruck {
   const { current: map } = useMap()
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const isPanelOverMap = useMediaQuery(useTheme().breakpoints.up('md'))
-  const { isPaused, resume } = usePausedByDriver(map, route)
+  const { isPaused, resume } = usePausedByDriver(map, route, showTruckRequest)
   const isVisible = useIsTruckInView(map, truck, isPanelOverMap)
   const lastRoute = useRef(route)
   const longitude = truck?.lon

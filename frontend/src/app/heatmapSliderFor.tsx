@@ -11,6 +11,7 @@ export function heatmapSliderFor(
   planner: TripPlannerState,
   hourOffset: number,
   onChangeHourOffset: (hourOffset: number) => void,
+  onPlay: () => void,
 ): ReactNode | null {
   const { heatmap, routes } = planner.results
   const selectedRoute = routes.find((route) => route.id === planner.selectedRouteId)
@@ -24,6 +25,7 @@ export function heatmapSliderFor(
       hourOffset={hourOffset}
       playUntilHour={playUntilHour(selectedRoute, heatmap)}
       onChangeHourOffset={onChangeHourOffset}
+      onPlay={onPlay}
       status={
         // A status line must never take the page down, for example while the server and the page
         // briefly disagree right after a deploy: it simply disappears.

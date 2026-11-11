@@ -7,10 +7,10 @@ const Floating = styled(Button)(({ theme }) => ({
   position: 'absolute',
   left: theme.spacing(1),
   bottom: theme.spacing(4.5),
-  minHeight: theme.spacing(5.5),
+  minHeight: theme.spacing(6),
   borderRadius: theme.spacing(3),
-  boxShadow: theme.shadows[6],
-  backgroundColor: theme.palette.background.paper,
+  boxShadow: theme.shadows[8],
+  fontSize: theme.typography.body1.fontSize,
   [theme.breakpoints.up('md')]: {
     bottom: `calc(${theme.spacing(1)} + ${String(FOLLOW_PANEL_CLEARANCE_PX)}px)`,
   },
@@ -23,7 +23,7 @@ interface ShowTruckButtonProps {
 // Sits bottom left: clear of the legend, the zoom buttons, the credits (which run wide on a phone) and, on wide screens, the forecast panel.
 export function ShowTruckButton({ onClick }: ShowTruckButtonProps) {
   return (
-    <Floating variant="outlined" startIcon={<LocalShippingIcon />} onClick={onClick}>
+    <Floating variant="contained" size="large" startIcon={<LocalShippingIcon />} onClick={onClick}>
       Show truck
     </Floating>
   )

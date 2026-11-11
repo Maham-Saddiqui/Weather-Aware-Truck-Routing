@@ -13,6 +13,7 @@ interface RouteMarkersProps {
   onSelectCheckpoint: (routeId: string, checkpointIndex: number) => void
   heatmap: Heatmap | null
   hourOffset: number
+  showTruckRequest?: number
   endpointLabels?: EndpointLabels
 }
 
@@ -22,6 +23,7 @@ export function RouteMarkers({
   routes,
   heatmap,
   hourOffset,
+  showTruckRequest,
   endpointLabels,
   ...checkpoints
 }: RouteMarkersProps) {
@@ -35,7 +37,14 @@ export function RouteMarkers({
       {heatmap && (
         <TruckMarker key={route.id} route={route} heatmap={heatmap} hourOffset={hourOffset} />
       )}
-      {heatmap && <TruckFollower route={route} heatmap={heatmap} hourOffset={hourOffset} />}
+      {heatmap && (
+        <TruckFollower
+          route={route}
+          heatmap={heatmap}
+          hourOffset={hourOffset}
+          showTruckRequest={showTruckRequest}
+        />
+      )}
       <CheckpointMarkers route={route} forecastMs={forecastMs} {...checkpoints} />
       <EndpointMarkers route={route} labels={endpointLabels} />
     </>

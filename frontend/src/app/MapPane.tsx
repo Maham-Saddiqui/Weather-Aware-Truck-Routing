@@ -14,7 +14,13 @@ type MapPlanner = Pick<
   | 'selectCheckpoint'
 >
 
-export function MapPane({ planner, hourOffset }: { planner: MapPlanner; hourOffset: number }) {
+interface MapPaneProps {
+  planner: MapPlanner
+  hourOffset: number
+  showTruckRequest: number
+}
+
+export function MapPane({ planner, hourOffset, showTruckRequest }: MapPaneProps) {
   const trip = planner.run?.trip
   const endpointLabels = useMemo(
     () => (trip ? { origin: trip.origin.label, destination: trip.destination.label } : undefined),
@@ -29,6 +35,7 @@ export function MapPane({ planner, hourOffset }: { planner: MapPlanner; hourOffs
           selectedCheckpointIndex={planner.selectedCheckpointIndex}
           heatmap={planner.results.heatmap}
           hourOffset={hourOffset}
+          showTruckRequest={showTruckRequest}
           endpointLabels={endpointLabels}
           onSelectRoute={planner.selectRoute}
           onSelectCheckpoint={planner.selectCheckpoint}

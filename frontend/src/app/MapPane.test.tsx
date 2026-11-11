@@ -30,7 +30,7 @@ afterEach(() => {
 
 describe('MapPane (FE-08, FE-11: the map loads lazily and may fail without hurting the page)', () => {
   it('shows the map once its chunk has loaded', async () => {
-    render(<MapPane planner={planner} hourOffset={0} />)
+    render(<MapPane planner={planner} hourOffset={0} showTruckRequest={0} />)
 
     expect(await screen.findByRole('img', { name: 'The loaded map' })).toBeVisible()
   })
@@ -39,7 +39,7 @@ describe('MapPane (FE-08, FE-11: the map loads lazily and may fail without hurti
     canvas.shouldFail = true
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    render(<MapPane planner={planner} hourOffset={0} />)
+    render(<MapPane planner={planner} hourOffset={0} showTruckRequest={0} />)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The map could not load. Your routes and weather ratings are still listed next to it.',
