@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MapLegend } from './MapLegend'
 import type { Heatmap } from '../../shared/types'
 
@@ -24,7 +25,7 @@ describe('MapLegend (FE-09, NFR-03: always visible, risk in words)', () => {
   it('says that grey on the map means no weather data (RR-11)', () => {
     render(<MapLegend heatmap={null} hourOffset={0} />)
 
-    expect(screen.getByText(/Grey stretches on the map have no weather data/)).toBeInTheDocument()
+    expect(screen.getByText(/Grey on the map means no weather data/)).toBeInTheDocument()
   })
 
   it('says nothing about the heatmap when there is none', () => {
@@ -45,5 +46,44 @@ describe('MapLegend (FE-09, NFR-03: always visible, risk in words)', () => {
     render(<MapLegend heatmap={heatmap} hourOffset={2} />)
 
     expect(screen.getByRole('status')).toHaveTextContent('Heatmap: no data at this hour')
+  })
+})
+
+function showOnPhone() {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('max-width'),
+    media: query,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }))
+}
+
+describe('MapLegend on a phone (NFR-04: the legend must not cover the routes)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('folds the notes away and offers a button to open them', async () => {
+    showOnPhone()
+    render(<MapLegend heatmap={heatmap} hourOffset={0} />)
+    const button = screen.getByRole('button', { name: 'Legend details' })
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+
+    await userEvent.click(button)
+
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('keeps the heatmap status in the page for screen readers while folded away', () => {
+    showOnPhone()
+    render(<MapLegend heatmap={heatmap} hourOffset={0} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent('Heatmap now: worst Moderate')
+  })
+
+  it('has no details button on a wide screen, where the notes are always shown', () => {
+    render(<MapLegend heatmap={heatmap} hourOffset={0} />)
+
+    expect(screen.queryByRole('button', { name: 'Legend details' })).not.toBeInTheDocument()
   })
 })
