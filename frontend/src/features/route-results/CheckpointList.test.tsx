@@ -13,6 +13,7 @@ function renderList(selectedCheckpointIndex: number | null = null) {
       <CheckpointList
         route={makeRoute('route-a')}
         selectedCheckpointIndex={selectedCheckpointIndex}
+        highlightedCheckpointIndex={null}
         onSelectCheckpoint={onSelectCheckpoint}
       />
       <button type="button">after</button>

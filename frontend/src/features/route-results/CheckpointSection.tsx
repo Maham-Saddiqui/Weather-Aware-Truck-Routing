@@ -1,12 +1,12 @@
 import Stack from '@mui/material/Stack'
 import { useTheme } from '@mui/material/styles'
-import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import { useState } from 'react'
+import { useRef } from 'react'
 import type { Route } from '../../shared/types'
-import { CheckpointDetails } from './CheckpointDetails'
-import { CheckpointList } from './CheckpointList'
-import { CheckpointsToggle } from './CheckpointsToggle'
+import { CheckpointAnnouncement } from './CheckpointAnnouncement'
+import { CheckpointPanel } from './CheckpointPanel'
+import { CHECKPOINTS_TITLE_ID, CheckpointsToggle } from './CheckpointsToggle'
+import { useCheckpointDisclosure } from './useCheckpointDisclosure'
 
 interface CheckpointSectionProps {
   route: Route
@@ -16,38 +16,42 @@ interface CheckpointSectionProps {
 }
 
 // Closed on a phone, where fifty rows would push everything else off the page; open on a wide screen.
-export function CheckpointSection({ routeNumber, ...list }: CheckpointSectionProps) {
+export function CheckpointSection({
+  route,
+  routeNumber,
+  selectedCheckpointIndex,
+  onSelectCheckpoint,
+}: CheckpointSectionProps) {
   const isPhone = useMediaQuery(useTheme().breakpoints.down('md'))
-  const [isOpen, setIsOpen] = useState(!isPhone)
-  const selected = list.route.checkpoints.find(
-    (checkpoint) => checkpoint.index === list.selectedCheckpointIndex,
-  )
+  const section = useRef<HTMLElement>(null)
+  const disclosure = useCheckpointDisclosure(selectedCheckpointIndex, section, !isPhone)
+
   return (
-    <Stack spacing={1} component="section" aria-labelledby="checkpoints-title">
+    <Stack
+      spacing={1}
+      component="section"
+      ref={section}
+      aria-labelledby={CHECKPOINTS_TITLE_ID}
+      sx={{ scrollMarginTop: (theme) => theme.spacing(1) }}
+    >
       <CheckpointsToggle
-        titleId="checkpoints-title"
-        panelId="checkpoints-panel"
         routeNumber={routeNumber}
-        checkpointCount={list.route.checkpoints.length}
-        isOpen={isOpen}
-        onToggle={() => {
-          setIsOpen((wasOpen) => !wasOpen)
-        }}
+        checkpointCount={route.checkpoints.length}
+        isOpen={disclosure.isOpen}
+        onToggle={disclosure.toggle}
       />
-      {isOpen && (
-        <Stack spacing={1} id="checkpoints-panel">
-          <div aria-live="polite">
-            {selected ? (
-              <CheckpointDetails checkpoint={selected} />
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                Select a checkpoint to see its wind, rain, snow and estimated arrival.
-              </Typography>
-            )}
-          </div>
-          <CheckpointList key={list.route.id} {...list} />
-        </Stack>
+      {disclosure.isOpen && (
+        <CheckpointPanel
+          route={route}
+          selectedCheckpointIndex={selectedCheckpointIndex}
+          highlightedCheckpointIndex={disclosure.revealedIndex}
+          onSelectCheckpoint={(routeId, checkpointIndex) => {
+            disclosure.markPickedInList()
+            onSelectCheckpoint(routeId, checkpointIndex)
+          }}
+        />
       )}
+      <CheckpointAnnouncement route={route} index={disclosure.revealedIndex} />
     </Stack>
   )
 }
