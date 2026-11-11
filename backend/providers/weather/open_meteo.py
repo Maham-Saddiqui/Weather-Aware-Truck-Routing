@@ -8,6 +8,7 @@ from typing import Any
 
 import httpx
 
+from domain.heatmap import cell_of
 from domain.types import GeoPoint, HourlyWeather
 from providers.http import QueryParams, get_with_one_retry
 from providers.weather.cache import CellKey, WindowCache
@@ -18,7 +19,6 @@ OPEN_METEO_READ_TIMEOUT_S = 5.0
 WEATHER_TOTAL_TIMEOUT_S = 12.0
 WINDOW_HOURS = 240
 POINTS_PER_REQUEST = 200
-CELL_DECIMALS = 2
 HOURLY_VARIABLES = "wind_speed_10m,wind_gusts_10m,rain,showers,snowfall"
 HTTP_OK = 200
 HTTP_TOO_MANY_REQUESTS = 429
@@ -106,7 +106,8 @@ class OpenMeteoWeather:
 
 
 def _cell(point: GeoPoint) -> CellKey:
-    return (round(point.lat, CELL_DECIMALS), round(point.lon, CELL_DECIMALS))
+    snapped = cell_of(point)
+    return (snapped.lat, snapped.lon)
 
 
 def _chunks(cells: Sequence[CellKey], size: int) -> Iterable[Sequence[CellKey]]:

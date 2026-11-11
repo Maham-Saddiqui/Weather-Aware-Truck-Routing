@@ -109,14 +109,23 @@ def test_a_point_without_data_is_absent_from_the_result() -> None:
     assert set(result) == {POINT}
 
 
-def test_points_inside_one_cell_share_one_requested_location() -> None:
+def test_points_inside_one_weather_cell_share_one_requested_location() -> None:
+    """The cell is the 0.05 degree grid of architecture section 7, defined once in the domain."""
     service = Service()
-    near = GeoPoint(41.001, -87.002)
+    near = GeoPoint(41.02, -87.02)
 
     result = service.weather.forecast([POINT, near])
 
     assert service.requests[0].url.params["latitude"] == "41.0"
     assert set(result) == {POINT, near}
+
+
+def test_points_in_neighbouring_weather_cells_are_requested_separately() -> None:
+    service = Service()
+
+    service.weather.forecast([POINT, GeoPoint(41.05, -87.0)])
+
+    assert service.requests[0].url.params["latitude"] == "41.0,41.05"
 
 
 def test_cells_already_cached_cost_no_provider_call_and_only_new_cells_are_fetched() -> None:

@@ -71,3 +71,7 @@ def test_cell_of_snaps_nearby_points_to_the_same_005_degree_cell() -> None:
 
 def test_cell_of_keeps_points_in_different_cells_apart() -> None:
     assert cell_of(GeoPoint(35.0, -100.0)) != cell_of(GeoPoint(35.1, -100.0))
+
+
+def test_cell_of_rounds_a_point_exactly_between_two_cells_up() -> None:
+    assert cell_of(GeoPoint(35.125, -35.125)) == GeoPoint(35.15, -35.1)
