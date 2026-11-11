@@ -11,6 +11,9 @@ DEFAULT_THROTTLE_RATE = "60/min"
 # A trip request costs routing and weather calls, so it gets a much stricter bucket (SEC-05).
 DEFAULT_TRIP_THROTTLE_RATE = "10/min"
 DEFAULT_TOMTOM_DAILY_CALL_LIMIT = 2_000
+# Production chain is <visitor>, <Cloudflare edge>, <Render internal>. With no forwarding header the
+# client address is the socket address, so local runs work unchanged.
+DEFAULT_NUM_PROXIES = 3
 
 
 TRIP_THROTTLE_SCOPE = "trips"
@@ -79,7 +82,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.AnonRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {"anon": API_THROTTLE_RATE, TRIP_THROTTLE_SCOPE: TRIP_THROTTLE_RATE},
     # Behind Render's proxy the client address is read from X-Forwarded-For (BE-17).
-    "NUM_PROXIES": int(os.environ.get("NUM_PROXIES", "1")),
+    "NUM_PROXIES": int_env("NUM_PROXIES", DEFAULT_NUM_PROXIES),
 }
 
 LOGGING = {
