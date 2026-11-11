@@ -34,9 +34,11 @@ from tests.fakes.weather import WINDOW_HOURS, FakeWeather
 ROAD_FACTOR = 1.2
 BENDS_DEG = (0.0, 2.5, -2.5)
 STORM_LON = -98.0
+STORM_LAT = 40.5
 STORM_WIDTH_DEG = 7.0
-STORM_PEAK_HOUR = 10
-STORM_HOURS = 8
+STORM_HEIGHT_DEG = 5.0
+STORM_PEAK_HOUR = 24
+STORM_HOURS = 10
 
 
 def utc_now() -> datetime:
@@ -63,7 +65,9 @@ class ScenarioRouting:
 
 
 def storm_window(point: GeoPoint, first_hour: datetime) -> HourlyWeather:
-    nearness = max(0.0, 1 - abs(point.lon - STORM_LON) / STORM_WIDTH_DEG)
+    nearness = max(0.0, 1 - abs(point.lon - STORM_LON) / STORM_WIDTH_DEG) * max(
+        0.0, 1 - abs(point.lat - STORM_LAT) / STORM_HEIGHT_DEG
+    )
     winds = tuple(
         Decimal(round(8 + 52 * nearness * max(0.0, 1 - abs(hour - STORM_PEAK_HOUR) / STORM_HOURS)))
         for hour in range(WINDOW_HOURS)
