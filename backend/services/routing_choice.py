@@ -1,6 +1,6 @@
 from dataclasses import dataclass, replace
 
-from domain.dedupe import choose_variety, drop_near_duplicates
+from domain.dedupe import ShapeBook, choose_variety, drop_near_duplicates
 from domain.types import ProviderRoute
 from domain.units import vehicle_weight_kg
 from providers.routing.port import (
@@ -46,14 +46,15 @@ def route_compare(env: TripEnvironment, request: TripRequest) -> RoutedRoutes:
     eco_call = env.executor.submit(
         _eco_routes, env, replace(fastest, preference=RoutePreference.ECO)
     )
+    shapes = ShapeBook()
     try:
-        distinct = drop_near_duplicates(fastest_call.result())
+        distinct = drop_near_duplicates(fastest_call.result(), shapes)
     except RoutingUnavailable:
         eco_call.cancel()
         return _from_backup(env.backup_routing, fastest)
     if len(distinct) < MAX_ROUTES_SHOWN:
-        distinct = drop_near_duplicates((*distinct, *eco_call.result()))
-    return RoutedRoutes(env.routing.name, choose_variety(distinct, MAX_ROUTES_SHOWN))
+        distinct = drop_near_duplicates((*distinct, *eco_call.result()), shapes)
+    return RoutedRoutes(env.routing.name, choose_variety(distinct, MAX_ROUTES_SHOWN, shapes))
 
 
 def _eco_routes(env: TripEnvironment, query: RouteQuery) -> tuple[ProviderRoute, ...]:

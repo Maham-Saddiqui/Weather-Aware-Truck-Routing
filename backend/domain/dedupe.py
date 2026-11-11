@@ -1,6 +1,7 @@
 import hashlib
 from collections.abc import Sequence
 from fractions import Fraction
+from functools import cached_property
 from math import floor
 
 from domain.constants import NEAR_DUPLICATE_OVERLAP_PERCENT, OVERLAP_CELLS_PER_DEGREE
@@ -18,60 +19,80 @@ def route_id(geometry: RouteGeometry) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:ROUTE_ID_LENGTH]
 
 
-def drop_near_duplicates(routes: Sequence[ProviderRoute]) -> tuple[ProviderRoute, ...]:
+class Shape:
+    """The 0.01 degree cells a route passes through; coordinates are the only floats allowed, so
+    cells make shapes comparable with integers."""
+
+    def __init__(self, route: ProviderRoute) -> None:
+        self.cells = frozenset(
+            (
+                floor(point.lat * OVERLAP_CELLS_PER_DEGREE),
+                floor(point.lon * OVERLAP_CELLS_PER_DEGREE),
+            )
+            for point in route.path
+        )
+
+    @cached_property
+    def halo(self) -> frozenset[Cell]:
+        """The shape's cells and their eight neighbours: a neighbouring cell is the same road."""
+        return frozenset(
+            (row + dr, column + dc)
+            for row, column in self.cells
+            for dr in (-1, 0, 1)
+            for dc in (-1, 0, 1)
+        )
+
+
+class ShapeBook:
+    """The shapes of one request's routes, each worked out once and dropped with the request."""
+
+    def __init__(self) -> None:
+        self._shapes: dict[RouteGeometry, Shape] = {}
+
+    def of(self, route: ProviderRoute) -> Shape:
+        if route.geometry not in self._shapes:
+            self._shapes[route.geometry] = Shape(route)
+        return self._shapes[route.geometry]
+
+
+def overlap(shape: Shape, other: Shape) -> Fraction:
+    """Share of both shapes lying on the other; a neighbouring cell counts as the same road."""
+    shared = len(shape.cells & other.halo) + len(other.cells & shape.halo)
+    return Fraction(shared, len(shape.cells) + len(other.cells))
+
+
+def drop_near_duplicates(
+    routes: Sequence[ProviderRoute], book: ShapeBook | None = None
+) -> tuple[ProviderRoute, ...]:
     """Keeps the first of any routes that follow the same roads; length plays no part."""
+    book = book or ShapeBook()
     kept: list[ProviderRoute] = []
-    kept_shapes: list[frozenset[Cell]] = []
     for route in routes:
-        shape = _shape_of(route)
-        if all(_overlap(shape, other) < NEAR_DUPLICATE_OVERLAP for other in kept_shapes):
+        shape = book.of(route)
+        if all(overlap(shape, book.of(other)) < NEAR_DUPLICATE_OVERLAP for other in kept):
             kept.append(route)
-            kept_shapes.append(shape)
     return tuple(kept)
 
 
-def choose_variety(routes: Sequence[ProviderRoute], limit: int) -> tuple[ProviderRoute, ...]:
+def choose_variety(
+    routes: Sequence[ProviderRoute], limit: int, book: ShapeBook | None = None
+) -> tuple[ProviderRoute, ...]:
     """The fastest route first, then each time the route sharing least road with those kept."""
     if not routes:
         return ()
-    shapes = [_shape_of(route) for route in routes]
+    book = book or ShapeBook()
     chosen = [min(range(len(routes)), key=lambda i: routes[i].travel_time_s)]
     remaining = [i for i in range(len(routes)) if i not in chosen]
     while remaining and len(chosen) < limit:
-        next_index = min(remaining, key=lambda i: _variety_cost(i, chosen, shapes, routes))
+        next_index = min(remaining, key=lambda i: _variety_cost(i, chosen, routes, book))
         chosen.append(next_index)
         remaining.remove(next_index)
     return tuple(routes[i] for i in chosen)
 
 
 def _variety_cost(
-    candidate: int,
-    chosen: list[int],
-    shapes: list[frozenset[Cell]],
-    routes: Sequence[ProviderRoute],
+    candidate: int, chosen: list[int], routes: Sequence[ProviderRoute], book: ShapeBook
 ) -> tuple[Fraction, int]:
-    most_shared = max(_overlap(shapes[candidate], shapes[kept]) for kept in chosen)
+    shape = book.of(routes[candidate])
+    most_shared = max(overlap(shape, book.of(routes[kept])) for kept in chosen)
     return most_shared, routes[candidate].travel_time_s
-
-
-def _shape_of(route: ProviderRoute) -> frozenset[Cell]:
-    """Coordinates are the only floats allowed; cells make shapes comparable with integers."""
-    return frozenset(
-        (floor(point.lat * OVERLAP_CELLS_PER_DEGREE), floor(point.lon * OVERLAP_CELLS_PER_DEGREE))
-        for point in route.path
-    )
-
-
-def _overlap(shape: frozenset[Cell], other: frozenset[Cell]) -> Fraction:
-    """Share of both shapes lying on the other; a neighbouring cell counts as the same road."""
-    shared = _cells_near(shape, other) + _cells_near(other, shape)
-    return Fraction(shared, len(shape) + len(other))
-
-
-def _cells_near(shape: frozenset[Cell], other: frozenset[Cell]) -> int:
-    return sum(1 for cell in shape if any(near in other for near in _neighbourhood(cell)))
-
-
-def _neighbourhood(cell: Cell) -> list[Cell]:
-    row, column = cell
-    return [(row + dr, column + dc) for dr in (-1, 0, 1) for dc in (-1, 0, 1)]
