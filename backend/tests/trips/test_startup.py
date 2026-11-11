@@ -3,10 +3,13 @@ import logging
 import sys
 
 import pytest
+from django.conf import settings
+from django.test import override_settings
 
 from config import container
 from config.startup import (
     configured_worker_count,
+    fail_if_deployment_setting_is_missing,
     log_worker_count,
     warn_if_routing_key_is_missing,
 )
@@ -20,7 +23,8 @@ def test_the_provider_bundle_is_built_at_start_up_before_any_request(
     monkeypatch.setattr(container, "providers", lambda: builds.append("built"))
     sys.modules.pop("config.wsgi", None)
 
-    importlib.import_module("config.wsgi")
+    with override_settings(DEBUG=True):
+        importlib.import_module("config.wsgi")
 
     assert builds == ["built"]
     sys.modules.pop("config.wsgi", None)
@@ -89,3 +93,36 @@ def test_a_present_routing_key_is_not_mentioned_at_all(caplog: pytest.LogCapture
     warn_if_routing_key_is_missing("fake-key-for-tests")
 
     assert caplog.records == []
+
+
+DEPLOYED = {
+    "DEBUG": False,
+    "ALLOWED_HOSTS": [".onrender.com"],
+    "CORS_ALLOWED_ORIGINS": ["https://a.test"],
+}
+
+
+def test_a_fully_configured_deployment_starts() -> None:
+    """BE-11"""
+    with override_settings(**DEPLOYED):
+        fail_if_deployment_setting_is_missing(settings)
+
+
+@pytest.mark.parametrize(
+    ("empty_setting", "variable"),
+    [("ALLOWED_HOSTS", "DJANGO_ALLOWED_HOSTS"), ("CORS_ALLOWED_ORIGINS", "ALLOWED_ORIGINS")],
+)
+def test_a_deployment_without_hosts_or_origins_stops_and_names_the_variable(
+    empty_setting: str, variable: str
+) -> None:
+    """BE-11"""
+    with override_settings(**{**DEPLOYED, empty_setting: []}), pytest.raises(RuntimeError) as stop:
+        fail_if_deployment_setting_is_missing(settings)
+
+    assert variable in str(stop.value)
+
+
+def test_debug_keeps_the_local_defaults_when_hosts_and_origins_are_missing() -> None:
+    """BE-11"""
+    with override_settings(DEBUG=True, ALLOWED_HOSTS=[], CORS_ALLOWED_ORIGINS=[]):
+        fail_if_deployment_setting_is_missing(settings)

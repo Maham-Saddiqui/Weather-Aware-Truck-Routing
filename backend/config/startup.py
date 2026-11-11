@@ -3,11 +3,26 @@ import os
 import sys
 from collections.abc import Mapping, Sequence
 
+from django.conf import LazySettings
+
 logger = logging.getLogger("trips.startup")
 
 GUNICORN_DEFAULT_WORKERS = 1
 WORKERS_FLAGS = ("--workers", "-w")
 REQUIRED_WORKERS = 1
+
+
+def fail_if_deployment_setting_is_missing(configured: LazySettings) -> None:
+    """Outside debug an empty list would silently refuse every visitor or every host (BE-11)."""
+    if configured.DEBUG:
+        return
+    required = {
+        "DJANGO_ALLOWED_HOSTS": configured.ALLOWED_HOSTS,
+        "ALLOWED_ORIGINS": configured.CORS_ALLOWED_ORIGINS,
+    }
+    for name, values in required.items():
+        if not values:
+            raise RuntimeError(f"Missing required environment variable: {name}")
 
 
 def configured_worker_count(argv: Sequence[str], environ: Mapping[str, str]) -> int:
