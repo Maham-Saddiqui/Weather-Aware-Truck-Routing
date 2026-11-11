@@ -13,7 +13,7 @@ function showOnPhone(isPhone: boolean) {
   }))
 }
 
-function layout(arrival: string | null = null) {
+function layout(arrival: string | null = '1-result') {
   return (
     <Providers>
       <PlannerLayout
@@ -26,7 +26,7 @@ function layout(arrival: string | null = null) {
   )
 }
 
-function renderLayout(arrival: string | null = null) {
+function renderLayout(arrival: string | null = '1-result') {
   return render(layout(arrival))
 }
 
@@ -108,7 +108,7 @@ describe('the results panel can be hidden beside the map (FE-07)', () => {
     expect(panel()).toHaveFocus()
   })
 
-  it('remembers a hidden panel for the next visit', async () => {
+  it('remembers a hidden panel for the next visit that shows a trip', async () => {
     const first = renderLayout()
     await userEvent.click(panel())
     first.unmount()
@@ -132,7 +132,7 @@ describe('the results panel can be hidden beside the map (FE-07)', () => {
   })
 
   it('opens again for each new trip result or error, without forgetting the saved choice', async () => {
-    const view = renderLayout()
+    const view = renderLayout('0-result')
     await userEvent.click(panel())
     expect(panel()).toHaveAttribute('aria-expanded', 'false')
 
@@ -146,6 +146,51 @@ describe('the results panel can be hidden beside the map (FE-07)', () => {
 
     view.rerender(layout('2-error'))
     expect(panel()).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
+describe('an empty page always shows the form, whatever panel choice was remembered (FE-07)', () => {
+  beforeEach(() => {
+    showOnPhone(false)
+  })
+
+  it('keeps the panel open and offers no hide button before a trip is planned', () => {
+    window.localStorage.setItem('results-panel-collapsed', 'true')
+    renderLayout(null)
+
+    expect(screen.queryByRole('button', { name: /results panel/ })).toBeNull()
+    expect(screen.getByText('form').closest('[inert]')).toBeNull()
+  })
+
+  it('opens for the first trip result and does not forget the remembered choice', () => {
+    window.localStorage.setItem('results-panel-collapsed', 'true')
+    const view = renderLayout(null)
+    expect(screen.queryByRole('button', { name: /results panel/ })).toBeNull()
+
+    view.rerender(layout('1-result'))
+    expect(screen.getByRole('button', { name: /results panel/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    expect(window.localStorage.getItem('results-panel-collapsed')).toBe('true')
+  })
+
+  it('opens an error on an empty page for the driver to read, and keeps the button afterwards', () => {
+    const view = renderLayout(null)
+
+    view.rerender(layout('1-error'))
+    view.rerender(layout(null))
+
+    expect(screen.getByRole('button', { name: /results panel/ })).toBeVisible()
+  })
+
+  it('stays open on an empty page when the browser refuses to read storage', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked')
+    })
+    renderLayout(null)
+
+    expect(screen.getByText('form').closest('[inert]')).toBeNull()
   })
 })
 
