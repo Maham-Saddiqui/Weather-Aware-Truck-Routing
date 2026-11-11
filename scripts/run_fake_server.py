@@ -17,7 +17,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 os.environ.setdefault("DJANGO_SECRET_KEY", "local-rehearsal-only")
 os.environ.setdefault("DJANGO_DEBUG", "true")
 os.environ.setdefault("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-os.environ.setdefault("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174")
+ALLOWED_DEV_PORTS = range(5173, 5180)
+os.environ.setdefault(
+    "ALLOWED_ORIGINS",
+    ",".join(f"http://{host}:{port}" for port in ALLOWED_DEV_PORTS for host in ("localhost", "127.0.0.1")),
+)
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -96,4 +100,5 @@ def scenario() -> container.Providers:
 if __name__ == "__main__":
     bundle = scenario()
     setattr(container, "providers", lambda: bundle)
-    execute_from_command_line(["manage.py", "runserver", "127.0.0.1:8000", "--noreload"])
+    port = os.environ.get("FAKE_SERVER_PORT", "8000")
+    execute_from_command_line(["manage.py", "runserver", f"127.0.0.1:{port}", "--noreload"])
