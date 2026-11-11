@@ -70,19 +70,22 @@ function nearestIndex(points: readonly (readonly number[])[], spot: LonLat): num
   return nearest
 }
 
-// Where to shift a pill sideways so it sits beside its line, not on the checkpoint dots: up when the line runs across
-// the screen, to the right when it runs up and down. Display geometry only (north is up, so latitude stretches by 1 / cos).
-export function sideOffset(points: readonly (readonly number[])[], spot: LonLat): [number, number] {
+// The direction of the line at the spot as (east, north) with east shrunk by latitude, so it matches the screen.
+function directionAt(points: readonly (readonly number[])[], spot: LonLat): [number, number] {
   const middle = nearestIndex(points, spot)
   const [fromLon = 0, fromLat = 0] = points[Math.max(0, middle - 1)] ?? []
   const [toLon = 0, toLat = 0] = points[Math.min(points.length - 1, middle + 1)] ?? []
-  const across = (toLon - fromLon) * Math.cos((spot[1] * Math.PI) / 180)
-  const up = toLat - fromLat
+  return [(toLon - fromLon) * Math.cos((spot[1] * Math.PI) / 180), toLat - fromLat]
+}
+
+// Where to shift a pill sideways so it sits beside its line, not on the checkpoint dots: up when the line runs across
+// the screen, to the right when it runs up and down. Display geometry only.
+export function sideOffset(points: readonly (readonly number[])[], spot: LonLat): [number, number] {
+  const [across, up] = directionAt(points, spot)
   const length = Math.hypot(across, up) || 1
   const sideways = up / length
   const vertical = across / length
-  const pointsDown = vertical > 0 || (vertical === 0 && sideways < 0)
-  const flip = pointsDown ? -1 : 1
+  const flip = vertical > 0 || (vertical === 0 && sideways < 0) ? -1 : 1
   const distance =
     Math.abs(sideways) * PILL_HALF_WIDTH_PX +
     Math.abs(vertical) * PILL_HALF_HEIGHT_PX +

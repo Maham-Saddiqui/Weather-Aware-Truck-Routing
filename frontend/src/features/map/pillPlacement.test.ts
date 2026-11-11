@@ -43,7 +43,7 @@ describe('place route name pills away from other routes and from each other (REQ
 
 describe('shift the selected name beside its line, off the checkpoint dots (REQ-08)', () => {
   it('lifts it above a line that runs across the screen', () => {
-    const [sideways = 1, up = 1] = sideOffset(
+    const [sideways, up] = sideOffset(
       [
         [0, 40],
         [1, 40],
@@ -57,7 +57,7 @@ describe('shift the selected name beside its line, off the checkpoint dots (REQ-
   })
 
   it('moves it to the right of a line that runs up and down', () => {
-    const [sideways = 0, up = 1] = sideOffset(
+    const [sideways, up] = sideOffset(
       [
         [0, 40],
         [0, 41],
