@@ -3,6 +3,7 @@ from dataclasses import dataclass, fields
 from decimal import Decimal
 from enum import StrEnum
 
+from domain.constants import FIRST_ROUTE_NAME
 from domain.levels import Level
 from domain.summary import IneligibleReason, RouteSummary
 from domain.units import miles_from_metres, travel_time_text, whole_minutes
@@ -156,7 +157,7 @@ def _recommend(eligible: list[Candidate], candidates: Sequence[Candidate]) -> Re
     )
 
 
-NAMES = {"winner": "Route 1", "runner_up": "Route 2"}
+NAMES = {"winner": FIRST_ROUTE_NAME, "runner_up": "Route 2"}
 
 
 def _why_it_won(eligible: list[Candidate], route_count: int) -> tuple[DecidingCriterion, str]:

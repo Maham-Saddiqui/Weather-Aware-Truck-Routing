@@ -7,7 +7,7 @@ from django.test import Client
 
 from config.container import Providers
 from domain.types import GeoPoint
-from domain.units import travel_time_text
+from domain.units import travel_time_difference_text, travel_time_text
 from providers.timezone.offline import OfflineTimeZoneLookup, TimeZoneNotFound
 from tests.fakes.bundle import default_fakes, with_trips
 from tests.fakes.trips import route_bent, tomtom_answering, trip_body
@@ -43,6 +43,7 @@ def test_the_primary_response_shows_the_servers_rounded_strings_and_no_rank(
     assert route["summary"]["travel_time_text"] == travel_time_text(
         route["summary"]["travel_time_s"]
     )
+    assert route["summary"]["travel_time_difference_text"] is None
     assert (first["distance_miles"], first["covered_miles"]) == ("0.0", "12.5")
     assert (second["distance_miles"], second["covered_miles"]) == ("25.0", "25.0")
     assert last["distance_miles"] == "100.0"
@@ -97,6 +98,22 @@ def test_the_compare_response_names_the_deciding_criterion_and_the_provider(
     assert body["recommendation"]["route_id"] == body["routes"][0]["id"]
     assert body["recommendation"]["sentence"].startswith("Route 1 ")
     assert all(route["summary"]["travel_time_text"] for route in body["routes"])
+
+
+def test_rr25_the_compare_response_compares_each_later_route_with_the_first(
+    client: Client, use_fakes: UseFakes
+) -> None:
+    """RR-25"""
+    routing = tomtom_answering((route_bent(0.0), route_bent(0.6)))
+    use_fakes(with_trips(default_fakes(), routing=routing))
+
+    _, body = post(client, "/trips/compare")
+
+    first, second = (route["summary"] for route in body["routes"])
+    assert first["travel_time_difference_text"] is None
+    assert second["travel_time_difference_text"] == travel_time_difference_text(
+        second["travel_time_s"], first["travel_time_s"]
+    )
 
 
 def test_a_place_no_time_zone_covers_is_a_validation_problem_not_a_crash(

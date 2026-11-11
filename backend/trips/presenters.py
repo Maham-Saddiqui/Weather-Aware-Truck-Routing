@@ -12,7 +12,7 @@ from domain.ranking import Recommendation
 from domain.rating import Measurements
 from domain.summary import MetresByLevel, RouteSummary
 from domain.types import GeoPoint
-from domain.units import miles_from_metres, travel_time_text
+from domain.units import miles_from_metres, travel_time_difference_text, travel_time_text
 from services.results import (
     CompareTripResult,
     Heatmap,
@@ -28,7 +28,7 @@ type Json = dict[str, Any]
 
 def present_primary(result: PrimaryTripResult) -> Json:
     return {
-        "route": _route(result.route),
+        "route": _route(result.route, first_route_seconds=None),
         "heatmap": _heatmap(result.heatmap),
         "routing_provider": result.routing_provider.value,
         "weather": {"status": result.weather_status.value},
@@ -37,7 +37,7 @@ def present_primary(result: PrimaryTripResult) -> Json:
 
 def present_compare(result: CompareTripResult) -> Json:
     return {
-        "routes": [_route(route) for route in result.routes],
+        "routes": [_route(route, _compared_with(result, route)) for route in result.routes],
         "recommendation": _recommendation(result.recommendation),
         "heatmap": _heatmap(result.heatmap),
         "routing_provider": result.routing_provider.value,
@@ -45,7 +45,12 @@ def present_compare(result: CompareTripResult) -> Json:
     }
 
 
-def _route(route: RatedRoute) -> Json:
+def _compared_with(result: CompareTripResult, route: RatedRoute) -> int | None:
+    first_route = result.routes[0]
+    return None if route is first_route else first_route.summary.travel_time_s
+
+
+def _route(route: RatedRoute, first_route_seconds: int | None) -> Json:
     geometry = route.route.geometry
     return {
         "id": route.route_id,
@@ -55,16 +60,17 @@ def _route(route: RatedRoute) -> Json:
             "precision": geometry.precision,
             "data": geometry.encoded,
         },
-        "summary": _summary(route.summary),
+        "summary": _summary(route.summary, first_route_seconds),
         "checkpoints": [_checkpoint(checkpoint) for checkpoint in route.checkpoints],
     }
 
 
-def _summary(summary: RouteSummary) -> Json:
+def _summary(summary: RouteSummary, first_route_seconds: int | None) -> Json:
     return {
         "distance_miles": _miles(summary.distance_m),
         "travel_time_s": summary.travel_time_s,
         "travel_time_text": travel_time_text(summary.travel_time_s),
+        "travel_time_difference_text": _difference_or_none(summary, first_route_seconds),
         "arrival_utc": _instant(summary.arrival_utc),
         "miles_by_level": _miles_by_level(summary.metres_by_level),
         "average_risk": _text_or_none(summary.average_risk),
@@ -72,6 +78,12 @@ def _summary(summary: RouteSummary) -> Json:
         "eligible": summary.is_eligible,
         "ineligible_reason": _value_or_none(summary.ineligible_reason),
     }
+
+
+def _difference_or_none(summary: RouteSummary, first_route_seconds: int | None) -> str | None:
+    if first_route_seconds is None:
+        return None
+    return travel_time_difference_text(summary.travel_time_s, first_route_seconds)
 
 
 def _miles_by_level(metres: MetresByLevel) -> Json:
