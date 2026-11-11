@@ -1,47 +1,17 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Providers } from '../../app/Providers'
 import { PHOTON_SEARCH_URL, SUGGESTION_PAUSE_MS } from '../../shared/constants'
+import { browserTimeZone, dayjs } from '../../shared/time'
 import { server } from '../../shared/testing/server'
-import { TripForm } from './TripForm'
-
-function photonFeature(
-  properties: { name: string; state: string; countrycode: string },
-  lon: number,
-  lat: number,
-) {
-  return { geometry: { coordinates: [lon, lat] }, properties }
-}
-
-function answerWithPlaces(onRequest?: (url: URL) => void) {
-  server.use(
-    http.get(PHOTON_SEARCH_URL, ({ request }) => {
-      onRequest?.(new URL(request.url))
-      return HttpResponse.json({
-        features: [
-          photonFeature({ name: 'Chicago', state: 'Illinois', countrycode: 'US' }, -87.63, 41.88),
-          photonFeature({ name: 'Chicoutimi', state: 'Quebec', countrycode: 'CA' }, -71.06, 48.43),
-        ],
-      })
-    }),
-  )
-}
-
-function renderForm(onSubmit = vi.fn()) {
-  render(
-    <Providers>
-      <TripForm initialTrip={null} needsReview={false} isBusy={false} onSubmit={onSubmit} />
-    </Providers>,
-  )
-  return onSubmit
-}
-
-async function chooseFirstSuggestion(field: string, text: string) {
-  await userEvent.type(screen.getByLabelText(field), text)
-  await userEvent.click(await screen.findByRole('option', { name: /Chicago/ }))
-}
+import {
+  answerWithPlaces,
+  chooseFirstSuggestion,
+  chooseOriginAndDestination,
+  photonFeature,
+  renderForm,
+} from './tripFormTestKit'
 
 // Testing Library only advances fake timers for you when it finds a `jest` global.
 function useFakeClock() {
@@ -156,23 +126,6 @@ describe('address suggestions (REQ-02, FE-10)', () => {
   })
 })
 
-async function chooseOriginAndDestination() {
-  answerWithPlaces()
-  await chooseFirstSuggestion('Origin', 'Chicago')
-  server.use(
-    http.get(PHOTON_SEARCH_URL, () =>
-      HttpResponse.json({
-        features: [
-          photonFeature({ name: 'Denver', state: 'Colorado', countrycode: 'US' }, -104.99, 39.74),
-        ],
-      }),
-    ),
-  )
-  await userEvent.type(screen.getByLabelText('Destination'), 'Denver')
-  await userEvent.click(await screen.findByRole('option', { name: /Denver/ }))
-  await userEvent.type(screen.getByLabelText('Cargo weight (lb)'), '42000')
-}
-
 describe('departure time zone (RR-18, RR-29)', () => {
   afterEach(() => {
     vi.useRealTimers()
@@ -192,6 +145,38 @@ describe('departure time zone (RR-18, RR-29)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
 
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ departure_utc: '2026-11-12T19:00:00.000Z' })
+  })
+
+  it('keeps the untouched default at 08:00 on the clock of the origin zone (RR-18)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-10T12:00:00Z') })
+    server.use(
+      http.get('*/api/v1/timezone', () => HttpResponse.json({ time_zone: 'Pacific/Honolulu' })),
+    )
+    const onSubmit = renderForm()
+    await chooseOriginAndDestination()
+    expect(await screen.findByText('Local time at the origin (HST)')).toBeInTheDocument()
+
+    expect(screen.getByRole('spinbutton', { name: 'Hours' })).toHaveAttribute('aria-valuenow', '8')
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ departure_utc: '2026-11-11T18:00:00.000Z' })
+  })
+
+  it('keeps the instant the driver typed when the origin zone arrives later (RR-18)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-10T12:00:00Z') })
+    server.use(
+      http.get('*/api/v1/timezone', () => HttpResponse.json({ time_zone: 'Pacific/Honolulu' })),
+    )
+    const onSubmit = renderForm()
+    const departure = await screen.findByRole('group', { name: 'Departure' }, { timeout: 5000 })
+    await userEvent.type(departure, '{Control>}a{/Control}')
+    await userEvent.keyboard('{Backspace}111220260900')
+    await chooseOriginAndDestination()
+    expect(await screen.findByText('Local time at the origin (HST)')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+
+    const typedInBrowserZone = dayjs.tz('2026-11-12 09:00', browserTimeZone()).toISOString()
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ departure_utc: typedInBrowserZone })
   })
 
   it('says it is finding the origin time zone and blocks planning until it arrives', async () => {

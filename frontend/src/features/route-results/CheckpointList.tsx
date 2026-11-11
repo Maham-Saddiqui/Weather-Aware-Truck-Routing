@@ -5,6 +5,7 @@ import ListItemText from '@mui/material/ListItemText'
 import { formatLocalTime } from '../../shared/time'
 import type { Route } from '../../shared/types'
 import { RiskChip } from './RiskChip'
+import { useRovingRows } from './useRovingRows'
 
 interface CheckpointListProps {
   route: Route
@@ -17,17 +18,26 @@ export function CheckpointList({
   selectedCheckpointIndex,
   onSelectCheckpoint,
 }: CheckpointListProps) {
+  const { checkpoints } = route
+  const selectedPosition = checkpoints.findIndex(({ index }) => index === selectedCheckpointIndex)
+  const roving = useRovingRows(checkpoints.length, selectedPosition)
+
   return (
     <List
       dense
       aria-label="Checkpoints"
+      onKeyDown={roving.moveFocus}
       sx={{ maxHeight: 280, overflowY: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}
     >
-      {route.checkpoints.map((checkpoint) => (
+      {checkpoints.map((checkpoint, position) => (
         <ListItem key={checkpoint.index} disablePadding>
           <ListItemButton
             selected={checkpoint.index === selectedCheckpointIndex}
             aria-current={checkpoint.index === selectedCheckpointIndex ? 'true' : undefined}
+            tabIndex={position === roving.tabStopPosition ? 0 : -1}
+            onFocus={() => {
+              roving.rememberRow(position)
+            }}
             onClick={() => {
               onSelectCheckpoint(route.id, checkpoint.index)
             }}

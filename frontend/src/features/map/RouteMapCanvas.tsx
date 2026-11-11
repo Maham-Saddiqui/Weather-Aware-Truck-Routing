@@ -10,6 +10,7 @@ import { BASEMAP_STYLE_URL, INITIAL_VIEW, ROUTE_HIT_LAYER_ID } from './mapConsta
 import { mapLib } from './mapLib'
 import { MapLegend } from './MapLegend'
 import { MapUnavailable } from './MapUnavailable'
+import { useMapFailure } from './useMapFailure'
 import { RouteScene } from './RouteScene'
 
 const INTERACTIVE_LAYER_IDS = [ROUTE_HIT_LAYER_ID]
@@ -28,7 +29,7 @@ function clickedRouteId(event: MapLayerMouseEvent): string | null {
 }
 
 export function RouteMapCanvas({ heatmap, hourOffset, onSelectRoute, ...scene }: RouteMapProps) {
-  const [hasFailed, setHasFailed] = useState(false)
+  const failure = useMapFailure()
   const [isOverRoute, setIsOverRoute] = useState(false)
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: MAP_MIN_HEIGHT_PX }}>
@@ -51,9 +52,8 @@ export function RouteMapCanvas({ heatmap, hourOffset, onSelectRoute, ...scene }:
             onSelectRoute(routeId)
           }
         }}
-        onError={() => {
-          setHasFailed(true)
-        }}
+        onLoad={failure.markLoaded}
+        onError={failure.report}
       >
         <AttributionControl position="bottom-right" compact={false} />
         <NavigationControl position="top-right" showCompass={false} />
@@ -61,7 +61,7 @@ export function RouteMapCanvas({ heatmap, hourOffset, onSelectRoute, ...scene }:
         <RouteScene {...scene} />
       </Map>
       <MapLegend heatmap={heatmap} hourOffset={hourOffset} />
-      {hasFailed && <MapUnavailable />}
+      {failure.hasFailed && <MapUnavailable />}
     </Box>
   )
 }

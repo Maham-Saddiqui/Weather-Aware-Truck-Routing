@@ -6,7 +6,9 @@ import type { Route } from '../../shared/types'
 import { RouteBadges } from './RouteBadges'
 
 // The button's click area is stretched over the whole card, so the card content stays ordinary text for screen readers.
+// ButtonBase is position: relative by default; it must be static so the overlay anchors to the card, not to the button.
 const SelectButton = styled(ButtonBase)(({ theme }) => ({
+  position: 'static',
   font: 'inherit',
   textAlign: 'left',
   '&::after': { content: '""', position: 'absolute', inset: 0 },

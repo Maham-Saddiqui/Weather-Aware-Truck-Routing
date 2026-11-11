@@ -1,9 +1,12 @@
 import { styled } from '@mui/material/styles'
-import { useState } from 'react'
+import Skeleton from '@mui/material/Skeleton'
+import { Suspense, useState } from 'react'
 import { MAP_MIN_HEIGHT_PX, PHONE_MAP_HEIGHT_PX } from '../shared/constants'
 import { heatmapSliderFor } from './heatmapSliderFor'
 import { MapPane } from './MapPane'
 import type { TripPlannerState } from './useTripPlanner'
+
+const SLIDER_HEIGHT_PX = 40
 
 const MapArea = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -44,7 +47,13 @@ export function MapWithSlider({ planner }: { planner: TripPlannerState }) {
       <MapFrame>
         <MapPane planner={planner} hourOffset={hourOffset} />
       </MapFrame>
-      {slider !== null && <SliderDock>{slider}</SliderDock>}
+      {slider !== null && (
+        <SliderDock>
+          <Suspense fallback={<Skeleton variant="rounded" height={SLIDER_HEIGHT_PX} />}>
+            {slider}
+          </Suspense>
+        </SliderDock>
+      )}
     </MapArea>
   )
 }

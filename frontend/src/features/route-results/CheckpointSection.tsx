@@ -29,7 +29,7 @@ export function CheckpointSection({ routeNumber, ...list }: CheckpointSectionPro
           </Typography>
         )}
       </div>
-      <CheckpointList {...list} />
+      <CheckpointList key={list.route.id} {...list} />
     </Stack>
   )
 }

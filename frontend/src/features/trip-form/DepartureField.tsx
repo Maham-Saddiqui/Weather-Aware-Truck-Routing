@@ -1,5 +1,7 @@
 import Button from '@mui/material/Button'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import type { Dayjs } from 'dayjs'
 import { zoneAbbreviation } from '../../shared/time'
 import type { OriginZone, OriginZoneState } from './useOriginTimeZone'
@@ -27,7 +29,7 @@ function zoneHint(value: Dayjs | null, { state, timeZone }: OriginZone): string 
 
 export function DepartureField({ value, zone, error, onChange }: DepartureFieldProps) {
   return (
-    <>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <DateTimePicker
         label="Departure"
         value={value}
@@ -46,6 +48,6 @@ export function DepartureField({ value, zone, error, onChange }: DepartureFieldP
           Look up the time zone again
         </Button>
       )}
-    </>
+    </LocalizationProvider>
   )
 }

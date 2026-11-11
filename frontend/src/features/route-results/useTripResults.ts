@@ -1,5 +1,5 @@
 import { skipToken, useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { api } from '../../shared/api/client'
 import { useHealth } from '../../shared/api/useHealth'
 import { SERVER_WAKING_DELAY_MS } from '../../shared/constants'
@@ -31,9 +31,12 @@ export function useTripResults(run: TripRun | null): TripResults {
       ),
     [primaryData, primaryError, primaryFailed, compareData, compareError, compareFailed, hasRun],
   )
-  const isServerAwake = useHealth().isSuccess
+  const { isAwake, pingIfStale } = useHealth()
+  useEffect(() => {
+    if (run) pingIfStale()
+  }, [run, pingIfStale])
   const isServerWaking = useElapsedFlag(
-    results.phase === 'loading' && !isServerAwake,
+    results.phase === 'loading' && !isAwake,
     SERVER_WAKING_DELAY_MS,
   )
   return { ...results, isPending: primary.isFetching || compare.isFetching, isServerWaking }

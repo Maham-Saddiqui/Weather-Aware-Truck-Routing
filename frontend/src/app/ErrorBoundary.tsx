@@ -4,6 +4,7 @@ import { Component, type ReactNode } from 'react'
 
 interface ErrorBoundaryProps {
   area: string
+  fallback?: ReactNode
   children: ReactNode
 }
 
@@ -20,6 +21,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render(): ReactNode {
     if (!this.state.hasFailed) return this.props.children
+    if (this.props.fallback) return this.props.fallback
     return (
       <Alert
         severity="error"

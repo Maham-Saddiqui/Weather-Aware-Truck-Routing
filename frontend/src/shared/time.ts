@@ -10,14 +10,13 @@ export function browserTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone
 }
 
+// Built from the calendar date and wall-clock text, because adding a day to a zoned time keeps today's UTC offset
+// and is one hour off on the day before a daylight-saving change.
 export function tomorrowMorning(now: Dayjs, timeZone: string): Dayjs {
-  return now
-    .tz(timeZone)
-    .add(1, 'day')
-    .hour(DEFAULT_DEPARTURE_HOUR)
-    .minute(0)
-    .second(0)
-    .millisecond(0)
+  const today = now.tz(timeZone).format('YYYY-MM-DD')
+  const tomorrow = dayjs.utc(today).add(1, 'day').format('YYYY-MM-DD')
+  const hour = String(DEFAULT_DEPARTURE_HOUR).padStart(2, '0')
+  return dayjs.tz(`${tomorrow} ${hour}:00`, timeZone)
 }
 
 // RR-18: every local time carries its zone abbreviation, generic ("MT") rather than "MST" or "MDT".
