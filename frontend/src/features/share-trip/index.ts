@@ -1,0 +1,1 @@
+export { ShareTrip } from './ShareTrip'
