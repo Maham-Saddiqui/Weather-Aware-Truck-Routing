@@ -9,6 +9,8 @@ from domain.constants import (
 )
 
 WHOLE_NUMBER = Decimal(1)
+SECONDS_PER_MINUTE = 60
+MINUTES_PER_HOUR = 60
 
 
 def round_half_up(value: Decimal, decimals: Decimal) -> Decimal:
@@ -25,3 +27,14 @@ def vehicle_weight_kg(load_lb: int) -> int:
     """Load plus the assumed empty tractor-trailer, converted exactly and rounded up."""
     total_kg = Decimal(load_lb + EMPTY_TRUCK_WEIGHT_LB) * KILOGRAMS_PER_POUND
     return math.ceil(total_kg)
+
+
+def whole_minutes(seconds: int) -> int:
+    """RR-25: travel time in whole minutes, halves up (30 seconds rounds to the next minute)."""
+    return (seconds + SECONDS_PER_MINUTE // 2) // SECONDS_PER_MINUTE
+
+
+def travel_time_text(seconds: int) -> str:
+    """RR-25: the travel time the screen shows, such as "14 h 4 min" or "52 min"."""
+    hours, minutes = divmod(whole_minutes(seconds), MINUTES_PER_HOUR)
+    return f"{minutes} min" if hours == 0 else f"{hours} h {minutes} min"

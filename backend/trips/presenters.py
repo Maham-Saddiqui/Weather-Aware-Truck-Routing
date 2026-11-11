@@ -12,7 +12,7 @@ from domain.ranking import Recommendation
 from domain.rating import Measurements
 from domain.summary import MetresByLevel, RouteSummary
 from domain.types import GeoPoint
-from domain.units import miles_from_metres
+from domain.units import miles_from_metres, travel_time_text
 from services.results import (
     CompareTripResult,
     Heatmap,
@@ -64,6 +64,7 @@ def _summary(summary: RouteSummary) -> Json:
     return {
         "distance_miles": _miles(summary.distance_m),
         "travel_time_s": summary.travel_time_s,
+        "travel_time_text": travel_time_text(summary.travel_time_s),
         "arrival_utc": _instant(summary.arrival_utc),
         "miles_by_level": _miles_by_level(summary.metres_by_level),
         "average_risk": _text_or_none(summary.average_risk),

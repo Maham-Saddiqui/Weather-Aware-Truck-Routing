@@ -160,6 +160,8 @@ export interface components {
         RouteSummary: {
             distance_miles: components["schemas"]["DecimalString"];
             travel_time_s: number;
+            /** @description Travel time ready to display, for example "14 h 4 min" or "52 min", rounded to whole minutes half up on the server (RR-25). The screen shows it unchanged and never converts seconds itself (GEN-03). */
+            travel_time_text: string;
             /** Format: date-time */
             arrival_utc: string;
             miles_by_level: components["schemas"]["MilesByLevel"];

@@ -7,6 +7,7 @@ from django.test import Client
 
 from config.container import Providers
 from domain.types import GeoPoint
+from domain.units import travel_time_text
 from providers.timezone.offline import OfflineTimeZoneLookup, TimeZoneNotFound
 from tests.fakes.bundle import default_fakes, with_trips
 from tests.fakes.trips import route_bent, tomtom_answering, trip_body
@@ -39,6 +40,9 @@ def test_the_primary_response_shows_the_servers_rounded_strings_and_no_rank(
     assert route["summary"]["distance_miles"] == "100.0"
     assert route["summary"]["miles_by_level"]["low"] == "100.0"
     assert route["summary"]["average_risk"] == "0.00"
+    assert route["summary"]["travel_time_text"] == travel_time_text(
+        route["summary"]["travel_time_s"]
+    )
     assert (first["distance_miles"], first["covered_miles"]) == ("0.0", "12.5")
     assert (second["distance_miles"], second["covered_miles"]) == ("25.0", "25.0")
     assert last["distance_miles"] == "100.0"
@@ -91,7 +95,7 @@ def test_the_compare_response_names_the_deciding_criterion_and_the_provider(
     assert body["routing_provider"] == "tomtom"
     assert body["recommendation"]["status"] == "recommended"
     assert body["recommendation"]["route_id"] == body["routes"][0]["id"]
-    assert body["recommendation"]["sentence"]
+    assert all(route["summary"]["travel_time_text"] for route in body["routes"])
 
 
 def test_a_place_no_time_zone_covers_is_a_validation_problem_not_a_crash(

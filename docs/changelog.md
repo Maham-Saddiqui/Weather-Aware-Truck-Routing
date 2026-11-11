@@ -57,6 +57,14 @@ A later batch (the heatmap `worst_level_by_hour` field) is listed at the end.
 |---|---|---|---|---|
 | 2026-11-11 | trip endpoints, components | 413 and 415 problem responses and the `X-Request-ID` response header. | The server refuses bodies above 8 KB and non-JSON bodies, and returns a request id on every response so a visitor can quote it. | `trips/body_limit.py`, `config/request_logging.py` |
 
+## Applied after the first batch (owner approved on 2026-11-11)
+
+| Date | Section | What changed | Why | Code |
+|---|---|---|---|---|
+| 2026-11-11 | openapi `RouteSummary` | New required string `travel_time_text` ("14 h 4 min"). | The standards audit found the browser converting and rounding travel time to minutes (CLAUDE.md rule 4, FE-05). The server already rounds travel time to whole minutes half up (RR-25), so it now also sends the display text. | `backend/domain/units.py`, `backend/trips/presenters.py`, `frontend/src/features/route-results/RouteStats.tsx` |
+| 2026-11-11 | risk-rules RR-26 (wording only) | The recommendation sentence names the routes and uses hours and minutes, for example "Route 1 is quicker: 14 h 4 min against 16 h 32 min for Route 2", instead of "844 against 992 minutes". The rule is unchanged: one plain sentence naming the first criterion that separated the winner. | A UX review found the sentence in minutes above route cards in hours; the reader had to convert. | `backend/domain/ranking.py` |
+| 2026-11-11 | frontend FE-09 (wording) | Low risk is drawn as a very faint green (about 12 percent) instead of nothing, so the corridor is visible on an all-clear trip; the legend says so. Still "near-transparent so only risky stretches glow". | On a calm day every test trip looked like a plain dark map and the heatmap, the headline feature, seemed absent. | `frontend/src/features/map/heatmapPaint.ts` |
+
 ## Applied after the first batch
 
 | Date | Section | What changed | Why | Code |

@@ -337,12 +337,15 @@ components:
           $ref: "#/components/schemas/DecimalString"
     RouteSummary:
       type: object
-      required: [distance_miles, travel_time_s, arrival_utc, miles_by_level, average_risk, worst_level, eligible, ineligible_reason]
+      required: [distance_miles, travel_time_s, travel_time_text, arrival_utc, miles_by_level, average_risk, worst_level, eligible, ineligible_reason]
       properties:
         distance_miles:
           $ref: "#/components/schemas/DecimalString"
         travel_time_s:
           type: integer
+        travel_time_text:
+          type: string
+          description: Travel time ready to display, for example "14 h 4 min" or "52 min", rounded to whole minutes half up on the server (RR-25). The screen shows it unchanged and never converts seconds itself (GEN-03).
         arrival_utc:
           type: string
           format: date-time
