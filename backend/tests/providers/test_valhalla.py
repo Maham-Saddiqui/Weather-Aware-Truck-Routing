@@ -2,11 +2,13 @@ import json
 import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import httpx
 import pytest
 
 from domain.types import GeoPoint
+from providers.http import CONNECT_TIMEOUT_S, USER_AGENT, make_client
 from providers.routing.polyline import decode_polyline
 from providers.routing.port import (
     NoRouteFound,
@@ -15,7 +17,7 @@ from providers.routing.port import (
     RoutingProviderName,
     RoutingUnavailable,
 )
-from providers.routing.valhalla import RequestLimiter, ValhallaRouting
+from providers.routing.valhalla import READ_TIMEOUT_S, RequestLimiter, ValhallaRouting
 from tests.fakes.polyline import encode_polyline
 
 BASE_URL = "https://valhalla.example.test"
@@ -47,7 +49,7 @@ def success_body(alternates: int = 0) -> str:
 def adapter(
     handler: Callable[[httpx.Request], httpx.Response], limiter: RequestLimiter | None = None
 ) -> ValhallaRouting:
-    client = httpx.Client(transport=httpx.MockTransport(handler))
+    client = make_client(READ_TIMEOUT_S, httpx.MockTransport(handler))
     return ValhallaRouting(client, BASE_URL, limiter or instant_limiter())
 
 
@@ -88,7 +90,9 @@ def test_the_request_asks_for_a_truck_route_with_the_weight_in_tonnes() -> None:
     request = seen[0]
     body = json.loads(request.content)
     assert str(request.url) == f"{BASE_URL}/route"
-    assert request.headers["user-agent"] == "weather-aware-truck-routing"
+    assert request.headers["user-agent"] == USER_AGENT
+    assert request.extensions["timeout"]["connect"] == CONNECT_TIMEOUT_S
+    assert request.extensions["timeout"]["read"] == READ_TIMEOUT_S
     assert body["costing"] == "truck"
     assert body["costing_options"] == {"truck": {"weight": 34.02}}
     assert body["alternates"] == 1
@@ -102,7 +106,7 @@ def test_a_trailing_slash_in_the_base_url_is_harmless() -> None:
         seen.append(str(request.url))
         return httpx.Response(200, text=success_body())
 
-    client = httpx.Client(transport=httpx.MockTransport(handler))
+    client = make_client(READ_TIMEOUT_S, httpx.MockTransport(handler))
     ValhallaRouting(client, BASE_URL + "/", instant_limiter()).routes(QUERY)
 
     assert seen == [f"{BASE_URL}/route"]
@@ -144,6 +148,20 @@ def test_rr14_rr15_the_progress_table_spreads_distance_and_time_in_proportion() 
     assert (last.distance_m, last.elapsed_s) == (12_345, 900)
 
 
+def test_rr02_rr30_progress_rounds_halves_up_in_exact_decimals(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RR-02, RR-30: the midpoint of 12,345 m and 901 s is 6,172.5 m and 450.5 s."""
+    equal_steps = [Decimal(step) for step in range(21)]
+    monkeypatch.setattr("providers.routing.valhalla._cumulative_metres", lambda path: equal_steps)
+    body = f'{{"trip": {trip_json(point_count=21, time_s="901.0")}}}'
+
+    (route,) = adapter(answering(200, body)).routes(QUERY)
+
+    middle = route.progress[1]
+    assert (middle.point_index, middle.distance_m, middle.elapsed_s) == (10, 6_173, 451)
+
+
 def test_a_route_of_a_single_point_has_a_one_entry_progress_table() -> None:
     body = f'{{"trip": {trip_json(point_count=1)}}}'
 
@@ -182,7 +200,8 @@ def test_be07_failures_and_unreadable_answers_are_routing_unavailable(
         adapter(answering(status, body)).routes(QUERY)
 
 
-def test_be08_one_network_error_is_retried_once() -> None:
+def test_be08_one_network_error_is_retried_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("providers.http.time.sleep", lambda seconds: None)
     attempts: list[int] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -195,7 +214,29 @@ def test_be08_one_network_error_is_retried_once() -> None:
     assert len(attempts) == 2
 
 
-def test_be08_two_network_errors_in_a_row_are_routing_unavailable() -> None:
+def test_be08_the_retry_also_waits_for_its_turn_at_the_limiter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("providers.http.time.sleep", lambda seconds: None)
+    clock = FakeClock()
+    limiter = RequestLimiter(min_gap_s=1.0, clock=clock.read, sleep=clock.sleep)
+    attempts: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise httpx.ConnectError("refused", request=request)
+        return httpx.Response(200, text=success_body())
+
+    adapter(handler, limiter).routes(QUERY)
+
+    assert clock.sleeps == [1.0]
+
+
+def test_be08_two_network_errors_in_a_row_are_routing_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("providers.http.time.sleep", lambda seconds: None)
     attempts: list[int] = []
 
     def handler(request: httpx.Request) -> httpx.Response:

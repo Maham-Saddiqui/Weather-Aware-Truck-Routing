@@ -109,14 +109,23 @@ def test_a_point_without_data_is_absent_from_the_result() -> None:
     assert set(result) == {POINT}
 
 
-def test_points_inside_one_cell_share_one_requested_location() -> None:
+def test_points_inside_one_weather_cell_share_one_requested_location() -> None:
+    """The cell is the 0.05 degree grid of architecture section 7, defined once in the domain."""
     service = Service()
-    near = GeoPoint(41.001, -87.002)
+    near = GeoPoint(41.02, -87.02)
 
     result = service.weather.forecast([POINT, near])
 
     assert service.requests[0].url.params["latitude"] == "41.0"
     assert set(result) == {POINT, near}
+
+
+def test_points_in_neighbouring_weather_cells_are_requested_separately() -> None:
+    service = Service()
+
+    service.weather.forecast([POINT, GeoPoint(41.05, -87.0)])
+
+    assert service.requests[0].url.params["latitude"] == "41.0,41.05"
 
 
 def test_cells_already_cached_cost_no_provider_call_and_only_new_cells_are_fetched() -> None:
@@ -154,6 +163,52 @@ def test_identical_concurrent_requests_share_one_provider_call() -> None:
 
     assert sizes == [2, 2, 2, 2]
     assert len(service.requests) == 1
+
+
+class SlowFetch:
+    """A service whose fetch for OTHER_POINT hangs until `release` is set."""
+
+    def __init__(self) -> None:
+        self.started = threading.Event()
+        self.release = threading.Event()
+        self.service = Service(self._respond)
+
+    def _respond(self, request: httpx.Request) -> httpx.Response:
+        if request.url.params["latitude"] == "42.0":
+            self.started.set()
+            self.release.wait(timeout=5)
+        return one_location_per_point(request)
+
+    def begin(self) -> None:
+        self.service.weather.forecast([POINT])
+        threading.Thread(target=self.service.weather.forecast, args=([OTHER_POINT],)).start()
+        assert self.started.wait(timeout=5)
+
+
+def test_a_fully_cached_request_does_not_wait_behind_a_slow_fetch() -> None:
+    """PERF-04"""
+    slow = SlowFetch()
+    slow.begin()
+
+    result = slow.service.weather.forecast([POINT])
+
+    assert not slow.release.is_set()
+    assert set(result) == {POINT}
+    slow.release.set()
+
+
+def test_a_request_that_needs_a_fetch_gives_up_when_a_slow_fetch_holds_the_line(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PERF-05"""
+    slow = SlowFetch()
+    slow.begin()
+    monkeypatch.setattr("providers.weather.open_meteo.WEATHER_TOTAL_TIMEOUT_S", 0.2)
+
+    with pytest.raises(WeatherUnavailable):
+        slow.service.weather.forecast([GeoPoint(43.0, -89.0)])
+
+    slow.release.set()
 
 
 def test_very_large_requests_are_split_to_keep_the_address_short() -> None:

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from decimal import Decimal
 from enum import StrEnum
 
@@ -57,14 +57,19 @@ class Ranking:
     recommendation: Recommendation
 
 
-# RR-24 in the brief's order; ties beyond these fall to the provider's order (RR-25).
-RANKING_CRITERIA = (
-    DecidingCriterion.SEVERE_MILES,
-    DecidingCriterion.HIGH_MILES,
-    DecidingCriterion.AVERAGE_RISK,
-    DecidingCriterion.TRAVEL_TIME,
-    DecidingCriterion.DISTANCE,
-)
+@dataclass(frozen=True, slots=True, order=True)
+class ComparisonValues:
+    """RR-24: the field order is the ranking order, and a field's name is its deciding criterion.
+
+    Ties beyond the last field fall to the provider's order (RR-25).
+    """
+
+    severe_miles: Decimal
+    high_miles: Decimal
+    average_risk: Decimal
+    travel_time: Decimal
+    distance: Decimal
+
 
 # Plain wording of each ranking criterion: the reason, then the unit of the compared numbers.
 WORDING_BY_CRITERION = {
@@ -105,7 +110,9 @@ LEAST_BAD_NOTE = " The least-bad route is shown greyed out, for information only
 
 def rank_routes(candidates: Sequence[Candidate]) -> Ranking:
     """RR-22 to RR-26: rank the eligible routes, order the rest least-bad first, explain."""
-    eligible = sorted((c for c in candidates if c.summary.is_eligible), key=_ranking_key)
+    if not candidates:
+        raise ValueError("At least one route is needed to rank")
+    eligible = sorted((c for c in candidates if c.summary.is_eligible), key=_comparison_key)
     ineligible = sorted((c for c in candidates if not c.summary.is_eligible), key=_least_bad_key)
     ranked = tuple(RankedRoute(c.route_id, rank) for rank, c in enumerate(eligible, start=1))
     unranked = tuple(RankedRoute(c.route_id, None) for c in ineligible)
@@ -113,29 +120,29 @@ def rank_routes(candidates: Sequence[Candidate]) -> Ranking:
     return Ranking(ranked + unranked, recommendation)
 
 
-def _comparison_values(summary: RouteSummary) -> tuple[Decimal, ...]:
+def _comparison_values(summary: RouteSummary) -> ComparisonValues:
     """RR-25: miles to 0.1, average risk to 0.01, travel time to whole minutes."""
     metres = summary.metres_by_level
     average_risk = UNRATED_AVERAGE_RISK if summary.average_risk is None else summary.average_risk
     minutes = (summary.travel_time_s + SECONDS_PER_MINUTE // 2) // SECONDS_PER_MINUTE
-    return (
-        miles_from_metres(metres.severe),
-        miles_from_metres(metres.high),
-        average_risk,
-        Decimal(minutes),
-        miles_from_metres(summary.distance_m),
+    return ComparisonValues(
+        severe_miles=miles_from_metres(metres.severe),
+        high_miles=miles_from_metres(metres.high),
+        average_risk=average_risk,
+        travel_time=Decimal(minutes),
+        distance=miles_from_metres(summary.distance_m),
     )
 
 
-def _ranking_key(candidate: Candidate) -> tuple[Decimal, ...]:
+def _comparison_key(candidate: Candidate) -> ComparisonValues:
     return _comparison_values(candidate.summary)
 
 
-def _least_bad_key(candidate: Candidate) -> tuple[Decimal, ...]:
+def _least_bad_key(candidate: Candidate) -> tuple[Decimal, ComparisonValues]:
     """RR-23: No Travel plus No data miles first, then the ranking order."""
     metres = candidate.summary.metres_by_level
     unsafe_or_unknown = miles_from_metres(metres.no_travel + metres.no_data)
-    return (unsafe_or_unknown, *_comparison_values(candidate.summary))
+    return (unsafe_or_unknown, _comparison_values(candidate.summary))
 
 
 def _recommend(eligible: list[Candidate], candidates: Sequence[Candidate]) -> Recommendation:
@@ -153,8 +160,10 @@ def _why_it_won(eligible: list[Candidate]) -> tuple[DecidingCriterion, str]:
         return DecidingCriterion.ONLY_ELIGIBLE, ONLY_ELIGIBLE_REASON
     ahead = _comparison_values(eligible[0].summary)
     behind = _comparison_values(eligible[1].summary)
-    for criterion, winning, losing in zip(RANKING_CRITERIA, ahead, behind, strict=True):
+    for field in fields(ComparisonValues):
+        winning, losing = getattr(ahead, field.name), getattr(behind, field.name)
         if winning != losing:
+            criterion = DecidingCriterion(field.name)
             reason, unit = WORDING_BY_CRITERION[criterion]
             return criterion, f"{reason} ({winning} against {losing} {unit})"
     return DecidingCriterion.PROVIDER_ORDER, TIED_REASON
@@ -164,8 +173,10 @@ def _data_coverage_note(winner: Candidate, candidates: Sequence[Candidate]) -> s
     """RR-26: say how many miles the rating rests on when any route has No data miles."""
     if all(c.summary.metres_by_level.no_data == 0 for c in candidates):
         return ""
-    rated = miles_from_metres(winner.summary.metres_by_level.rated)
     total = miles_from_metres(winner.summary.distance_m)
+    if winner.summary.metres_by_level.no_data == 0:
+        return f" This route's rating is based on all {total} of its miles."
+    rated = miles_from_metres(winner.summary.metres_by_level.rated)
     return f" This route's rating is based on {rated} of its {total} miles; the rest has no data."
 
 

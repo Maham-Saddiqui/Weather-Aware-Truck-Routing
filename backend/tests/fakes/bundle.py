@@ -63,6 +63,7 @@ def default_fakes() -> Providers:
             weather=FakeWeather.uniform(calm_weather(FIRST_WEATHER_HOUR)),
             timezone=FakeTimeZone(),
             executor=EXECUTOR,
+            clock=fixed_clock,
         ),
         attribution=FakeAttribution(),
         clock=fixed_clock,

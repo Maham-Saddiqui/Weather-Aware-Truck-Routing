@@ -5,7 +5,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from domain.types import GeoPoint
+from domain.types import CheckpointSpacing, GeoPoint
 from services.trip_request import TripRequest
 from trips import limits
 
@@ -109,7 +109,7 @@ def parse_trip_request(data: object, now: datetime) -> TripRequest:
         destination=_point(valid["destination"]),
         departure_utc=valid["departure_utc"],
         load_lb=valid["load_lb"],
-        spacing_miles=valid["spacing_miles"],
+        spacing_miles=CheckpointSpacing(valid["spacing_miles"]),
     )
 
 

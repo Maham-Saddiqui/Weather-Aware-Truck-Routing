@@ -8,6 +8,8 @@ from domain.constants import (
     METRES_PER_MILE,
 )
 
+WHOLE_NUMBER = Decimal(1)
+
 
 def round_half_up(value: Decimal, decimals: Decimal) -> Decimal:
     """RR-02: halves always round up, in exact decimals."""

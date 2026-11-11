@@ -6,7 +6,7 @@ from domain.dedupe import route_id
 from domain.heatmap import cell_of, risk_digits
 from domain.rating import measurements_at, rate_checkpoint
 from domain.summary import RatedStop, summarize
-from domain.types import GeoPoint, HourlyWeather, ProviderRoute
+from domain.types import CheckpointSpacing, GeoPoint, HourlyWeather, ProviderRoute
 from providers.timezone.port import TimeZoneLookup
 from providers.weather.port import WeatherBusy, WeatherError
 from services.environment import TripEnvironment
@@ -20,7 +20,7 @@ from services.results import (
 from services.trip_request import TripRequest
 
 # Heatmap points every 25 miles along each route (architecture section 7).
-HEATMAP_GRID_MILES = 25
+HEATMAP_GRID_SPACING = CheckpointSpacing.TWENTY_FIVE_MILES
 
 type Windows = Mapping[GeoPoint, HourlyWeather]
 
@@ -38,7 +38,7 @@ def rate_routes(
     """One batched weather call for every checkpoint and heatmap cell of every route (PERF-01)."""
     planned = [(route, _stops(route, request.spacing_miles, request)) for route in routes]
     grid_cells = _unique_cells(
-        stop.position for route in routes for stop in _stops(route, HEATMAP_GRID_MILES, request)
+        stop.position for route in routes for stop in _stops(route, HEATMAP_GRID_SPACING, request)
     )
     checkpoint_cells = _unique_cells(stop.position for _, stops in planned for stop in stops)
     windows, failure = _fetch_weather(env, [*checkpoint_cells, *grid_cells])
@@ -51,7 +51,9 @@ def rate_routes(
     )
 
 
-def _stops(route: ProviderRoute, spacing_miles: int, request: TripRequest) -> tuple[Stop, ...]:
+def _stops(
+    route: ProviderRoute, spacing_miles: CheckpointSpacing, request: TripRequest
+) -> tuple[Stop, ...]:
     return plan_stops(route, spacing_miles, request.departure_utc)
 
 

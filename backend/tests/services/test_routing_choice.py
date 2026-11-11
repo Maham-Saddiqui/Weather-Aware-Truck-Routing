@@ -1,3 +1,6 @@
+from dataclasses import replace
+from datetime import timedelta
+
 import pytest
 
 from providers.routing.port import (
@@ -8,7 +11,7 @@ from providers.routing.port import (
 )
 from services.compare_trip import plan_compare_trip
 from services.primary_trip import plan_primary_trip
-from tests.fakes.bundle import FakeCallGuard
+from tests.fakes.bundle import NOW, FakeCallGuard
 from tests.fakes.routing import FakeRouting
 from tests.fakes.trips import route_bent, tomtom_answering, trip_environment, trip_request
 
@@ -114,3 +117,22 @@ def test_each_tomtom_call_counts_against_the_daily_budget() -> None:
     plan_compare_trip(trip_environment(routing=tomtom, call_guard=guard), trip_request())
 
     assert guard.acquired == 2
+
+
+def test_the_current_hour_departure_sent_to_the_provider_is_never_in_the_past() -> None:
+    """RR-29"""
+    tomtom = tomtom_answering((route_bent(0.0),), (route_bent(0.6),))
+    minutes_ago = replace(trip_request(), departure_utc=NOW - timedelta(minutes=25))
+
+    plan_compare_trip(trip_environment(routing=tomtom), minutes_ago)
+
+    assert {query.depart_at for query in tomtom.calls} == {NOW}
+
+
+def test_a_later_departure_is_sent_to_the_provider_unchanged() -> None:
+    """RR-29"""
+    tomtom = tomtom_answering((route_bent(0.0),))
+
+    plan_primary_trip(trip_environment(routing=tomtom), trip_request())
+
+    assert [query.depart_at for query in tomtom.calls] == [NOW + timedelta(hours=3)]

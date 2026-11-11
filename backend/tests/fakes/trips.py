@@ -2,7 +2,7 @@ from dataclasses import replace
 from datetime import timedelta
 from typing import Any
 
-from domain.types import GeoPoint, HourlyWeather, ProviderRoute
+from domain.types import CheckpointSpacing, GeoPoint, HourlyWeather, ProviderRoute
 from providers.routing.port import RoutePreference, RoutingProviderName
 from services.environment import TripEnvironment
 from services.trip_request import TripRequest
@@ -15,7 +15,9 @@ DESTINATION = GeoPoint(40.0, -90.0)
 STORM_LATITUDE = 40.5
 
 
-def trip_request(spacing_miles: int = 25, load_lb: int = 30_000) -> TripRequest:
+def trip_request(
+    spacing_miles: CheckpointSpacing = CheckpointSpacing.TWENTY_FIVE_MILES, load_lb: int = 30_000
+) -> TripRequest:
     return TripRequest(ORIGIN, DESTINATION, NOW + timedelta(hours=3), load_lb, spacing_miles)
 
 

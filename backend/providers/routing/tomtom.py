@@ -51,10 +51,10 @@ class TomTomAttribution:
 
     def routing_copyright(self) -> str:
         body = self._http.get_json("/map/2/copyrights/caption.json", {})
-        try:
-            return str(body["copyrightsCaption"])
-        except KeyError:
-            raise RoutingUnavailable("TomTom sent a copyright answer we cannot read") from None
+        caption = body.get("copyrightsCaption")
+        if not isinstance(caption, str) or not caption:
+            raise RoutingUnavailable("TomTom sent a copyright answer we cannot read")
+        return caption
 
 
 class _TomTomHttp:
@@ -76,9 +76,11 @@ class _TomTomHttp:
             raise RoutingUnavailable("TomTom could not be reached") from None
         _raise_for_failure(response)
         try:
-            body: JsonObject = json.loads(response.text)
+            body = json.loads(response.text)
         except ValueError:
             raise RoutingUnavailable("TomTom sent an answer that is not JSON") from None
+        if not isinstance(body, dict):
+            raise RoutingUnavailable("TomTom sent an answer that is not a JSON object")
         return body
 
 

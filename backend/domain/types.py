@@ -1,14 +1,27 @@
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from enum import IntEnum
 
 
 @dataclass(frozen=True, slots=True)
 class GeoPoint:
-    """Coordinates are only passed through and looked up, never rated or compared (RR-30)."""
+    """The only floats in the domain (RR-30).
+
+    They place points and group nearby ones into cells; they never enter ratings, distances or
+    comparisons of risk.
+    """
 
     lat: float
     lon: float
+
+
+class CheckpointSpacing(IntEnum):
+    """RR-12: the only distances, in miles, a driver can choose between checkpoints."""
+
+    TEN_MILES = 10
+    TWENTY_FIVE_MILES = 25
+    FIFTY_MILES = 50
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from math import floor
 
 from domain.constants import HEATMAP_HOURS, WEATHER_CELLS_PER_DEGREE
 from domain.rating import measurements_at, rate_checkpoint
@@ -26,4 +27,4 @@ def _digit_at(weather: HourlyWeather | None, moment_utc: datetime, load_lb: int)
 
 
 def _snapped(degrees: float) -> float:
-    return round(degrees * WEATHER_CELLS_PER_DEGREE) / WEATHER_CELLS_PER_DEGREE
+    return floor(degrees * WEATHER_CELLS_PER_DEGREE + 0.5) / WEATHER_CELLS_PER_DEGREE

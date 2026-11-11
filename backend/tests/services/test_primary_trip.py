@@ -21,7 +21,7 @@ environment = trip_environment
 
 def test_calm_weather_gives_a_rated_route_with_every_checkpoint_low() -> None:
     """RR-12, RR-13: checkpoints at the origin, every 25 miles and the destination"""
-    result = plan_primary_trip(environment(), trip_request(spacing_miles=25))
+    result = plan_primary_trip(environment(), trip_request())
 
     assert [c.stop.index for c in result.route.checkpoints] == [0, 1, 2, 3, 4]
     assert {c.rating.level for c in result.route.checkpoints} == {Level.LOW}

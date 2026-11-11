@@ -1,5 +1,7 @@
+from collections.abc import Callable
 from concurrent.futures import Executor
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Protocol
 
 from providers.routing.port import RoutingProvider
@@ -23,3 +25,4 @@ class TripEnvironment:
     weather: WeatherProvider
     timezone: TimeZoneLookup
     executor: Executor
+    clock: Callable[[], datetime]

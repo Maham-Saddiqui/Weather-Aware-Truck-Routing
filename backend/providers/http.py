@@ -1,6 +1,6 @@
 import secrets
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 import httpx
 
@@ -31,9 +31,13 @@ def get_with_one_retry(
     url: str,
     params: QueryParams,
 ) -> httpx.Response:
+    return send_with_one_retry(lambda: client.get(url, params=params))
+
+
+def send_with_one_retry(send: Callable[[], httpx.Response]) -> httpx.Response:
     """Retries once, after a short random pause, and only for network errors (architecture 10)."""
     try:
-        return client.get(url, params=params)
+        return send()
     except httpx.TransportError:
         time.sleep(_jitter.uniform(*RETRY_PAUSE_RANGE_S))
-    return client.get(url, params=params)
+    return send()

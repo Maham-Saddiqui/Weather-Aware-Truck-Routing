@@ -52,6 +52,7 @@ def providers() -> Providers:
             ),
             timezone=OfflineTimeZoneLookup(),
             executor=ThreadPoolExecutor(PARALLEL_CALL_THREADS, thread_name_prefix="provider-call"),
+            clock=utc_now,
         ),
         attribution=TomTomAttribution(settings.TOMTOM_API_KEY, tomtom_client),
         clock=utc_now,
