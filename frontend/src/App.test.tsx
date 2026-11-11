@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -57,6 +57,27 @@ describe('App shell', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(/Arrival times are driving time only/)).toBeInTheDocument()
   })
+
+  it.each([['Credits'], ['How risk works']])(
+    'keeps focus inside the %s dialog and returns it to the button when closed (NFR-03)',
+    async (buttonName) => {
+      render(<App />)
+      const opener = screen.getByRole('button', { name: buttonName })
+
+      await userEvent.click(opener)
+      const dialog = await screen.findByRole('dialog')
+      await userEvent.tab()
+      await userEvent.tab()
+      await userEvent.tab()
+      expect(dialog).toContainElement(document.activeElement as HTMLElement)
+
+      await userEvent.keyboard('{Escape}')
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+      expect(opener).toHaveFocus()
+    },
+  )
 
   it('plans an example trip with one click and lists both routes (REQ-11, REQ-06)', async () => {
     render(<App />)

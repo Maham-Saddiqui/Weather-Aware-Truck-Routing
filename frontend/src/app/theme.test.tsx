@@ -33,3 +33,18 @@ describe('risk palette (FE-09)', () => {
     expect(theme.palette.risk).toEqual(RISK_COLOURS)
   })
 })
+
+describe('reduced motion (NFR-03)', () => {
+  it('shortens animations and transitions when the visitor asks for less motion', () => {
+    const rules = theme.components?.MuiCssBaseline?.styleOverrides as Record<string, unknown>
+    const reduced = rules['@media (prefers-reduced-motion: reduce)'] as Record<
+      string,
+      Record<string, string>
+    >
+
+    expect(reduced['*, *::before, *::after']).toMatchObject({
+      animationDuration: '0.01ms !important',
+      transitionDuration: '0.01ms !important',
+    })
+  })
+})
