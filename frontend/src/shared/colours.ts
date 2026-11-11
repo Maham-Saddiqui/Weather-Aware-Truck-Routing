@@ -11,9 +11,9 @@ export const RISK_COLOURS: Record<CheckpointLevel, string> = {
 
 export const ACCENT_TURQUOISE = '#2dd4bf'
 
-// Route colour is an interface accent, never a risk colour (FE-15).
-export const ROUTE_COLOURS = {
-  selected: ACCENT_TURQUOISE,
-  muted: '#6b7c8f',
-  casing: '#0d1e2d',
-} as const
+// One line hue per route position, the same whether the route is selected or not. They stay clear of the risk
+// colours (green, yellow, orange, red, purple) and of each other for colour-blind readers, and each is at least
+// 3:1 against the dark basemap (FE-15).
+export const ROUTE_HUES = ['#3b82f6', '#f1f5f9', '#22d3ee'] as const
+
+export const ROUTE_CASING_COLOUR = '#0d1e2d'

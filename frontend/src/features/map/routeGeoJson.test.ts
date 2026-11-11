@@ -12,12 +12,12 @@ describe('routeLines (REQ-08: one line per route)', () => {
     ])
   })
 
-  it('gives each route position its own line colour so alternatives can be told apart', () => {
-    const colours = routeLines([NORTH_ROUTE, NORTH_ROUTE, NORTH_ROUTE]).features.map(
-      (feature) => feature.properties.colour,
+  it('tags each line with its position so the route keeps one hue whether selected or not', () => {
+    const positions = routeLines([NORTH_ROUTE, NORTH_ROUTE, NORTH_ROUTE]).features.map(
+      (feature) => feature.properties.position,
     )
 
-    expect(new Set(colours).size).toBe(3)
+    expect(positions).toEqual([0, 1, 2])
   })
 
   it('decodes each line with the precision stated in its own geometry', () => {

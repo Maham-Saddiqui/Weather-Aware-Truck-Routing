@@ -1,6 +1,6 @@
 import ButtonBase from '@mui/material/ButtonBase'
 import Stack from '@mui/material/Stack'
-import { styled } from '@mui/material/styles'
+import { styled, useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import type { Route } from '../../shared/types'
 import { RouteBadges } from './RouteBadges'
@@ -19,6 +19,21 @@ const SelectButton = styled(ButtonBase)(({ theme }) => ({
     borderRadius: theme.shape.borderRadius,
   },
 }))
+
+const SWATCH_WIDTH_PX = 6
+const SWATCH_HEIGHT_PX = 20
+
+// The same hue as the route's line and name pill on the map, so card and line are linked.
+const Swatch = styled('span', { shouldForwardProp: (name) => name !== 'hue' })<{ hue: string }>(
+  ({ theme, hue }) => ({
+    display: 'inline-block',
+    flexShrink: 0,
+    width: SWATCH_WIDTH_PX,
+    height: SWATCH_HEIGHT_PX,
+    borderRadius: theme.shape.borderRadius,
+    backgroundColor: hue,
+  }),
+)
 
 interface RouteHeadingProps {
   route: Route
@@ -39,9 +54,16 @@ export function RouteHeading({
   isLeastBad,
   onSelect,
 }: RouteHeadingProps) {
+  const theme = useTheme()
   return (
     <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between' }}>
-      <Typography id={headingId} variant="h3" component="h3">
+      <Typography
+        id={headingId}
+        variant="h3"
+        component="h3"
+        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+      >
+        <Swatch hue={theme.palette.route[routeNumber - 1] ?? ''} aria-hidden="true" />
         <SelectButton
           aria-pressed={isSelected}
           onClick={() => {

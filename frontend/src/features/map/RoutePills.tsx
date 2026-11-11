@@ -35,7 +35,7 @@ export function RoutePills({ routes, lines, selectedRouteId, onSelectRoute }: Ro
             px: 1,
             py: 0.25,
             border: 2,
-            borderColor: feature.properties.colour,
+            borderColor: `route.${String(index)}`,
             borderRadius: 4,
             bgcolor: 'background.paper',
             color: 'text.primary',

@@ -1,15 +1,17 @@
 import { createTheme } from '@mui/material/styles'
 import type {} from '@mui/x-date-pickers/themeAugmentation'
-import { ACCENT_TURQUOISE, RISK_COLOURS } from '../shared/colours'
+import { ACCENT_TURQUOISE, RISK_COLOURS, ROUTE_HUES } from '../shared/colours'
 import { MIN_TOUCH_TARGET_PX } from '../shared/constants'
 import type { CheckpointLevel } from '../shared/types'
 
 declare module '@mui/material/styles' {
   interface Palette {
     risk: Record<CheckpointLevel, string>
+    route: readonly string[]
   }
   interface PaletteOptions {
     risk?: Record<CheckpointLevel, string>
+    route?: readonly string[]
   }
 }
 
@@ -66,6 +68,7 @@ export const theme = createTheme({
     text: { primary: TEXT_PRIMARY, secondary: TEXT_SECONDARY },
     divider: BORDER,
     risk: RISK_COLOURS,
+    route: ROUTE_HUES,
   },
   focusVisible: true,
   shape: { borderRadius: 10 },
