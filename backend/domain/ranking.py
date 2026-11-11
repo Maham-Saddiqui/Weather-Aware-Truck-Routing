@@ -1,0 +1,184 @@
+from collections.abc import Sequence
+from dataclasses import dataclass
+from decimal import Decimal
+from enum import StrEnum
+
+from domain.levels import Level
+from domain.summary import IneligibleReason, RouteSummary
+from domain.units import miles_from_metres
+
+SECONDS_PER_MINUTE = 60
+UNRATED_AVERAGE_RISK = Decimal(Level.NO_TRAVEL + 1)
+
+
+class DecidingCriterion(StrEnum):
+    SEVERE_MILES = "severe_miles"
+    HIGH_MILES = "high_miles"
+    AVERAGE_RISK = "average_risk"
+    TRAVEL_TIME = "travel_time"
+    DISTANCE = "distance"
+    PROVIDER_ORDER = "provider_order"
+    ONLY_ELIGIBLE = "only_eligible"
+
+
+class RecommendationStatus(StrEnum):
+    RECOMMENDED = "recommended"
+    NONE_ELIGIBLE = "none_eligible"
+
+
+@dataclass(frozen=True, slots=True)
+class Candidate:
+    """A summarised route; its position in the sequence is the order the provider returned."""
+
+    route_id: str
+    summary: RouteSummary
+
+
+@dataclass(frozen=True, slots=True)
+class RankedRoute:
+    route_id: str
+    rank: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class Recommendation:
+    status: RecommendationStatus
+    route_id: str | None
+    least_bad_route_id: str | None
+    deciding_criterion: DecidingCriterion | None
+    sentence: str
+
+
+@dataclass(frozen=True, slots=True)
+class Ranking:
+    """display_order lists ranked routes first, then ineligible routes, least-bad first (RR-23)."""
+
+    display_order: tuple[RankedRoute, ...]
+    recommendation: Recommendation
+
+
+# RR-24 in the brief's order; ties beyond these fall to the provider's order (RR-25).
+RANKING_CRITERIA = (
+    DecidingCriterion.SEVERE_MILES,
+    DecidingCriterion.HIGH_MILES,
+    DecidingCriterion.AVERAGE_RISK,
+    DecidingCriterion.TRAVEL_TIME,
+    DecidingCriterion.DISTANCE,
+)
+
+# Plain wording of each ranking criterion: the reason, then the unit of the compared numbers.
+WORDING_BY_CRITERION = {
+    DecidingCriterion.SEVERE_MILES: (
+        "it has fewer Severe-weather miles than the next best route",
+        "miles",
+    ),
+    DecidingCriterion.HIGH_MILES: (
+        "it has fewer High-risk-weather miles than the next best route",
+        "miles",
+    ),
+    DecidingCriterion.AVERAGE_RISK: (
+        "it has a lower average risk than the next best route",
+        "on a scale of 0 to 4",
+    ),
+    DecidingCriterion.TRAVEL_TIME: ("it is quicker than the next best route", "minutes"),
+    DecidingCriterion.DISTANCE: ("it is shorter than the next best route", "miles"),
+}
+TIED_REASON = "it ties with the next best route on every measure, so the provider's first is used"
+ONLY_ELIGIBLE_REASON = (
+    "it is the only route without No Travel conditions and with enough weather data"
+)
+
+NO_ROUTE_SENTENCES = {
+    frozenset({IneligibleReason.NO_TRAVEL}): (
+        "No route is recommended: every route has at least one No Travel checkpoint."
+    ),
+    frozenset({IneligibleReason.NOT_ENOUGH_WEATHER_DATA}): (
+        "No route is recommended: there is not enough weather data to rate any route."
+    ),
+    frozenset({IneligibleReason.NO_TRAVEL, IneligibleReason.NOT_ENOUGH_WEATHER_DATA}): (
+        "No route is recommended: each route has a No Travel checkpoint or not enough weather data."
+    ),
+}
+LEAVE_LATER_ADVICE = " Consider leaving later."
+LEAST_BAD_NOTE = " The least-bad route is shown greyed out, for information only."
+
+
+def rank_routes(candidates: Sequence[Candidate]) -> Ranking:
+    """RR-22 to RR-26: rank the eligible routes, order the rest least-bad first, explain."""
+    eligible = sorted((c for c in candidates if c.summary.is_eligible), key=_ranking_key)
+    ineligible = sorted((c for c in candidates if not c.summary.is_eligible), key=_least_bad_key)
+    ranked = tuple(RankedRoute(c.route_id, rank) for rank, c in enumerate(eligible, start=1))
+    unranked = tuple(RankedRoute(c.route_id, None) for c in ineligible)
+    recommendation = _recommend(eligible, candidates) if eligible else _recommend_none(ineligible)
+    return Ranking(ranked + unranked, recommendation)
+
+
+def _comparison_values(summary: RouteSummary) -> tuple[Decimal, ...]:
+    """RR-25: miles to 0.1, average risk to 0.01, travel time to whole minutes."""
+    metres = summary.metres_by_level
+    average_risk = UNRATED_AVERAGE_RISK if summary.average_risk is None else summary.average_risk
+    minutes = (summary.travel_time_s + SECONDS_PER_MINUTE // 2) // SECONDS_PER_MINUTE
+    return (
+        miles_from_metres(metres.severe),
+        miles_from_metres(metres.high),
+        average_risk,
+        Decimal(minutes),
+        miles_from_metres(summary.distance_m),
+    )
+
+
+def _ranking_key(candidate: Candidate) -> tuple[Decimal, ...]:
+    return _comparison_values(candidate.summary)
+
+
+def _least_bad_key(candidate: Candidate) -> tuple[Decimal, ...]:
+    """RR-23: No Travel plus No data miles first, then the ranking order."""
+    metres = candidate.summary.metres_by_level
+    unsafe_or_unknown = miles_from_metres(metres.no_travel + metres.no_data)
+    return (unsafe_or_unknown, *_comparison_values(candidate.summary))
+
+
+def _recommend(eligible: list[Candidate], candidates: Sequence[Candidate]) -> Recommendation:
+    winner = eligible[0]
+    criterion, reason = _why_it_won(eligible)
+    sentence = f"Recommended because {reason}.{_data_coverage_note(winner, candidates)}"
+    return Recommendation(
+        RecommendationStatus.RECOMMENDED, winner.route_id, None, criterion, sentence
+    )
+
+
+def _why_it_won(eligible: list[Candidate]) -> tuple[DecidingCriterion, str]:
+    """RR-26: the first criterion on which the winner differs from the runner-up."""
+    if len(eligible) == 1:
+        return DecidingCriterion.ONLY_ELIGIBLE, ONLY_ELIGIBLE_REASON
+    ahead = _comparison_values(eligible[0].summary)
+    behind = _comparison_values(eligible[1].summary)
+    for criterion, winning, losing in zip(RANKING_CRITERIA, ahead, behind, strict=True):
+        if winning != losing:
+            reason, unit = WORDING_BY_CRITERION[criterion]
+            return criterion, f"{reason} ({winning} against {losing} {unit})"
+    return DecidingCriterion.PROVIDER_ORDER, TIED_REASON
+
+
+def _data_coverage_note(winner: Candidate, candidates: Sequence[Candidate]) -> str:
+    """RR-26: say how many miles the rating rests on when any route has No data miles."""
+    if all(c.summary.metres_by_level.no_data == 0 for c in candidates):
+        return ""
+    rated = miles_from_metres(winner.summary.metres_by_level.rated)
+    total = miles_from_metres(winner.summary.distance_m)
+    return f" This route's rating is based on {rated} of its {total} miles; the rest has no data."
+
+
+def _recommend_none(ineligible: list[Candidate]) -> Recommendation:
+    reasons = _reasons_of(ineligible)
+    has_ratings = any(c.summary.metres_by_level.rated > 0 for c in ineligible)
+    least_bad = ineligible[0].route_id if has_ratings else None
+    sentence = NO_ROUTE_SENTENCES[reasons] + LEAVE_LATER_ADVICE
+    if least_bad is not None:
+        sentence += LEAST_BAD_NOTE
+    return Recommendation(RecommendationStatus.NONE_ELIGIBLE, None, least_bad, None, sentence)
+
+
+def _reasons_of(ineligible: list[Candidate]) -> frozenset[IneligibleReason]:
+    reasons = (c.summary.ineligible_reason for c in ineligible)
+    return frozenset(reason for reason in reasons if reason is not None)
