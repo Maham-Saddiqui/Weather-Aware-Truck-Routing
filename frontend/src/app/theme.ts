@@ -18,6 +18,34 @@ const NAVY_RAISED = '#172b45'
 const TEXT_PRIMARY = '#e9eff7'
 const TEXT_SECONDARY = '#a3b4c8'
 const BORDER = 'rgba(163, 180, 200, 0.2)'
+const ACCENT_LIGHT = '#5eead4'
+const ACCENT_DARK = '#14b8a6'
+const SURFACE_SHADOW = '0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18)'
+const TRANSITION = 'background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease'
+
+const MAP = '.maplibregl-map'
+const MAP_CONTROLS = {
+  [`${MAP} .maplibregl-ctrl-group`]: {
+    backgroundColor: NAVY_SURFACE,
+    border: `1px solid ${BORDER}`,
+    boxShadow: SURFACE_SHADOW,
+  },
+  [`${MAP} .maplibregl-ctrl-group button + button`]: { borderTopColor: BORDER },
+  [`${MAP} .maplibregl-ctrl-group button:hover`]: { backgroundColor: NAVY_RAISED },
+  [`${MAP} .maplibregl-ctrl-group .maplibregl-ctrl-icon`]: { filter: 'invert(1)' },
+  [`${MAP} .maplibregl-ctrl-attrib`]: {
+    backgroundColor: 'rgba(10, 21, 36, 0.8)',
+    color: TEXT_SECONDARY,
+    fontSize: '0.6875rem',
+  },
+  [`${MAP} .maplibregl-ctrl-attrib a`]: { color: TEXT_SECONDARY },
+  '@media (pointer: coarse)': {
+    [`${MAP} .maplibregl-ctrl-group button`]: {
+      width: MIN_TOUCH_TARGET_PX,
+      height: MIN_TOUCH_TARGET_PX,
+    },
+  },
+}
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)'
 
@@ -26,7 +54,12 @@ export const theme = createTheme({
   palette: {
     mode: 'dark',
     background: { default: NAVY_BACKGROUND, paper: NAVY_SURFACE },
-    primary: { main: ACCENT_TURQUOISE, contrastText: NAVY_BACKGROUND },
+    primary: {
+      main: ACCENT_TURQUOISE,
+      light: ACCENT_LIGHT,
+      dark: ACCENT_DARK,
+      contrastText: NAVY_BACKGROUND,
+    },
     text: { primary: TEXT_PRIMARY, secondary: TEXT_SECONDARY },
     divider: BORDER,
     risk: RISK_COLOURS,
@@ -45,6 +78,7 @@ export const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        ...MAP_CONTROLS,
         body: { fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' },
         [REDUCED_MOTION]: {
           '*, *::before, *::after': {
@@ -58,9 +92,23 @@ export const theme = createTheme({
     MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
     MuiCard: {
       defaultProps: { variant: 'outlined' },
-      styleOverrides: { root: { backgroundColor: NAVY_RAISED } },
+      styleOverrides: {
+        root: { backgroundColor: NAVY_RAISED, boxShadow: SURFACE_SHADOW, transition: TRANSITION },
+      },
     },
-    MuiButton: { styleOverrides: { root: { minHeight: MIN_TOUCH_TARGET_PX } } },
+    MuiButton: {
+      defaultProps: { disableElevation: true },
+      styleOverrides: {
+        root: {
+          minHeight: MIN_TOUCH_TARGET_PX,
+          transition: TRANSITION,
+          '&.MuiButton-containedPrimary': {
+            fontWeight: 700,
+            '&:hover': { backgroundColor: ACCENT_LIGHT },
+          },
+        },
+      },
+    },
     MuiIconButton: {
       styleOverrides: { root: { minWidth: MIN_TOUCH_TARGET_PX, minHeight: MIN_TOUCH_TARGET_PX } },
     },
