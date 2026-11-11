@@ -107,7 +107,9 @@ def test_requests_are_throttled_per_forwarded_address_with_retry_after(
     monkeypatch.setitem(AnonRateThrottle.THROTTLE_RATES, "anon", "2/min")
 
     def call(address: str) -> Any:
-        return client.get("/api/v1/attribution", HTTP_X_FORWARDED_FOR=address)
+        return client.get(
+            "/api/v1/timezone", {"lat": "39.7", "lon": "-104.9"}, HTTP_X_FORWARDED_FOR=address
+        )
 
     assert [call("203.0.113.1").status_code for _ in range(2)] == [200, 200]
     blocked = call("203.0.113.1")

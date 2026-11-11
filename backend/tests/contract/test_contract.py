@@ -63,7 +63,7 @@ def test_a_timezone_validation_error_matches_the_contracts_400_problem(
 def test_a_throttled_response_matches_the_contracts_429_problem_with_retry_after(
     client: Client, use_fakes: UseFakes, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setitem(AnonRateThrottle.THROTTLE_RATES, "anon", "1/min")
+    monkeypatch.setitem(AnonRateThrottle.THROTTLE_RATES, "attribution", "1/min")
     client.get("/api/v1/attribution")
 
     assert_conforms(client.get("/api/v1/attribution"), "/attribution", "get")

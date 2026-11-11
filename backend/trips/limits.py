@@ -9,6 +9,10 @@ LOWER_48_MAX_LAT = 49.4
 LOWER_48_MIN_LON = -125.0
 LOWER_48_MAX_LON = -66.9
 
+# Throttle scopes: rates per scope live in the settings (SEC-05).
+TRIP_THROTTLE_SCOPE = "trips"
+ATTRIBUTION_THROTTLE_SCOPE = "attribution"
+
 MAX_LOAD_LB = 80_000
 MAX_DEPARTURE_AHEAD = timedelta(days=7)
 SPACING_CHOICES_MILES = tuple(int(spacing) for spacing in CheckpointSpacing)
