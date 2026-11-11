@@ -21,6 +21,12 @@ describe('MapLegend (FE-09, NFR-03: always visible, risk in words)', () => {
     expect(words).toEqual(['Low', 'Moderate', 'High', 'Severe', 'No Travel', 'No data'])
   })
 
+  it('says that grey on the map means no weather data (RR-11)', () => {
+    render(<MapLegend heatmap={null} hourOffset={0} />)
+
+    expect(screen.getByText(/Grey stretches on the map have no weather data/)).toBeInTheDocument()
+  })
+
   it('says nothing about the heatmap when there is none', () => {
     render(<MapLegend heatmap={null} hourOffset={0} />)
 

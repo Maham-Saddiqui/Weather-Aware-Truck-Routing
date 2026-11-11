@@ -9,11 +9,6 @@ export const ROUTE_LINE_LAYER_ID = 'route-line'
 export const ROUTE_HIT_LAYER_ID = 'route-hit'
 export const HEATMAP_LAYER_ID = 'heatmap-circles'
 
-// Interface accent for the chosen route and a muted slate for the others (route colour is not risk colour, FE-15).
-export const ROUTE_COLOUR_SELECTED = '#2dd4bf'
-export const ROUTE_COLOUR_MUTED = '#6b7c8f'
-export const ROUTE_CASING_COLOUR = '#0d1e2d'
-
 export const ROUTE_HIT_WIDTH_PX = 22
 
 // Heatmap circles grow with zoom so a 25 mile spacing stays a continuous band at every zoom.

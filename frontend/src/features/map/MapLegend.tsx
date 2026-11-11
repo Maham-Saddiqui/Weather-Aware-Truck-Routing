@@ -1,20 +1,10 @@
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { LEVEL_LABELS, LEVEL_ORDER } from '../../shared/risk'
 import type { Heatmap } from '../../shared/types'
 import { worstLevelAtHour } from './heatmapPaint'
 import { LegendItem } from './LegendItem'
-import { RISK_WORDS } from './riskScale'
-import type { RiskLevel } from './riskScale'
-
-const LEGEND_ORDER: readonly RiskLevel[] = [
-  'low',
-  'moderate',
-  'high',
-  'severe',
-  'no_travel',
-  'no_data',
-]
 
 interface MapLegendProps {
   heatmap: Heatmap | null
@@ -25,7 +15,7 @@ function heatmapSummary(heatmap: Heatmap, hourOffset: number): string {
   const worstLevel = worstLevelAtHour(heatmap, hourOffset)
   return worstLevel === null
     ? 'Heatmap: no data at this hour'
-    : `Heatmap now: worst ${RISK_WORDS[worstLevel]}`
+    : `Heatmap now: worst ${LEVEL_LABELS[worstLevel]}`
 }
 
 export function MapLegend({ heatmap, hourOffset }: MapLegendProps) {
@@ -49,10 +39,13 @@ export function MapLegend({ heatmap, hourOffset }: MapLegendProps) {
         useFlexGap
         sx={{ flexWrap: 'wrap', gap: 1, m: 0, p: 0, listStyle: 'none' }}
       >
-        {LEGEND_ORDER.map((level) => (
+        {LEVEL_ORDER.map((level) => (
           <LegendItem key={level} level={level} />
         ))}
       </Stack>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+        Grey stretches on the map have no weather data.
+      </Typography>
       {heatmap && (
         <Typography variant="caption" role="status" sx={{ display: 'block', mt: 0.5 }}>
           {heatmapSummary(heatmap, hourOffset)}

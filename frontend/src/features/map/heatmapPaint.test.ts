@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { RISK_COLOURS } from '../../shared/colours'
 import type { Heatmap } from '../../shared/types'
 import { circleFillForHour, heatmapFeatures, riskDigitAt, worstLevelAtHour } from './heatmapPaint'
 
@@ -70,10 +71,14 @@ describe('circleFillForHour (FE-09: colour shows the risk level, Low is invisibl
     expect(new Set(fills).size).toBe(fills.length)
   })
 
-  it('has a fallback fill for no data that is fainter than Moderate', () => {
+  it('draws no data in the neutral grey at a clearly visible opacity, never invisible like Low (RR-11)', () => {
     const expression = circleFillForHour(0)
+    const noDataFill = String(expression.at(-1))
+    const visibleFloor = 0x66
 
-    expect(String(expression.at(-1)).slice(-2)).toBe('1f')
+    expect(noDataFill.slice(0, 7)).toBe(RISK_COLOURS.no_data)
+    expect(parseInt(noDataFill.slice(-2), 16)).toBeGreaterThanOrEqual(visibleFloor)
+    expect(noDataFill).not.toBe(String(expression[3]))
   })
 })
 

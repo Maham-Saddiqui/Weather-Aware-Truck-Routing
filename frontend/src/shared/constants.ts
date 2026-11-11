@@ -20,6 +20,7 @@ export const MINUTES_PER_HOUR = 60
 
 export const MIN_TOUCH_TARGET_PX = 44
 export const PHONE_MAP_HEIGHT_PX = 340
+export const MAP_MIN_HEIGHT_PX = 280
 
 export const DRIVING_TIME_NOTICE =
   'Arrival times are driving time only. They do not include rest breaks or hours-of-service rules.'

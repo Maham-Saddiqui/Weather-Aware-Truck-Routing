@@ -1,6 +1,7 @@
 import Skeleton from '@mui/material/Skeleton'
 import { Component, lazy, Suspense } from 'react'
 import type { ReactNode } from 'react'
+import { MAP_MIN_HEIGHT_PX } from '../../shared/constants'
 import type { RouteMapProps } from '../../shared/types'
 import { MapUnavailable } from './MapUnavailable'
 
@@ -24,7 +25,11 @@ class MapLoadBoundary extends Component<{ children: ReactNode }, { hasFailed: bo
 export function RouteMap(props: RouteMapProps) {
   return (
     <MapLoadBoundary>
-      <Suspense fallback={<Skeleton variant="rounded" height="100%" sx={{ minHeight: 280 }} />}>
+      <Suspense
+        fallback={
+          <Skeleton variant="rounded" height="100%" sx={{ minHeight: MAP_MIN_HEIGHT_PX }} />
+        }
+      >
         <LazyRouteMapCanvas {...props} />
       </Suspense>
     </MapLoadBoundary>

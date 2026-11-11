@@ -26,7 +26,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 export function CheckpointDetails({ checkpoint }: { checkpoint: Checkpoint }) {
   const { measurements } = checkpoint
   return (
-    <Paper variant="outlined" sx={{ p: 2 }} aria-live="polite">
+    <Paper variant="outlined" sx={{ p: 2 }}>
       <Typography variant="h3" component="h4" sx={{ mb: 1 }}>
         Mile {checkpoint.distance_miles} <RiskChip level={checkpoint.level} />
       </Typography>

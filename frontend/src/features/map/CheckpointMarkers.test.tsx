@@ -39,10 +39,18 @@ describe('CheckpointMarkers (REQ-08, NFR-03: risk is never shown by colour alone
     expect(onSelectCheckpoint).toHaveBeenCalledWith('route-north', 3)
   })
 
-  it('selects a checkpoint from the keyboard', async () => {
-    const onSelectCheckpoint = renderMarkers(null)
+  it('keeps the markers out of the tab order, since the checkpoint list is the keyboard route (FE-07)', async () => {
+    renderMarkers(null)
 
     await userEvent.tab()
+
+    expect(document.body).toHaveFocus()
+  })
+
+  it('still selects a focused checkpoint with the keyboard', async () => {
+    const onSelectCheckpoint = renderMarkers(null)
+
+    screen.getAllByRole('button')[0]?.focus()
     await userEvent.keyboard('{Enter}')
 
     expect(onSelectCheckpoint).toHaveBeenCalledWith('route-north', 0)
@@ -60,7 +68,7 @@ describe('CheckpointMarkers (REQ-08, NFR-03: risk is never shown by colour alone
   it('shows a card with the risk word, mile and ETA when a marker gets focus', async () => {
     renderMarkers(null)
 
-    await userEvent.tab()
+    screen.getAllByRole('button')[0]?.focus()
 
     const card = await screen.findByRole('tooltip')
     expect(card).toHaveTextContent('Low')

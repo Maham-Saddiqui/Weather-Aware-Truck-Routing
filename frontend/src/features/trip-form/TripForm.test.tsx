@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { http, HttpResponse } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { delay, http, HttpResponse } from 'msw'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Providers } from '../../app/Providers'
-import { PHOTON_SEARCH_URL } from '../../shared/constants'
+import { PHOTON_SEARCH_URL, SUGGESTION_PAUSE_MS } from '../../shared/constants'
 import { server } from '../../shared/testing/server'
 import { TripForm } from './TripForm'
 
@@ -32,7 +32,7 @@ function answerWithPlaces(onRequest?: (url: URL) => void) {
 function renderForm(onSubmit = vi.fn()) {
   render(
     <Providers>
-      <TripForm initialTrip={null} isBusy={false} onSubmit={onSubmit} />
+      <TripForm initialTrip={null} needsReview={false} isBusy={false} onSubmit={onSubmit} />
     </Providers>,
   )
   return onSubmit
@@ -43,16 +43,82 @@ async function chooseFirstSuggestion(field: string, text: string) {
   await userEvent.click(await screen.findByRole('option', { name: /Chicago/ }))
 }
 
+// Testing Library only advances fake timers for you when it finds a `jest` global.
+function useFakeClock() {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  vi.stubGlobal('jest', { advanceTimersByTime: (ms: number) => vi.advanceTimersByTime(ms) })
+  return userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+}
+
+function passTime(milliseconds: number) {
+  return act(() => vi.advanceTimersByTimeAsync(milliseconds))
+}
+
 describe('address suggestions (REQ-02, FE-10)', () => {
-  it('waits for three characters before asking Photon', async () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('asks Photon for exactly three characters but not for two (REQ-02)', async () => {
+    const typing = useFakeClock()
     const requests: URL[] = []
     answerWithPlaces((url) => requests.push(url))
     renderForm()
 
-    await userEvent.type(screen.getByLabelText('Origin'), 'Ch')
-    await new Promise((resolve) => setTimeout(resolve, 450))
-
+    await typing.type(screen.getByLabelText('Origin'), 'Ch')
+    await passTime(SUGGESTION_PAUSE_MS)
     expect(requests).toHaveLength(0)
+
+    await typing.type(screen.getByLabelText('Origin'), 'i')
+    await passTime(SUGGESTION_PAUSE_MS)
+    await vi.waitFor(() => {
+      expect(requests).toHaveLength(1)
+    })
+    expect(requests[0]?.searchParams.get('q')).toBe('Chi')
+  })
+
+  it('waits for the 300 ms typing pause before asking (FE-10)', async () => {
+    const typing = useFakeClock()
+    const requests: URL[] = []
+    answerWithPlaces((url) => requests.push(url))
+    renderForm()
+
+    await typing.type(screen.getByLabelText('Origin'), 'Chicago')
+    await passTime(SUGGESTION_PAUSE_MS - 1)
+    expect(requests).toHaveLength(0)
+
+    await passTime(1)
+    await vi.waitFor(() => {
+      expect(requests).toHaveLength(1)
+    })
+  })
+
+  it('cancels the previous suggestion request when the driver keeps typing (FE-10)', async () => {
+    const typing = useFakeClock()
+    const signals: AbortSignal[] = []
+    server.use(
+      http.get(PHOTON_SEARCH_URL, async ({ request }) => {
+        signals.push(request.signal)
+        await delay('infinite')
+        return HttpResponse.json({ features: [] })
+      }),
+    )
+    renderForm()
+
+    await typing.type(screen.getByLabelText('Origin'), 'Chi')
+    await passTime(SUGGESTION_PAUSE_MS)
+    await vi.waitFor(() => {
+      expect(signals).toHaveLength(1)
+    })
+    await typing.type(screen.getByLabelText('Origin'), 'c')
+    await passTime(SUGGESTION_PAUSE_MS)
+    await vi.waitFor(() => {
+      expect(signals).toHaveLength(2)
+    })
+
+    expect(signals[0]?.aborted).toBe(true)
+    expect(signals[1]?.aborted).toBe(false)
   })
 
   it('asks once after a typing pause, limited to the lower 48, and lists only US places', async () => {
@@ -87,6 +153,86 @@ describe('address suggestions (REQ-02, FE-10)', () => {
     expect(screen.getByText('Choose an origin from the suggestions.')).toBeInTheDocument()
     expect(screen.getByText('Choose a destination from the suggestions.')).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
+  })
+})
+
+async function chooseOriginAndDestination() {
+  answerWithPlaces()
+  await chooseFirstSuggestion('Origin', 'Chicago')
+  server.use(
+    http.get(PHOTON_SEARCH_URL, () =>
+      HttpResponse.json({
+        features: [
+          photonFeature({ name: 'Denver', state: 'Colorado', countrycode: 'US' }, -104.99, 39.74),
+        ],
+      }),
+    ),
+  )
+  await userEvent.type(screen.getByLabelText('Destination'), 'Denver')
+  await userEvent.click(await screen.findByRole('option', { name: /Denver/ }))
+  await userEvent.type(screen.getByLabelText('Cargo weight (lb)'), '42000')
+}
+
+describe('departure time zone (RR-18, RR-29)', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('sends the typed wall-clock time as the instant in the origin zone, not the browser zone', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-10T12:00:00Z') })
+    server.use(
+      http.get('*/api/v1/timezone', () => HttpResponse.json({ time_zone: 'Pacific/Honolulu' })),
+    )
+    const onSubmit = renderForm()
+    await chooseOriginAndDestination()
+    expect(await screen.findByText('Local time at the origin (HST)')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByRole('group', { name: 'Departure' }), '{Control>}a{/Control}')
+    await userEvent.keyboard('{Backspace}111220260900')
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ departure_utc: '2026-11-12T19:00:00.000Z' })
+  })
+
+  it('says it is finding the origin time zone and blocks planning until it arrives', async () => {
+    let answer: () => void = () => undefined
+    server.use(
+      http.get('*/api/v1/timezone', async () => {
+        await new Promise<void>((resolve) => {
+          answer = resolve
+        })
+        return HttpResponse.json({ time_zone: 'America/Chicago' })
+      }),
+    )
+    const onSubmit = renderForm()
+    await chooseOriginAndDestination()
+
+    expect(await screen.findByText('Finding the origin’s time zone…')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(screen.getByText(/still finding the origin’s time zone/)).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    answer()
+    expect(await screen.findByText(/Local time at the origin/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('says the lookup failed, blocks planning and lets the driver look it up again', async () => {
+    server.use(http.get('*/api/v1/timezone', () => HttpResponse.error()))
+    const onSubmit = renderForm()
+    await chooseOriginAndDestination()
+    expect(await screen.findByText('We could not find the origin’s time zone.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(screen.getByText(/cannot read the departure time/)).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    server.resetHandlers()
+    await userEvent.click(screen.getByRole('button', { name: 'Look up the time zone again' }))
+    expect(await screen.findByText(/Local time at the origin/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(onSubmit).toHaveBeenCalledTimes(1)
   })
 })
 

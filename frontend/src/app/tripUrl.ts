@@ -4,6 +4,7 @@ import type { Place, SpacingMiles, TripRequest } from '../shared/types'
 
 const NUMBER_PATTERN = /^-?\d+(\.\d+)?$/
 const MAX_LABEL_LENGTH = 200
+const ISO_INSTANT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z$/
 
 function readNumber(params: URLSearchParams, name: string, limit: number): number | null {
   const text = params.get(name)
@@ -27,8 +28,8 @@ function readSpacing(params: URLSearchParams): SpacingMiles | null {
 
 function readDeparture(params: URLSearchParams): string | null {
   const text = params.get('dep')
-  const departure = text === null ? null : dayjs(text)
-  return departure?.isValid() ? departure.toISOString() : null
+  const isInstant = text !== null && ISO_INSTANT_PATTERN.test(text)
+  return isInstant && dayjs(text).isValid() ? dayjs(text).toISOString() : null
 }
 
 function readLoad(params: URLSearchParams): number | null {

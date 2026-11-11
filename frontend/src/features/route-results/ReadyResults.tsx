@@ -22,7 +22,7 @@ export function ReadyResults(props: RouteResultsProps) {
         <RouteCard
           key={route.id}
           route={route}
-          position={index + 1}
+          routeNumber={index + 1}
           isSelected={route.id === selectedRouteId}
           isRecommended={route.id === recommendation?.route_id}
           isLeastBad={route.id === recommendation?.least_bad_route_id}
@@ -34,7 +34,7 @@ export function ReadyResults(props: RouteResultsProps) {
       {selectedRoute && (
         <CheckpointSection
           route={selectedRoute}
-          position={routes.indexOf(selectedRoute) + 1}
+          routeNumber={routes.indexOf(selectedRoute) + 1}
           selectedCheckpointIndex={props.selectedCheckpointIndex}
           onSelectCheckpoint={props.onSelectCheckpoint}
         />

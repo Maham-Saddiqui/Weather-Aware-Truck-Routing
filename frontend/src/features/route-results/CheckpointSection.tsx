@@ -6,27 +6,29 @@ import { CheckpointList } from './CheckpointList'
 
 interface CheckpointSectionProps {
   route: Route
-  position: number
+  routeNumber: number
   selectedCheckpointIndex: number | null
   onSelectCheckpoint: (routeId: string, checkpointIndex: number) => void
 }
 
-export function CheckpointSection({ position, ...list }: CheckpointSectionProps) {
+export function CheckpointSection({ routeNumber, ...list }: CheckpointSectionProps) {
   const selected = list.route.checkpoints.find(
     (checkpoint) => checkpoint.index === list.selectedCheckpointIndex,
   )
   return (
     <Stack spacing={1} component="section" aria-labelledby="checkpoints-title">
       <Typography id="checkpoints-title" variant="h3" component="h3">
-        Checkpoints on Route {position}
+        Checkpoints on Route {routeNumber}
       </Typography>
-      {selected ? (
-        <CheckpointDetails checkpoint={selected} />
-      ) : (
-        <Typography variant="body2" color="text.secondary">
-          Select a checkpoint to see its wind, rain, snow and estimated arrival.
-        </Typography>
-      )}
+      <div aria-live="polite">
+        {selected ? (
+          <CheckpointDetails checkpoint={selected} />
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Select a checkpoint to see its wind, rain, snow and estimated arrival.
+          </Typography>
+        )}
+      </div>
       <CheckpointList {...list} />
     </Stack>
   )

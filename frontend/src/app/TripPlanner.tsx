@@ -1,7 +1,6 @@
 import { TripForm } from '../features/trip-form'
 import { ErrorBoundary } from './ErrorBoundary'
-import { heatmapSliderFor } from './heatmapSliderFor'
-import { MapPane } from './MapPane'
+import { MapWithSlider } from './MapWithSlider'
 import { PlannerLayout } from './PlannerLayout'
 import { ResultsPane } from './ResultsPane'
 import { useTripPlanner } from './useTripPlanner'
@@ -13,15 +12,15 @@ export function TripPlanner() {
       form={
         <ErrorBoundary area="the trip form">
           <TripForm
-            initialTrip={planner.run?.trip ?? null}
+            initialTrip={planner.restored?.trip ?? null}
+            needsReview={planner.restored?.isPlannable === false}
             isBusy={planner.results.isPending}
             onSubmit={planner.submit}
           />
         </ErrorBoundary>
       }
       results={<ResultsPane planner={planner} />}
-      map={<MapPane planner={planner} />}
-      slider={heatmapSliderFor(planner)}
+      map={<MapWithSlider planner={planner} />}
     />
   )
 }

@@ -15,8 +15,7 @@ export function TripDetailsFields({ form }: { form: ReturnType<typeof useTripFor
       <Suspense fallback={<Skeleton variant="rounded" height={56} />}>
         <DepartureField
           value={values.departure}
-          timeZone={form.timeZone}
-          hasOrigin={values.origin !== null}
+          zone={form.originZone}
           error={errors.departure}
           onChange={(departure) => {
             change({ departure })

@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles'
+import { ACCENT_TURQUOISE, RISK_COLOURS } from '../shared/colours'
 import { MIN_TOUCH_TARGET_PX } from '../shared/constants'
 import type { CheckpointLevel } from '../shared/types'
 
@@ -14,19 +15,9 @@ declare module '@mui/material/styles' {
 const NAVY_BACKGROUND = '#0a1524'
 const NAVY_SURFACE = '#101f33'
 const NAVY_RAISED = '#172b45'
-const TURQUOISE = '#2dd4bf'
 const TEXT_PRIMARY = '#e9eff7'
 const TEXT_SECONDARY = '#a3b4c8'
 const BORDER = 'rgba(163, 180, 200, 0.2)'
-
-const RISK_PALETTE: Record<CheckpointLevel, string> = {
-  low: '#4ade80',
-  moderate: '#facc15',
-  high: '#fb923c',
-  severe: '#f87171',
-  no_travel: '#c084fc',
-  no_data: '#94a3b8',
-}
 
 const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)'
 
@@ -35,12 +26,12 @@ export const theme = createTheme({
   palette: {
     mode: 'dark',
     background: { default: NAVY_BACKGROUND, paper: NAVY_SURFACE },
-    primary: { main: TURQUOISE, contrastText: NAVY_BACKGROUND },
+    primary: { main: ACCENT_TURQUOISE, contrastText: NAVY_BACKGROUND },
     text: { primary: TEXT_PRIMARY, secondary: TEXT_SECONDARY },
     divider: BORDER,
-    risk: RISK_PALETTE,
-    action: { focus: TURQUOISE },
+    risk: RISK_COLOURS,
   },
+  focusVisible: true,
   shape: { borderRadius: 10 },
   spacing: 8,
   typography: {
