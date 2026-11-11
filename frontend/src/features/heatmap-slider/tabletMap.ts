@@ -1,6 +1,6 @@
 // The map area is a size container from the md breakpoint up, so these rules follow the map's own width and
 // never apply on a phone, where the panel sits below the map and no container exists.
-const TABLET_MAP_MAX_PX = 760
+const TABLET_MAP_MAX_PX = 860
 const NARROW_TABLET_MAP_MAX_PX = 540
 const ONE_LINE_ARRIVAL_MAP_MIN_PX = 650
 

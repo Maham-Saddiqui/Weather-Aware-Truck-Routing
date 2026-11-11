@@ -164,7 +164,7 @@ describe('useFollowTruck keeps the truck in view without changing the zoom (REQ-
     stub.width = 600
     const hook = renderFollowing()
 
-    moveTruckTo(hook, { x: 300, y: 600 - 150 })
+    moveTruckTo(hook, { x: 300, y: 600 - 138 })
 
     expect(stub.easeTo).toHaveBeenCalledTimes(1)
     const offset = (stub.easeTo.mock.calls[0]?.[0] as EaseOptions & { offset: [number, number] })
@@ -175,13 +175,13 @@ describe('useFollowTruck keeps the truck in view without changing the zoom (REQ-
   it('leaves a truck at the same height alone on a wide map, where the panel is shorter', () => {
     const hook = renderFollowing()
 
-    moveTruckTo(hook, { x: 500, y: 600 - 150 })
+    moveTruckTo(hook, { x: 500, y: 600 - 138 })
 
     expect(stub.easeTo).not.toHaveBeenCalled()
   })
 
   it('eases when the map is resized so the taller panel now covers the truck', () => {
-    renderFollowing({ x: 300, y: 450 })
+    renderFollowing({ x: 300, y: 462 })
 
     stub.width = 600
     emit('resize')

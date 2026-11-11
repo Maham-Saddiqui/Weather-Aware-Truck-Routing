@@ -13,6 +13,23 @@ const TOUCH_TOOLTIP_MS = 6000
 const HIDDEN_ON_TABLET_MAP = { [WHEN_TABLET_MAP]: { display: 'none' } }
 const SHOWN_ONLY_ON_TABLET_MAP = { display: 'none', [WHEN_TABLET_MAP]: { display: 'inline' } }
 
+function ZoneNote({ zoneName }: { zoneName: string }) {
+  return (
+    <Typography
+      variant="caption"
+      color="text.secondary"
+      sx={{ [WHEN_TABLET_MAP]: { lineHeight: 1.3 } }}
+    >
+      <Box component="span" sx={HIDDEN_ON_TABLET_MAP}>
+        {`Times shown in the origin's time zone (${zoneName})`}
+      </Box>
+      <Box component="span" sx={SHOWN_ONLY_ON_TABLET_MAP}>
+        {`Origin time zone (${zoneName})`}
+      </Box>
+    </Typography>
+  )
+}
+
 // On a tablet-sized map the caption is two short lines, so the panel does not grow a row for it.
 export function ForecastCaption({ zoneName }: { zoneName: string }) {
   return (
@@ -34,20 +51,13 @@ export function ForecastCaption({ zoneName }: { zoneName: string }) {
           <IconButton
             size="small"
             aria-label="What the forecast time shows"
-            sx={{ [WHEN_TABLET_MAP]: { marginBlock: -0.75 } }}
+            sx={{ [WHEN_TABLET_MAP]: { marginBlock: -1.25 } }}
           >
             <InfoOutlined fontSize="small" />
           </IconButton>
         </Tooltip>
       </Stack>
-      <Typography variant="caption" color="text.secondary">
-        <Box component="span" sx={HIDDEN_ON_TABLET_MAP}>
-          {`Times shown in the origin's time zone (${zoneName})`}
-        </Box>
-        <Box component="span" sx={SHOWN_ONLY_ON_TABLET_MAP}>
-          {`Origin time zone (${zoneName})`}
-        </Box>
-      </Typography>
+      <ZoneNote zoneName={zoneName} />
     </Stack>
   )
 }

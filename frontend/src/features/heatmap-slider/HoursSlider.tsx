@@ -1,12 +1,14 @@
 import Slider from '@mui/material/Slider'
 import { useId } from 'react'
 import { VISUALLY_HIDDEN_STYLE } from '../../shared/visuallyHidden'
+import { WHEN_TABLET_MAP } from './tabletMap'
 import { arrivalLabelLeft, arrivalMarkFor } from './arrivalMark'
 
 const SLIDER_MIN_WIDTH_PX = 160
 const ARRIVAL_TICK_HEIGHT_PX = 16
 
 const arrivalMarkStyle = {
+  '&.MuiSlider-marked': { [WHEN_TABLET_MAP]: { marginBottom: '14px' } },
   '& .MuiSlider-mark': {
     width: 3,
     height: ARRIVAL_TICK_HEIGHT_PX,
