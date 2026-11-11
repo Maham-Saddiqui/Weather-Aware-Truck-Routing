@@ -52,7 +52,7 @@ def test_a_declared_length_that_is_not_a_number_is_refused_with_413(
 
 def test_a_normal_trip_request_is_far_below_the_limit(client: Client, use_fakes: UseFakes) -> None:
     """SEC-03"""
-    assert len(trip_body()) < MAX_BODY_BYTES // 4
+    assert len(json.dumps(trip_body())) < MAX_BODY_BYTES // 4
     assert client.post(TRIP_PATHS[0], trip_body(), content_type=JSON).status_code != 413
 
 

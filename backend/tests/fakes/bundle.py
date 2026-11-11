@@ -33,8 +33,10 @@ class FakeAttribution:
     def __init__(self, text: str = "Synthetic credit", failure: Exception | None = None) -> None:
         self.text = text
         self.failure = failure
+        self.calls = 0
 
     def routing_copyright(self) -> str:
+        self.calls += 1
         if self.failure is not None:
             raise self.failure
         return self.text

@@ -10,6 +10,7 @@ import pytest
 
 from domain.types import GeoPoint
 from providers.http import make_client
+from providers.weather.budget import BudgetLimit, WeatherBudget
 from providers.weather.cache import WindowCache
 from providers.weather.open_meteo import POINTS_PER_REQUEST, OpenMeteoWeather
 from providers.weather.port import WeatherBusy, WeatherUnavailable
@@ -44,15 +45,24 @@ def one_location_per_point(request: httpx.Request) -> httpx.Response:
 
 
 class Service:
-    def __init__(self, respond: Callable[[httpx.Request], httpx.Response] | None = None) -> None:
+    def __init__(
+        self,
+        respond: Callable[[httpx.Request], httpx.Response] | None = None,
+        budget: WeatherBudget | None = None,
+    ) -> None:
         self.requests: list[httpx.Request] = []
         self.clock = [NOW]
         self._respond = respond or one_location_per_point
         transport = httpx.MockTransport(self._handle)
         cache = WindowCache(lambda: self.clock[0])
         self.weather = OpenMeteoWeather(
-            "https://weather.test", make_client(1.0, transport), cache, lambda: self.clock[0]
+            "https://weather.test",
+            make_client(1.0, transport),
+            cache,
+            lambda: self.clock[0],
         )
+        if budget is not None:
+            self.weather.limited_by(budget)
 
     def _handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
@@ -280,6 +290,26 @@ def test_a_forecast_builds_no_decimals_until_a_reading_is_asked_for(
 
     assert windows[POINT].wind_mph[2] == Decimal("12.5")
     assert built == ["12.5"]
+
+
+def test_a_spent_weather_budget_means_busy_and_no_provider_call() -> None:
+    """SEC-07"""
+    budget = WeatherBudget([BudgetLimit(timedelta(minutes=1), 1)], lambda: NOW)
+    service = Service(budget=budget)
+
+    with pytest.raises(WeatherBusy):
+        service.weather.forecast([POINT, OTHER_POINT])
+
+    assert service.requests == []
+
+
+def test_cached_cells_cost_no_weather_budget() -> None:
+    """SEC-07"""
+    budget = WeatherBudget([BudgetLimit(timedelta(minutes=1), 1)], lambda: NOW)
+    service = Service(budget=budget)
+    service.weather.forecast([POINT])
+
+    assert set(service.weather.forecast([POINT])) == {POINT}
 
 
 def test_an_answer_without_any_hourly_data_leaves_the_point_absent() -> None:

@@ -12,6 +12,7 @@ from providers.routing.tomtom import TOMTOM_READ_TIMEOUT_S, TomTomAttribution, T
 from providers.routing.valhalla import READ_TIMEOUT_S as VALHALLA_READ_TIMEOUT_S
 from providers.routing.valhalla import RequestLimiter, ValhallaRouting
 from providers.timezone.offline import OfflineTimeZoneLookup
+from providers.weather.budget import WEATHER_BUDGET_LIMITS, WeatherBudget
 from providers.weather.cache import WindowCache
 from providers.weather.open_meteo import OPEN_METEO_READ_TIMEOUT_S, OpenMeteoWeather
 from services.daily_guard import DailyCallGuard
@@ -51,7 +52,7 @@ def providers() -> Providers:
                 make_client(OPEN_METEO_READ_TIMEOUT_S),
                 WindowCache(utc_now),
                 utc_now,
-            ),
+            ).limited_by(WeatherBudget(WEATHER_BUDGET_LIMITS, utc_now)),
             timezone=OfflineTimeZoneLookup(),
             executor=ThreadPoolExecutor(PARALLEL_CALL_THREADS, thread_name_prefix="provider-call"),
             clock=utc_now,

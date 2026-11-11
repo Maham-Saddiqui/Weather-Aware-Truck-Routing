@@ -11,6 +11,7 @@ import httpx
 from domain.heatmap import cell_of
 from domain.types import GeoPoint, HourlyWeather
 from providers.http import QueryParams, get_with_one_retry
+from providers.weather.budget import WeatherBudget
 from providers.weather.cache import CellKey, WindowCache
 from providers.weather.port import WeatherBusy, WeatherUnavailable
 from providers.weather.series import CompactSeries
@@ -41,7 +42,13 @@ class OpenMeteoWeather:
         self._client = client
         self._cache = cache
         self._clock = clock
+        self._budget = WeatherBudget((), clock)
         self._fetch_lock = threading.Lock()
+
+    def limited_by(self, budget: WeatherBudget) -> "OpenMeteoWeather":
+        """Without a budget every fetch is allowed; the server always sets one."""
+        self._budget = budget
+        return self
 
     def forecast(self, points: Sequence[GeoPoint]) -> Mapping[GeoPoint, HourlyWeather]:
         deadline = time.monotonic() + WEATHER_TOTAL_TIMEOUT_S
@@ -70,6 +77,8 @@ class OpenMeteoWeather:
             if missing and deadline - time.monotonic() < OPEN_METEO_READ_TIMEOUT_S:
                 raise WeatherUnavailable("The weather service is too slow")
             for chunk in _chunks(missing, POINTS_PER_REQUEST):
+                if not self._budget.try_spend(len(chunk)):
+                    raise WeatherBusy("The weather allowance is spent for now")
                 for cell, text in self._fetch(chunk).items():
                     self._cache.put(cell, text)
                     windows[cell] = text
