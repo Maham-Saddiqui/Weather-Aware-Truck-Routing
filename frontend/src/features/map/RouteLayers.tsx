@@ -2,6 +2,7 @@ import { Layer, Source } from '@vis.gl/react-maplibre'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import { useTheme } from '@mui/material/styles'
 import { ROUTE_CASING_COLOUR } from '../../shared/colours'
+import { directionCueLayerProps } from './directionCue'
 import { ROUTE_HIT_LAYER_ID, ROUTE_HIT_WIDTH_PX, ROUTE_LINE_LAYER_ID } from './mapConstants'
 import type { RouteLines } from './routeGeoJson'
 
@@ -72,6 +73,7 @@ export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
           'line-width': whenSelected(selectedRouteId, 6, 4),
         }}
       />
+      <Layer {...directionCueLayerProps(selectedRouteId, palette.common.white)} />
       <Layer id={ROUTE_HIT_LAYER_ID} type="line" layout={ROUND_LINES} paint={HIT_PAINT} />
     </Source>
   )
