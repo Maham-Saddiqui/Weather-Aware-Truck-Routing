@@ -107,6 +107,8 @@ describe('trip in the page address (REQ-14, FE-16)', () => {
     render(<App />)
 
     expect(await screen.findByRole('button', { name: 'Route 2' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Chicago.* to Denver/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Edit trip' }))
     expect(screen.getByLabelText('Origin')).toHaveValue('Chicago')
     expect(screen.getByLabelText('Cargo weight (lb)')).toHaveValue('42000')
   })

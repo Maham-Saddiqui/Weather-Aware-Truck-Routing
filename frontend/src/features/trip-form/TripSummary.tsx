@@ -3,14 +3,22 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { formatLocalTime } from '../../shared/time'
 import type { TripFormValues } from './validation'
 
 interface TripSummaryProps {
   values: TripFormValues
+  departureZone: string | null
   onEdit: () => void
 }
 
-export function TripSummary({ values, onEdit }: TripSummaryProps) {
+// The departure waits for the origin's zone: showing it in the browser's zone would be a different clock.
+function departureText({ departure }: TripFormValues, zone: string | null): string {
+  if (!departure || zone === null) return ''
+  return `, departs ${formatLocalTime(departure.toISOString(), zone)}`
+}
+
+export function TripSummary({ values, departureZone, onEdit }: TripSummaryProps) {
   return (
     <Stack
       direction="row"
@@ -23,6 +31,7 @@ export function TripSummary({ values, onEdit }: TripSummaryProps) {
         </Typography>
         <Typography variant="caption" color="text.secondary">
           {values.loadLb} lb, checkpoint every {values.spacingMiles} miles
+          {departureText(values, departureZone)}
         </Typography>
       </Box>
       <Button
