@@ -16,8 +16,12 @@ export function ReadyResults(props: RouteResultsProps) {
 
   return (
     <Stack spacing={2}>
-      <ResultNotices results={results} />
-      <RecommendationBanner recommendation={recommendation} routes={routes} />
+      <ResultNotices results={results} onRetry={props.onRetry} />
+      <RecommendationBanner
+        recommendation={recommendation}
+        routes={routes}
+        weather={results.weather}
+      />
       {routes.map((route, index) => (
         <RouteCard
           key={route.id}
