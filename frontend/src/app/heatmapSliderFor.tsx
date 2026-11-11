@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { HeatmapSlider } from '../features/heatmap-slider'
+import { HeatmapStatus } from '../features/map'
 import type { TripPlannerState } from './useTripPlanner'
 
 export function heatmapSliderFor(
@@ -18,6 +19,7 @@ export function heatmapSliderFor(
       hours={heatmap.hours}
       hourOffset={hourOffset}
       onChangeHourOffset={onChangeHourOffset}
+      status={<HeatmapStatus heatmap={heatmap} hourOffset={hourOffset} />}
     />
   )
 }

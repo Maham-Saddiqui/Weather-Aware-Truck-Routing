@@ -7,22 +7,8 @@ import { styled, useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import Typography from '@mui/material/Typography'
 import { useId, useState } from 'react'
-import { LEVEL_LABELS, LEVEL_ORDER } from '../../shared/risk'
-import type { Heatmap } from '../../shared/types'
-import { worstLevelAtHour } from './heatmapPaint'
+import { LEVEL_ORDER } from '../../shared/risk'
 import { LegendItem } from './LegendItem'
-
-interface MapLegendProps {
-  heatmap: Heatmap | null
-  hourOffset: number
-}
-
-function heatmapSummary(heatmap: Heatmap, hourOffset: number): string {
-  const worstLevel = worstLevelAtHour(heatmap, hourOffset)
-  return worstLevel === null
-    ? 'Heatmap: no data at this hour'
-    : `Heatmap now: worst ${LEVEL_LABELS[worstLevel]}`
-}
 
 const Panel = styled(Paper)(({ theme }) => ({
   position: 'absolute',
@@ -43,7 +29,6 @@ const Items = styled('ul')(({ theme }) => ({
   listStyle: 'none',
 }))
 
-// Kept in the page when folded away so the live status is still announced.
 const Notes = styled('div', { shouldForwardProp: (name) => name !== 'isShown' })<{
   isShown: boolean
 }>(({ isShown }) =>
@@ -59,7 +44,7 @@ const Notes = styled('div', { shouldForwardProp: (name) => name !== 'isShown' })
       },
 )
 
-export function MapLegend({ heatmap, hourOffset }: MapLegendProps) {
+export function MapLegend() {
   const isPhone = useMediaQuery(useTheme().breakpoints.down('md'))
   const [isOpen, setIsOpen] = useState(false)
   const notesId = useId()
@@ -89,11 +74,6 @@ export function MapLegend({ heatmap, hourOffset }: MapLegendProps) {
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
           Grey on the map means no weather data.
         </Typography>
-        {heatmap && (
-          <Typography variant="caption" role="status" sx={{ display: 'block' }}>
-            {heatmapSummary(heatmap, hourOffset)}
-          </Typography>
-        )}
       </Notes>
     </Panel>
   )

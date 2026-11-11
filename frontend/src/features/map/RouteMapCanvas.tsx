@@ -60,7 +60,7 @@ export function RouteMapCanvas({ heatmap, hourOffset, onSelectRoute, ...scene }:
         {heatmap && <HeatmapLayer heatmap={heatmap} hourOffset={hourOffset} />}
         <RouteScene {...scene} />
       </Map>
-      <MapLegend heatmap={heatmap} hourOffset={hourOffset} />
+      <MapLegend />
       {failure.hasFailed && <MapUnavailable />}
     </Box>
   )
