@@ -4,7 +4,7 @@ import { makeHeatmapOfRisks } from '../../shared/testing/fixtures'
 import { HeatmapStatus } from './HeatmapStatus'
 
 describe('HeatmapStatus words what the heatmap shows at the chosen hour (REQ-09, RR-28, FE-09)', () => {
-  it('says all clear when the worst digit is Low, because Low is drawn transparent', () => {
+  it('says all clear when the worst digit is Low, because Low is only a faint tint', () => {
     render(<HeatmapStatus heatmap={makeHeatmapOfRisks('0', '0')} hourOffset={0} />)
 
     expect(screen.getByRole('status')).toHaveTextContent(

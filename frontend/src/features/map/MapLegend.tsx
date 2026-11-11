@@ -72,7 +72,7 @@ export function MapLegend() {
       </Stack>
       <Notes id={notesId} isShown={!isPhone || isOpen}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-          Grey on the map means no weather data.
+          Faint green on the map means low risk; grey means no weather data.
         </Typography>
       </Notes>
     </Panel>

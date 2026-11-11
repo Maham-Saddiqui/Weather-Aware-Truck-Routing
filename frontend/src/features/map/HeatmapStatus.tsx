@@ -19,7 +19,7 @@ function statusText(worstLevel: CheckpointLevel | null): string {
     : `Worst along these routes: ${LEVEL_LABELS[worstLevel]}`
 }
 
-// Low is transparent on the map, so this words the server's worst level for the hour when there is nothing to see (FE-09, FE-07).
+// Low is only a faint tint on the map, so this words the server's worst level for the hour when there is nothing glowing (FE-09, FE-07).
 // The region stays mounted and React rewrites it only when the words change, so playback does not spam screen readers.
 export function HeatmapStatus({ heatmap, hourOffset }: HeatmapStatusProps) {
   const worstLevel = levelForDigit(riskDigitAt(heatmap.worst_level_by_hour, hourOffset))

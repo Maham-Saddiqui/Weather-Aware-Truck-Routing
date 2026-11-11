@@ -12,10 +12,12 @@ describe('MapLegend (FE-09, NFR-03: always visible, risk in words)', () => {
     expect(words).toEqual(['Low', 'Moderate', 'High', 'Severe', 'No Travel', 'No data'])
   })
 
-  it('says that grey on the map means no weather data (RR-11)', () => {
+  it('says that faint green on the map means low risk and grey means no weather data (FE-09, RR-11)', () => {
     render(<MapLegend />)
 
-    expect(screen.getByText(/Grey on the map means no weather data/)).toBeInTheDocument()
+    expect(
+      screen.getByText('Faint green on the map means low risk; grey means no weather data.'),
+    ).toBeInTheDocument()
   })
 
   it('leaves the live heatmap status to the status chip next to the slider', () => {

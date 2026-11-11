@@ -4,15 +4,15 @@ import { RISK_COLOURS } from '../../shared/colours'
 import { LEVEL_ORDER } from '../../shared/risk'
 import type { CheckpointLevel, Heatmap } from '../../shared/types'
 
-const INVISIBLE = '#00000000'
-
 const DIGIT_LEVELS = LEVEL_ORDER.filter((level) => level !== 'no_data')
 const LEVEL_FOR_DIGIT: Record<string, CheckpointLevel> = Object.fromEntries(
   DIGIT_LEVELS.map((level, digit) => [String(digit), level]),
 )
 
-// Opacity (as the last two hex digits) rises with risk, so Low is invisible and only risky stretches glow (FE-09).
-const FILL_OPACITY_HEX: Record<Exclude<CheckpointLevel, 'low'>, string> = {
+// Opacity (as the last two hex digits) rises with risk: Low is a faint 12 percent tint that keeps the corridor
+// visible, and only risky stretches glow (FE-09).
+const FILL_OPACITY_HEX: Record<CheckpointLevel, string> = {
+  low: '1f',
   moderate: '8c',
   high: 'a6',
   severe: 'bf',
@@ -21,7 +21,7 @@ const FILL_OPACITY_HEX: Record<Exclude<CheckpointLevel, 'low'>, string> = {
 }
 
 function fillFor(level: CheckpointLevel): string {
-  return level === 'low' ? INVISIBLE : `${RISK_COLOURS[level]}${FILL_OPACITY_HEX[level]}`
+  return `${RISK_COLOURS[level]}${FILL_OPACITY_HEX[level]}`
 }
 
 export function riskDigitAt(risk: string, hourOffset: number): string {

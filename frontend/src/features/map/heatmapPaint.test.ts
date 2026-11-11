@@ -35,24 +35,33 @@ describe('levelForDigit (RR-01: the server digit names the level, x is no level)
   })
 })
 
-describe('circleFillForHour (FE-09: colour shows the risk level, Low is invisible)', () => {
+describe('circleFillForHour (FE-09: colour shows the risk level, Low is a faint tint)', () => {
   it('takes character h of the point risk string and matches it to one fill per level', () => {
     const expression = circleFillForHour(6)
 
     expect(expression.slice(0, 2)).toEqual(['match', ['slice', ['get', 'risk'], 6, 7]])
   })
 
-  it('draws Low fully transparent and every higher level with a more opaque fill', () => {
-    const [, , lowDigit, lowFill, , moderateFill, , highFill, , severeFill, , noTravelFill] =
-      circleFillForHour(0)
+  it('draws Low as a faint tint of the shared Low green, about 12 percent (FE-09, REQ-09)', () => {
+    const [, , lowDigit, lowFill] = circleFillForHour(0)
+    const opacity = parseInt(String(lowFill).slice(-2), 16) / 0xff
 
     expect(lowDigit).toBe('0')
-    expect(lowFill).toBe('#00000000')
-    const opacities = [moderateFill, highFill, severeFill, noTravelFill].map((fill) =>
+    expect(String(lowFill).slice(0, 7)).toBe(RISK_COLOURS.low)
+    expect(opacity).toBeGreaterThan(0.1)
+    expect(opacity).toBeLessThan(0.15)
+  })
+
+  it('makes every higher level more opaque than Low, so only risky stretches glow (FE-09, RR-28)', () => {
+    const [, , , lowFill, , moderateFill, , highFill, , severeFill, , noTravelFill] =
+      circleFillForHour(0)
+
+    const opacities = [lowFill, moderateFill, highFill, severeFill, noTravelFill].map((fill) =>
       parseInt(String(fill).slice(-2), 16),
     )
     expect(opacities).toEqual([...opacities].sort((a, b) => a - b))
-    expect(Math.min(...opacities)).toBeGreaterThan(0)
+    expect(new Set(opacities).size).toBe(opacities.length)
+    expect(opacities[1]).toBeGreaterThanOrEqual((opacities[0] ?? 0) * 3)
   })
 
   it('gives each level its own colour so packed points never change the hue', () => {
@@ -61,7 +70,7 @@ describe('circleFillForHour (FE-09: colour shows the risk level, Low is invisibl
     expect(new Set(fills).size).toBe(fills.length)
   })
 
-  it('draws no data in the neutral grey at a clearly visible opacity, never invisible like Low (RR-11)', () => {
+  it('draws no data in the neutral grey at a clearly visible opacity, far above the faint Low tint (RR-11)', () => {
     const expression = circleFillForHour(0)
     const noDataFill = String(expression.at(-1))
     const visibleFloor = 0x66
