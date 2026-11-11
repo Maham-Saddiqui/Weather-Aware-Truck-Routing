@@ -5,7 +5,7 @@ export type ProblemCode =
 
 const MESSAGES: Record<ProblemCode, string> = {
   validation_error: 'Some trip details are not valid. Check the form and try again.',
-  rate_limited: 'Too many requests. Wait a minute and try again.',
+  rate_limited: 'The server is busy right now. Wait a few seconds and try again.',
   routing_unavailable: 'Routing is unavailable right now. Try again in a minute.',
   no_route_found: 'No truck route was found between these two places. Try different places.',
   weather_unavailable: 'Weather data is unavailable right now. Try again in a minute.',
