@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { TruckMarker } from './TruckMarker'
-import { NORTH_ROUTE, SOUTH_ROUTE, heatmapFromCheckpoints } from './routeFixtures'
+import { NORTH_ROUTE, heatmapFromCheckpoints } from './routeFixtures'
 
 const markerProps = vi.hoisted(() => ({ current: null as { longitude: number } | null }))
 
@@ -15,15 +15,8 @@ vi.mock('@vis.gl/react-maplibre', () => ({
 
 const HEATMAP = heatmapFromCheckpoints([NORTH_ROUTE])
 
-function truckAt(hourOffset: number, selectedRouteId: string | null = NORTH_ROUTE.id) {
-  return (
-    <TruckMarker
-      routes={[NORTH_ROUTE, SOUTH_ROUTE]}
-      selectedRouteId={selectedRouteId}
-      heatmap={HEATMAP}
-      hourOffset={hourOffset}
-    />
-  )
+function truckAt(hourOffset: number) {
+  return <TruckMarker route={NORTH_ROUTE} heatmap={HEATMAP} hourOffset={hourOffset} />
 }
 
 describe('TruckMarker follows the forecast slider (REQ-09, RR-28, FE-07, FE-08)', () => {
@@ -49,11 +42,5 @@ describe('TruckMarker follows the forecast slider (REQ-09, RR-28, FE-07, FE-08)'
 
     expect(screen.getByText('Arrived')).toBeVisible()
     expect(screen.getByRole('img', { name: /^Truck arrived, / })).toBeVisible()
-  })
-
-  it('shows no truck when no route is selected', () => {
-    render(truckAt(0, null))
-
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 })

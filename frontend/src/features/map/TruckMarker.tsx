@@ -5,22 +5,17 @@ import { TruckBadge } from './TruckBadge'
 import { truckPositionAt } from './truckPosition'
 
 interface TruckMarkerProps {
-  routes: readonly Route[]
-  selectedRouteId: string | null
-  heatmap: Heatmap | null
+  route: Route
+  heatmap: Heatmap
   hourOffset: number
 }
 
 // Moves through the map's marker API on each tick; the route lines are not redrawn (FE-08).
-export function TruckMarker({ routes, selectedRouteId, heatmap, hourOffset }: TruckMarkerProps) {
-  const checkpoints = routes.find((route) => route.id === selectedRouteId)?.checkpoints ?? []
-  const timeZone = checkpoints[0]?.time_zone
-  if (!heatmap || !timeZone) {
-    return null
-  }
+export function TruckMarker({ route, heatmap, hourOffset }: TruckMarkerProps) {
   const instant = instantAfterHours(heatmap.start_utc, hourOffset)
-  const truck = truckPositionAt(checkpoints, instant.getTime())
-  if (!truck) {
+  const truck = truckPositionAt(route.checkpoints, instant.getTime())
+  const timeZone = route.checkpoints[0]?.time_zone
+  if (!truck || !timeZone) {
     return null
   }
   const clock = formatClockTime(instant.toISOString(), timeZone)

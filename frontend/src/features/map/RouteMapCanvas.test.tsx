@@ -18,7 +18,7 @@ const mapProps = vi.hoisted(() => ({ current: null as MapStubProps | null }))
 vi.mock('./mapLib', () => ({ mapLib: Promise.resolve({}) }))
 vi.mock('./RouteScene', () => ({ RouteScene: () => null }))
 vi.mock('./HeatmapLayer', () => ({ HeatmapLayer: () => null }))
-vi.mock('./TruckMarker', () => ({ TruckMarker: () => null }))
+vi.mock('./RouteMarkers', () => ({ RouteMarkers: () => null }))
 vi.mock('@vis.gl/react-maplibre', () => ({
   Map: (props: MapStubProps) => {
     mapProps.current = props
