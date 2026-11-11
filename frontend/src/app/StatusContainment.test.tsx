@@ -13,7 +13,7 @@ describe('a broken forecast status stays contained (NFR-04, FE-12)', () => {
       <div>
         <p>The rest of the page</p>
         <ErrorBoundary area="the forecast status" fallback={<></>}>
-          <HeatmapStatus heatmap={heatmapWithoutField} hourOffset={0} />
+          <HeatmapStatus heatmap={heatmapWithoutField} hourOffset={0} timeZone="America/Chicago" />
         </ErrorBoundary>
       </div>,
     )

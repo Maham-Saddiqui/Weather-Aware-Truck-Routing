@@ -297,7 +297,9 @@ describe('HeatmapSlider caption (REQ-09, FE-07: self-explanatory controls)', () 
     await userEvent.tab()
 
     const tooltip = await screen.findByRole('tooltip')
-    expect(tooltip).toHaveTextContent('Weather along the whole corridor at this time.')
+    expect(tooltip).toHaveTextContent(
+      'The status shows the weather along all the routes at this clock hour, wherever the truck is.',
+    )
     expect(tooltip).toHaveTextContent('The truck marker shows where the truck would be.')
     expect(tooltip).toHaveTextContent('Checkpoint dots show conditions when the truck arrives.')
   })

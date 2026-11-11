@@ -5,7 +5,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
 const EXPLANATION =
-  'Weather along the whole corridor at this time. The truck marker shows where the truck would be. Checkpoint dots show conditions when the truck arrives.'
+  'The status shows the weather along all the routes at this clock hour, wherever the truck is. The truck marker shows where the truck would be. Checkpoint dots show conditions when the truck arrives.'
 const TOUCH_TOOLTIP_MS = 6000
 
 export function ForecastCaption() {
