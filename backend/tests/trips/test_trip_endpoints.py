@@ -95,6 +95,7 @@ def test_the_compare_response_names_the_deciding_criterion_and_the_provider(
     assert body["routing_provider"] == "tomtom"
     assert body["recommendation"]["status"] == "recommended"
     assert body["recommendation"]["route_id"] == body["routes"][0]["id"]
+    assert body["recommendation"]["sentence"].startswith("Route 1 ")
     assert all(route["summary"]["travel_time_text"] for route in body["routes"])
 
 

@@ -51,17 +51,21 @@ def test_rr26_the_sentence_names_the_criterion_and_both_numbers() -> None:
     )
 
     assert ranking.recommendation.sentence == (
-        "Recommended because it has fewer Severe-weather miles than the next best route "
-        "(0.0 against 10.0 miles)."
+        "Route 1 has fewer Severe-weather miles than Route 2 (0.0 against 10.0 miles)."
     )
 
 
 def test_rr24_fewest_high_miles_decides_when_severe_miles_are_equal() -> None:
-    """RR-24."""
+    """RR-24, RR-26."""
     with_high = candidate("a", ["80", "20"], [LOW, HIGH])
     without_high = candidate("b", ["100"], [LOW])
 
-    assert recommended_by(with_high, without_high) is DecidingCriterion.HIGH_MILES
+    ranking = rank_routes([with_high, without_high])
+
+    assert ranking.recommendation.deciding_criterion is DecidingCriterion.HIGH_MILES
+    assert ranking.recommendation.sentence == (
+        "Route 1 has fewer High-risk-weather miles than Route 2 (0.0 against 20.0 miles)."
+    )
 
 
 def test_rr24_lowest_average_risk_decides_when_severe_and_high_miles_are_equal() -> None:
@@ -73,7 +77,9 @@ def test_rr24_lowest_average_risk_decides_when_severe_and_high_miles_are_equal()
 
     assert ranking.recommendation.route_id == "b"
     assert ranking.recommendation.deciding_criterion is DecidingCriterion.AVERAGE_RISK
-    assert "(0.00 against 0.20 on a scale of 0 to 4)" in ranking.recommendation.sentence
+    assert ranking.recommendation.sentence == (
+        "Route 1 has a lower average risk than Route 2 (0.00 against 0.20 on a scale of 0 to 4)."
+    )
 
 
 def test_rr24_shortest_travel_time_decides_when_the_risks_are_equal() -> None:
@@ -85,7 +91,10 @@ def test_rr24_shortest_travel_time_decides_when_the_risks_are_equal() -> None:
 
     assert ranking.recommendation.route_id == "b"
     assert ranking.recommendation.deciding_criterion is DecidingCriterion.TRAVEL_TIME
-    assert "(60 against 70 minutes)" in ranking.recommendation.sentence
+    assert (
+        ranking.recommendation.sentence
+        == "Route 1 is quicker: 1 h 0 min against 1 h 10 min for Route 2."
+    )
 
 
 def test_rr25_shorter_distance_wins_when_the_travel_time_is_equal_to_the_minute() -> None:
@@ -97,7 +106,9 @@ def test_rr25_shorter_distance_wins_when_the_travel_time_is_equal_to_the_minute(
 
     assert ranking.recommendation.route_id == "b"
     assert ranking.recommendation.deciding_criterion is DecidingCriterion.DISTANCE
-    assert "(100.0 against 101.0 miles)" in ranking.recommendation.sentence
+    assert ranking.recommendation.sentence == (
+        "Route 1 is shorter than Route 2 (100.0 against 101.0 miles)."
+    )
 
 
 def test_rr25_the_providers_order_decides_when_everything_else_is_equal() -> None:
@@ -110,6 +121,9 @@ def test_rr25_the_providers_order_decides_when_everything_else_is_equal() -> Non
     assert ranking.recommendation.route_id == "a"
     assert ranking.recommendation.deciding_criterion is DecidingCriterion.PROVIDER_ORDER
     assert ranking.display_order == (RankedRoute("a", 1), RankedRoute("b", 2))
+    assert ranking.recommendation.sentence == (
+        "Route 1 ties with Route 2 on every measure, so the provider's first is used."
+    )
 
 
 def test_rr25_miles_that_differ_by_less_than_a_tenth_of_a_mile_count_as_equal() -> None:
@@ -147,8 +161,10 @@ def test_rr26_a_trip_with_one_route_is_not_told_it_beat_other_routes() -> None:
 
     sentence = ranking.recommendation.sentence
     assert ranking.recommendation.deciding_criterion is DecidingCriterion.ONLY_ELIGIBLE
-    assert sentence.startswith("Recommended because it is the only route found")
-    assert "without" not in sentence
+    assert sentence == (
+        "Route 1 is the only route found, and it has no No Travel conditions "
+        "and enough weather data."
+    )
 
 
 def test_rr26_an_only_eligible_route_next_to_blocked_ones_keeps_its_sentence() -> None:
@@ -158,7 +174,9 @@ def test_rr26_an_only_eligible_route_next_to_blocked_ones_keeps_its_sentence() -
 
     sentence = rank_routes([blocked, open_road]).recommendation.sentence
 
-    assert "the only route without No Travel conditions" in sentence
+    assert sentence == (
+        "Route 1 is the only route without No Travel conditions and with enough weather data."
+    )
 
 
 def test_rr23_ranked_routes_come_first_then_ineligible_routes_least_bad_first() -> None:

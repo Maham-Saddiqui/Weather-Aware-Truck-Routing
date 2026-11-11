@@ -5,9 +5,8 @@ from enum import StrEnum
 
 from domain.levels import Level
 from domain.summary import IneligibleReason, RouteSummary
-from domain.units import miles_from_metres
+from domain.units import miles_from_metres, travel_time_text, whole_minutes
 
-SECONDS_PER_MINUTE = 60
 UNRATED_AVERAGE_RISK = Decimal(Level.NO_TRAVEL + 1)
 
 
@@ -71,30 +70,30 @@ class ComparisonValues:
     distance: Decimal
 
 
-# Plain wording of each ranking criterion: the reason, then the unit of the compared numbers.
-WORDING_BY_CRITERION = {
+# Plain wording of each ranking criterion; {ahead} and {behind} are the compared numbers.
+SENTENCE_BY_CRITERION = {
     DecidingCriterion.SEVERE_MILES: (
-        "it has fewer Severe-weather miles than the next best route",
-        "miles",
+        "{winner} has fewer Severe-weather miles than {runner_up} ({ahead} against {behind} miles)"
     ),
     DecidingCriterion.HIGH_MILES: (
-        "it has fewer High-risk-weather miles than the next best route",
-        "miles",
+        "{winner} has fewer High-risk-weather miles than {runner_up} "
+        "({ahead} against {behind} miles)"
     ),
     DecidingCriterion.AVERAGE_RISK: (
-        "it has a lower average risk than the next best route",
-        "on a scale of 0 to 4",
+        "{winner} has a lower average risk than {runner_up} "
+        "({ahead} against {behind} on a scale of 0 to 4)"
     ),
-    DecidingCriterion.TRAVEL_TIME: ("it is quicker than the next best route", "minutes"),
-    DecidingCriterion.DISTANCE: ("it is shorter than the next best route", "miles"),
+    DecidingCriterion.TRAVEL_TIME: "{winner} is quicker: {ahead} against {behind} for {runner_up}",
+    DecidingCriterion.DISTANCE: (
+        "{winner} is shorter than {runner_up} ({ahead} against {behind} miles)"
+    ),
 }
-TIED_REASON = "it ties with the next best route on every measure, so the provider's first is used"
+TIED_REASON = "{winner} ties with {runner_up} on every measure, so the provider's first is used"
 ONLY_ELIGIBLE_REASON = (
-    "it is the only route without No Travel conditions and with enough weather data"
+    "{winner} is the only route without No Travel conditions and with enough weather data"
 )
-
 ONLY_ROUTE_REASON = (
-    "it is the only route found, and it has no No Travel conditions and enough weather data"
+    "{winner} is the only route found, and it has no No Travel conditions and enough weather data"
 )
 
 NO_ROUTE_SENTENCES = {
@@ -128,12 +127,11 @@ def _comparison_values(summary: RouteSummary) -> ComparisonValues:
     """RR-25: miles to 0.1, average risk to 0.01, travel time to whole minutes."""
     metres = summary.metres_by_level
     average_risk = UNRATED_AVERAGE_RISK if summary.average_risk is None else summary.average_risk
-    minutes = (summary.travel_time_s + SECONDS_PER_MINUTE // 2) // SECONDS_PER_MINUTE
     return ComparisonValues(
         severe_miles=miles_from_metres(metres.severe),
         high_miles=miles_from_metres(metres.high),
         average_risk=average_risk,
-        travel_time=Decimal(minutes),
+        travel_time=Decimal(whole_minutes(summary.travel_time_s)),
         distance=miles_from_metres(summary.distance_m),
     )
 
@@ -151,28 +149,43 @@ def _least_bad_key(candidate: Candidate) -> tuple[Decimal, ComparisonValues]:
 
 def _recommend(eligible: list[Candidate], candidates: Sequence[Candidate]) -> Recommendation:
     winner = eligible[0]
-    criterion, reason = _why_it_won(eligible, len(candidates))
-    sentence = f"Recommended because {reason}.{_data_coverage_note(winner, candidates)}"
+    criterion, sentence = _why_it_won(eligible, len(candidates))
+    full_sentence = f"{sentence}.{_data_coverage_note(winner, candidates)}"
     return Recommendation(
-        RecommendationStatus.RECOMMENDED, winner.route_id, None, criterion, sentence
+        RecommendationStatus.RECOMMENDED, winner.route_id, None, criterion, full_sentence
     )
 
 
+NAMES = {"winner": "Route 1", "runner_up": "Route 2"}
+
+
 def _why_it_won(eligible: list[Candidate], route_count: int) -> tuple[DecidingCriterion, str]:
-    """RR-26: the first criterion on which the winner differs from the runner-up."""
+    """RR-26: the first criterion on which the winner differs from the runner-up.
+
+    Ranked routes come first in the display order: the winner is Route 1, the runner-up Route 2.
+    """
     if route_count == 1:
-        return DecidingCriterion.ONLY_ELIGIBLE, ONLY_ROUTE_REASON
+        return DecidingCriterion.ONLY_ELIGIBLE, ONLY_ROUTE_REASON.format(**NAMES)
     if len(eligible) == 1:
-        return DecidingCriterion.ONLY_ELIGIBLE, ONLY_ELIGIBLE_REASON
-    ahead = _comparison_values(eligible[0].summary)
-    behind = _comparison_values(eligible[1].summary)
+        return DecidingCriterion.ONLY_ELIGIBLE, ONLY_ELIGIBLE_REASON.format(**NAMES)
+    return _first_difference(eligible[0].summary, eligible[1].summary)
+
+
+def _first_difference(ahead: RouteSummary, behind: RouteSummary) -> tuple[DecidingCriterion, str]:
+    ahead_values, behind_values = _comparison_values(ahead), _comparison_values(behind)
     for field in fields(ComparisonValues):
-        winning, losing = getattr(ahead, field.name), getattr(behind, field.name)
+        winning, losing = getattr(ahead_values, field.name), getattr(behind_values, field.name)
         if winning != losing:
             criterion = DecidingCriterion(field.name)
-            reason, unit = WORDING_BY_CRITERION[criterion]
-            return criterion, f"{reason} ({winning} against {losing} {unit})"
-    return DecidingCriterion.PROVIDER_ORDER, TIED_REASON
+            if criterion is DecidingCriterion.TRAVEL_TIME:
+                winning, losing = _times_as_text(ahead, behind)
+            sentence = SENTENCE_BY_CRITERION[criterion]
+            return criterion, sentence.format(**NAMES, ahead=winning, behind=losing)
+    return DecidingCriterion.PROVIDER_ORDER, TIED_REASON.format(**NAMES)
+
+
+def _times_as_text(ahead: RouteSummary, behind: RouteSummary) -> tuple[str, str]:
+    return travel_time_text(ahead.travel_time_s), travel_time_text(behind.travel_time_s)
 
 
 def _data_coverage_note(winner: Candidate, candidates: Sequence[Candidate]) -> str:
