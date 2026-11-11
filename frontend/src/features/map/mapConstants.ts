@@ -16,3 +16,8 @@ export const ROUTE_HIT_WIDTH_PX = 22
 // Heatmap circles grow with zoom so a 25 mile spacing stays a continuous band at every zoom.
 export const HEATMAP_RADIUS_STOPS_ZOOM_PX = [3, 12, 6, 26, 9, 70] as const
 export const HEATMAP_BLUR = 0.9
+
+// The truck pin stands about 63 px above its point, so the truck is kept this far below the top edge.
+export const FOLLOW_TOP_CLEARANCE_PX = 80
+export const FOLLOW_EDGE_CLEARANCE_PX = 24
+export const FOLLOW_EASE_MS = 600
