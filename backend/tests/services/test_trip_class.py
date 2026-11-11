@@ -13,7 +13,7 @@ from providers.routing.port import RoutePreference
 from providers.routing.tomtom import TomTomRouting
 from services import trip_class
 from services.compare_trip import plan_compare_trip
-from services.trip_class import LONG_TRIP, NORMAL_TRIP, classify
+from services.trip_class import LONG_TRIP, MAX_ROUTES_SHOWN, NORMAL_TRIP, classify
 from services.trip_request import TripRequest
 from tests.fakes.trips import route_bent, tomtom_answering, trip_environment, trip_request
 from tests.providers.test_tomtom import route_payload
@@ -49,10 +49,11 @@ def test_a_trip_just_over_1000_straight_line_miles_is_a_long_trip() -> None:
     assert classify(trip_of_miles(1001)).long_trip
 
 
-def test_a_long_trip_asks_for_one_alternative_waits_longer_and_skips_eco() -> None:
+def test_a_long_trip_asks_for_the_same_alternatives_as_a_normal_trip_and_waits_longer() -> None:
     """REQ-03"""
-    assert (LONG_TRIP.alternatives, LONG_TRIP.asks_for_eco_routes) == (1, False)
-    assert (NORMAL_TRIP.alternatives, NORMAL_TRIP.asks_for_eco_routes) == (2, True)
+    assert LONG_TRIP.alternatives == NORMAL_TRIP.alternatives == MAX_ROUTES_SHOWN - 1
+    assert LONG_TRIP.asks_for_eco_routes is False
+    assert NORMAL_TRIP.asks_for_eco_routes is True
     assert LONG_TRIP.alternatives_read_timeout_s > NORMAL_TRIP.alternatives_read_timeout_s
     assert (LONG_TRIP.deadline_s, NORMAL_TRIP.deadline_s) == (40.0, None)
 
@@ -72,14 +73,14 @@ def tomtom_over_a_recording_transport() -> tuple[TomTomRouting, list[httpx.Reque
     return TomTomRouting("fake-key-for-tests", make_client(8.0, httpx.MockTransport(handler))), seen
 
 
-def test_a_long_trip_sends_one_alternatives_call_with_one_alternative_and_the_long_wait() -> None:
+def test_a_long_trip_sends_one_alternatives_call_with_two_alternatives_and_the_long_wait() -> None:
     """REQ-03, BE-08"""
     tomtom, seen = tomtom_over_a_recording_transport()
 
     plan_compare_trip(trip_environment(routing=tomtom), trip_of_miles(1500))
 
     (request,) = seen
-    assert request.url.params["maxAlternatives"] == "1"
+    assert request.url.params["maxAlternatives"] == "2"
     assert request.url.params["routeType"] == "fastest"
     assert request.extensions["timeout"]["read"] == LONG_TRIP.alternatives_read_timeout_s
 
@@ -105,4 +106,4 @@ def test_a_long_trip_never_calls_tomtom_for_eco_routes() -> None:
     plan_compare_trip(trip_environment(routing=tomtom), trip_of_miles(1500))
 
     assert {query.preference for query in tomtom.calls} == {RoutePreference.FASTEST}
-    assert {query.max_alternatives for query in tomtom.calls} == {1}
+    assert {query.max_alternatives for query in tomtom.calls} == {2}

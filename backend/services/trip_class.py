@@ -6,6 +6,7 @@ from domain.units import WHOLE_NUMBER, round_half_up
 from services.trip_request import TripRequest
 
 MAX_ROUTES_SHOWN = 3
+ALTERNATIVES_ASKED = MAX_ROUTES_SHOWN - 1
 
 # TomTom's compute time grows with route length and with options. On the live server about 920
 # straight-line miles answered with alternatives in about 6 s; about 1,375 timed out at 8 s.
@@ -33,19 +34,19 @@ class TripClass:
 NORMAL_TRIP = TripClass(
     long_trip=False,
     straight_line_miles=0,
-    alternatives=MAX_ROUTES_SHOWN - 1,
+    alternatives=ALTERNATIVES_ASKED,
     alternatives_read_timeout_s=12.0,
     asks_for_eco_routes=True,
     deadline_s=None,
 )
 
-# Long trips ask for less work and wait longer. TomTom cancels a request at about 30 s itself, so
-# the wait plus the connect time stays under 25 s. The whole trip (routing, the 8 s single-route
-# fallback, weather and rating) must fit in the deadline.
+# Long trips ask for the same alternatives and wait longer. TomTom cancels a request at about 30 s
+# itself, so the wait plus the connect time stays under 25 s. The whole trip (routing, the
+# fallbacks, weather and rating) must fit in the deadline.
 LONG_TRIP = TripClass(
     long_trip=True,
     straight_line_miles=0,
-    alternatives=1,
+    alternatives=ALTERNATIVES_ASKED,
     alternatives_read_timeout_s=22.0,
     asks_for_eco_routes=False,
     deadline_s=40.0,
