@@ -1,14 +1,20 @@
 import { useState } from 'react'
 import { useTripResults } from '../features/route-results'
 import type { TripRequest, TripRun } from '../shared/types'
+import { encodeTrip, parseTrip } from './tripUrl'
 
 interface Selection {
   routeId: string | null
   checkpointIndex: number | null
 }
 
+function restoreRun(): TripRun | null {
+  const trip = parseTrip(window.location.search)
+  return trip && { trip, runId: 1 }
+}
+
 export function useTripPlanner() {
-  const [run, setRun] = useState<TripRun | null>(null)
+  const [run, setRun] = useState<TripRun | null>(restoreRun)
   const [selection, setSelection] = useState<Selection>({ routeId: null, checkpointIndex: null })
   const [hourOffset, setHourOffset] = useState(0)
   const results = useTripResults(run)
@@ -25,6 +31,7 @@ export function useTripPlanner() {
     hourOffset,
     setHourOffset,
     submit: (trip: TripRequest) => {
+      window.history.replaceState(null, '', `?${encodeTrip(trip)}`)
       setRun((previous) => ({ trip, runId: (previous?.runId ?? 0) + 1 }))
       setHourOffset(0)
     },

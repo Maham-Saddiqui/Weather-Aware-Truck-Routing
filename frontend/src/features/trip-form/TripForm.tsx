@@ -15,7 +15,7 @@ interface TripFormProps {
 
 export function TripForm({ initialTrip, isBusy, onSubmit }: TripFormProps) {
   const isPhone = useMediaQuery(useTheme().breakpoints.down('md'))
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(initialTrip !== null)
   const form = useTripForm(initialTrip, (trip) => {
     setIsCollapsed(true)
     onSubmit(trip)
