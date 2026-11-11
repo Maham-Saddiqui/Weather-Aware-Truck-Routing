@@ -7,7 +7,13 @@ const RouteMap = lazy(() =>
   import('../features/map').then((module) => ({ default: module.RouteMap })),
 )
 
-export function MapPane({ planner }: { planner: TripPlannerState }) {
+export function MapPane({
+  planner,
+  hourOffset,
+}: {
+  planner: TripPlannerState
+  hourOffset: number
+}) {
   return (
     <ErrorBoundary area="the map">
       <Suspense fallback={<Skeleton variant="rectangular" height="100%" />}>
@@ -16,7 +22,7 @@ export function MapPane({ planner }: { planner: TripPlannerState }) {
           selectedRouteId={planner.selectedRouteId}
           selectedCheckpointIndex={planner.selectedCheckpointIndex}
           heatmap={planner.results.heatmap}
-          hourOffset={planner.hourOffset}
+          hourOffset={hourOffset}
           onSelectRoute={planner.selectRoute}
           onSelectCheckpoint={planner.selectCheckpoint}
         />

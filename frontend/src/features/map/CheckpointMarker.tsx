@@ -4,12 +4,12 @@ import Tooltip from '@mui/material/Tooltip'
 import { Marker } from '@vis.gl/react-maplibre'
 import { memo } from 'react'
 import { RISK_COLOURS } from '../../shared/colours'
+import { MIN_TOUCH_TARGET_PX } from '../../shared/constants'
 import { LEVEL_LABELS, RiskIcon } from '../../shared/risk'
 import type { Checkpoint } from '../../shared/types'
 import { CheckpointCard } from './CheckpointCard'
 import { formatEta } from './formatEta'
 
-const TOUCH_TARGET_PX = 44
 const DOT_PX = 24
 const SELECTED_DOT_PX = 34
 
@@ -29,10 +29,11 @@ function CheckpointMarkerView({ checkpoint, isSelected, onSelect }: CheckpointMa
         <ButtonBase
           aria-label={label}
           aria-pressed={isSelected}
+          tabIndex={-1}
           onClick={() => {
             onSelect(index)
           }}
-          sx={{ width: TOUCH_TARGET_PX, height: TOUCH_TARGET_PX, borderRadius: '50%' }}
+          sx={{ width: MIN_TOUCH_TARGET_PX, height: MIN_TOUCH_TARGET_PX, borderRadius: '50%' }}
         >
           <Box
             sx={{

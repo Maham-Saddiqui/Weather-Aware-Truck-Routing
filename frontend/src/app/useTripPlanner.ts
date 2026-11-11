@@ -16,7 +16,6 @@ function restoreRun(): TripRun | null {
 export function useTripPlanner() {
   const [run, setRun] = useState<TripRun | null>(restoreRun)
   const [selection, setSelection] = useState<Selection>({ routeId: null, checkpointIndex: null })
-  const [hourOffset, setHourOffset] = useState(0)
   const results = useTripResults(run)
 
   const selectRoute = useCallback((routeId: string) => {
@@ -35,12 +34,9 @@ export function useTripPlanner() {
     selectedRouteId,
     selectedCheckpointIndex:
       selection.routeId === selectedRouteId ? selection.checkpointIndex : null,
-    hourOffset,
-    setHourOffset,
     submit: (trip: TripRequest) => {
       window.history.replaceState(null, '', `?${encodeTrip(trip)}`)
       setRun((previous) => ({ trip, runId: (previous?.runId ?? 0) + 1 }))
-      setHourOffset(0)
     },
     retry: () => {
       setRun((previous) => (previous ? { ...previous, runId: previous.runId + 1 } : null))

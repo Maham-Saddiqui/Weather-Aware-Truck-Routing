@@ -1,8 +1,7 @@
-import { styled } from '@mui/material/styles'
+import { styled, useTheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ReactNode } from 'react'
-import { PHONE_MAP_HEIGHT_PX } from '../shared/constants'
 
-const MAP_MIN_HEIGHT_PX = 280
 const PANEL_WIDTH_TABLET_PX = 340
 const PANEL_WIDTH_DESKTOP_PX = 460
 
@@ -35,60 +34,29 @@ const Panel = styled('div')(({ theme }) => ({
   },
 }))
 
-const FormSlot = styled('section')(({ theme }) => ({
-  order: 1,
+const Slot = styled('section')(({ theme }) => ({
   padding: theme.spacing(2),
-  [theme.breakpoints.up('md')]: { order: 0, padding: 0 },
-}))
-
-const ResultsSlot = styled('section')(({ theme }) => ({
-  order: 3,
-  padding: theme.spacing(2),
-  [theme.breakpoints.up('md')]: { order: 0, padding: 0 },
-}))
-
-const MapArea = styled('div')(({ theme }) => ({
-  order: 2,
-  position: 'relative',
-  [theme.breakpoints.up('md')]: { order: 0, minHeight: MAP_MIN_HEIGHT_PX },
-}))
-
-const MapFrame = styled('div')(({ theme }) => ({
-  height: PHONE_MAP_HEIGHT_PX,
-  [theme.breakpoints.up('md')]: { position: 'absolute', inset: 0, height: 'auto' },
-}))
-
-const SliderDock = styled('div')(({ theme }) => ({
-  padding: theme.spacing(1, 2),
-  backgroundColor: theme.palette.background.paper,
-  [theme.breakpoints.up('md')]: {
-    position: 'absolute',
-    left: theme.spacing(2),
-    right: theme.spacing(2),
-    bottom: theme.spacing(3),
-    borderRadius: theme.shape.borderRadius,
-    border: `1px solid ${theme.palette.divider}`,
-  },
+  [theme.breakpoints.up('md')]: { padding: 0 },
 }))
 
 interface PlannerLayoutProps {
   form: ReactNode
   results: ReactNode
   map: ReactNode
-  slider: ReactNode | null
 }
 
-export function PlannerLayout({ form, results, map, slider }: PlannerLayoutProps) {
+// On a phone the map sits between the form and the results; the page order follows what is on screen (WCAG 2.4.3).
+export function PlannerLayout({ form, results, map }: PlannerLayoutProps) {
+  const isPhone = useMediaQuery(useTheme().breakpoints.down('md'))
+  const resultsSlot = <Slot aria-label="Route results">{results}</Slot>
   return (
     <Workspace>
       <Panel>
-        <FormSlot aria-label="Trip details">{form}</FormSlot>
-        <ResultsSlot aria-label="Route results">{results}</ResultsSlot>
+        <Slot aria-label="Trip details">{form}</Slot>
+        {!isPhone && resultsSlot}
       </Panel>
-      <MapArea>
-        <MapFrame>{map}</MapFrame>
-        {slider !== null && <SliderDock>{slider}</SliderDock>}
-      </MapArea>
+      {map}
+      {isPhone && resultsSlot}
     </Workspace>
   )
 }
