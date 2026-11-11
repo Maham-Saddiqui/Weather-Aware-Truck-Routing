@@ -19,14 +19,17 @@ MILES_LOGGED_IN_STEPS_OF = 10
 class TripClass:
     """How much routing work a trip gets: long trips ask for less work and may wait longer.
 
-    A deadline of None means the trip runner's normal deadline.
+    A deadline of None means the trip runner's normal deadline. The eco call is a bonus beside
+    the fastest call; on long trips it asks for no alternatives and waits the client's normal
+    time (read timeout None), so it finishes long before the fastest call gives up.
     """
 
     long_trip: bool
     straight_line_miles: int
     alternatives: int
     alternatives_read_timeout_s: float
-    asks_for_eco_routes: bool
+    eco_alternatives: int
+    eco_read_timeout_s: float | None
     deadline_s: float | None
 
 
@@ -36,7 +39,8 @@ NORMAL_TRIP = TripClass(
     straight_line_miles=0,
     alternatives=ALTERNATIVES_ASKED,
     alternatives_read_timeout_s=12.0,
-    asks_for_eco_routes=True,
+    eco_alternatives=ALTERNATIVES_ASKED,
+    eco_read_timeout_s=12.0,
     deadline_s=None,
 )
 
@@ -48,7 +52,8 @@ LONG_TRIP = TripClass(
     straight_line_miles=0,
     alternatives=ALTERNATIVES_ASKED,
     alternatives_read_timeout_s=22.0,
-    asks_for_eco_routes=False,
+    eco_alternatives=0,
+    eco_read_timeout_s=None,
     deadline_s=40.0,
 )
 

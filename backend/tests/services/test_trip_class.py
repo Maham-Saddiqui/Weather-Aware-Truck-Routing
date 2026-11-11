@@ -9,16 +9,16 @@ from domain.constants import METRES_PER_MILE
 from domain.distance import EARTH_RADIUS_M
 from domain.types import GeoPoint
 from providers.http import make_client
-from providers.routing.port import RoutePreference
 from providers.routing.tomtom import TomTomRouting
 from services import trip_class
 from services.compare_trip import plan_compare_trip
 from services.trip_class import LONG_TRIP, MAX_ROUTES_SHOWN, NORMAL_TRIP, classify
 from services.trip_request import TripRequest
-from tests.fakes.trips import route_bent, tomtom_answering, trip_environment, trip_request
+from tests.fakes.trips import trip_environment, trip_request
 from tests.providers.test_tomtom import route_payload
 
 START = GeoPoint(30.0, -100.0)
+EXPECTED_CLIENT_READ_TIMEOUT_S = 8.0
 
 
 def trip_of_miles(miles: float) -> TripRequest:
@@ -49,11 +49,10 @@ def test_a_trip_just_over_1000_straight_line_miles_is_a_long_trip() -> None:
     assert classify(trip_of_miles(1001)).long_trip
 
 
-def test_a_long_trip_asks_for_the_same_alternatives_as_a_normal_trip_and_waits_longer() -> None:
+def test_a_long_trip_asks_for_the_same_alternatives_waits_longer_and_asks_eco_for_none() -> None:
     """REQ-03"""
     assert LONG_TRIP.alternatives == NORMAL_TRIP.alternatives == MAX_ROUTES_SHOWN - 1
-    assert LONG_TRIP.asks_for_eco_routes is False
-    assert NORMAL_TRIP.asks_for_eco_routes is True
+    assert (LONG_TRIP.eco_alternatives, NORMAL_TRIP.eco_alternatives) == (0, 2)
     assert LONG_TRIP.alternatives_read_timeout_s > NORMAL_TRIP.alternatives_read_timeout_s
     assert (LONG_TRIP.deadline_s, NORMAL_TRIP.deadline_s) == (40.0, None)
 
@@ -70,19 +69,23 @@ def tomtom_over_a_recording_transport() -> tuple[TomTomRouting, list[httpx.Reque
         seen.append(request)
         return httpx.Response(200, json={"routes": [route_payload()]})
 
-    return TomTomRouting("fake-key-for-tests", make_client(8.0, httpx.MockTransport(handler))), seen
+    return TomTomRouting(
+        "fake-key-for-tests",
+        make_client(EXPECTED_CLIENT_READ_TIMEOUT_S, httpx.MockTransport(handler)),
+    ), seen
 
 
-def test_a_long_trip_sends_one_alternatives_call_with_two_alternatives_and_the_long_wait() -> None:
+def test_a_long_trip_sends_fastest_with_two_alternatives_and_eco_alone_each_with_its_wait() -> None:
     """REQ-03, BE-08"""
     tomtom, seen = tomtom_over_a_recording_transport()
 
     plan_compare_trip(trip_environment(routing=tomtom), trip_of_miles(1500))
 
-    (request,) = seen
-    assert request.url.params["maxAlternatives"] == "2"
-    assert request.url.params["routeType"] == "fastest"
-    assert request.extensions["timeout"]["read"] == LONG_TRIP.alternatives_read_timeout_s
+    by_type = {request.url.params["routeType"]: request for request in seen}
+    assert by_type["fastest"].url.params["maxAlternatives"] == "2"
+    assert by_type["fastest"].extensions["timeout"]["read"] == LONG_TRIP.alternatives_read_timeout_s
+    assert by_type["eco"].url.params["maxAlternatives"] == "0"
+    assert by_type["eco"].extensions["timeout"]["read"] == EXPECTED_CLIENT_READ_TIMEOUT_S
 
 
 def test_a_normal_trip_sends_fastest_and_eco_calls_with_two_alternatives_and_the_normal_wait() -> (
@@ -97,13 +100,3 @@ def test_a_normal_trip_sends_fastest_and_eco_calls_with_two_alternatives_and_the
     assert {request.url.params["routeType"] for request in seen} == {"fastest", "eco"}
     waits = {request.extensions["timeout"]["read"] for request in seen}
     assert waits == {NORMAL_TRIP.alternatives_read_timeout_s}
-
-
-def test_a_long_trip_never_calls_tomtom_for_eco_routes() -> None:
-    """REQ-03"""
-    tomtom = tomtom_answering((route_bent(0.0),), (route_bent(0.6),))
-
-    plan_compare_trip(trip_environment(routing=tomtom), trip_of_miles(1500))
-
-    assert {query.preference for query in tomtom.calls} == {RoutePreference.FASTEST}
-    assert {query.max_alternatives for query in tomtom.calls} == {2}

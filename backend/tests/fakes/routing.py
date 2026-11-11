@@ -43,6 +43,36 @@ def straight_route(
     return ProviderRoute(geometry, path, distance_m, travel_time_s, progress)
 
 
+class ScriptedRouting:
+    """Answers per (preference, alternatives asked) with routes or a scripted failure.
+
+    A call nobody scripted fails the test with a KeyError. Every call is recorded.
+    """
+
+    def __init__(
+        self,
+        outcomes: Mapping[tuple[RoutePreference, int], Outcome],
+        name: RoutingProviderName = RoutingProviderName.TOMTOM,
+    ) -> None:
+        self.name = name
+        self.outcomes = dict(outcomes)
+        self.calls: list[RouteQuery] = []
+
+    def routes(self, query: RouteQuery) -> tuple[ProviderRoute, ...]:
+        self.calls.append(query)
+        outcome = self.outcomes[(query.preference, query.max_alternatives)]
+        if isinstance(outcome, RoutingError):
+            raise outcome
+        return outcome
+
+    def asked(self, preference: RoutePreference, alternatives: int) -> list[RouteQuery]:
+        return [
+            call
+            for call in self.calls
+            if (call.preference, call.max_alternatives) == (preference, alternatives)
+        ]
+
+
 class FakeRouting:
     """Answers per route preference with routes or a scripted failure, and records every call.
 
