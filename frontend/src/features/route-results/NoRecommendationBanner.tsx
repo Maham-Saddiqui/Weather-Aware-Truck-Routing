@@ -13,7 +13,7 @@ interface NoRecommendationBannerProps {
 }
 
 const WEATHER_PROBLEM_ENDINGS: Partial<Record<WeatherStatus, string>> = {
-  busy: 'The weather service is busy, so no route could be rated. Try again in a minute.',
+  busy: 'The weather service is busy, so no route could be rated. Try again in a few minutes, or later if it stays busy.',
   unavailable: 'Weather data is unavailable, so no route could be rated. Try again in a minute.',
 }
 

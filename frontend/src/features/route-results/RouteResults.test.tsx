@@ -257,7 +257,11 @@ describe('states (REQ-10, REQ-12)', () => {
   it('shows the weather states in plain words', () => {
     renderResults(resultsWith({ weather: 'busy' }))
 
-    expect(screen.getByText('Weather service busy, try again in a minute')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Weather service busy, try again in a few minutes, or later if it stays busy',
+      ),
+    ).toBeInTheDocument()
   })
 
   it.each([

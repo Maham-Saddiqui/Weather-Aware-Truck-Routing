@@ -12,8 +12,9 @@ export const LABEL_HALO_COLOUR = '#0b1623'
 export const LABEL_HALO_WIDTH_PX = 1.6
 
 export const FIT_PADDING_PX = 56
-// The forecast panel floating over the bottom of the map on wide screens is about 100 px tall.
-export const FIT_BOTTOM_CLEARANCE_PX = 100
+// The forecast panel floating over the bottom of the map on wide screens is about 125 px tall with its reserved
+// arrival row, and the destination pin's city label hangs about 24 px below its point.
+export const FIT_BOTTOM_CLEARANCE_PX = 124
 // Measured in a browser: the legend sits 8 px below the top edge and is about 60 px tall, at wide and phone widths alike.
 export const LEGEND_BOTTOM_PX = 68
 // The truck pin stands about 63 px above its point, so a route start under the legend would hide the pin.

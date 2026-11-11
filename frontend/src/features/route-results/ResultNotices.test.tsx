@@ -125,9 +125,15 @@ describe('trying again when the weather service cannot rate the routes (REQ-12, 
   it('keeps the notice text inside one polite live region, announced once', () => {
     renderResults(resultsWith({ weather: 'busy' }))
 
-    const text = screen.getByText('Weather service busy, try again in a minute')
+    const text = screen.getByText(
+      'Weather service busy, try again in a few minutes, or later if it stays busy',
+    )
 
-    expect(screen.getAllByText('Weather service busy, try again in a minute')).toHaveLength(1)
+    expect(
+      screen.getAllByText(
+        'Weather service busy, try again in a few minutes, or later if it stays busy',
+      ),
+    ).toHaveLength(1)
     expect(text.closest('[aria-live="polite"]')).not.toBeNull()
   })
 })

@@ -37,7 +37,7 @@ describe('advice when no route is recommended (RR-23)', () => {
 
     expect(
       screen.getByText(
-        /The weather service is busy, so no route could be rated\. Try again in a minute\./,
+        /The weather service is busy, so no route could be rated\. Try again in a few minutes, or later if it stays busy\./,
       ),
     ).toBeInTheDocument()
     expect(screen.queryByText(/Leaving later may help/)).not.toBeInTheDocument()

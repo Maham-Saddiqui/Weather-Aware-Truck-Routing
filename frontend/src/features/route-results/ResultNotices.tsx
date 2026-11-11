@@ -38,7 +38,7 @@ const WEATHER_NOTICES: Record<WeatherStatus, Notice | null> = {
   },
   busy: {
     severity: 'warning',
-    text: 'Weather service busy, try again in a minute',
+    text: 'Weather service busy, try again in a few minutes, or later if it stays busy',
     canRetry: true,
   },
 }
