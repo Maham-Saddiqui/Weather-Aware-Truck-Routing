@@ -48,7 +48,7 @@ Front end: `app` (shell, theme, providers) and `features/*` (trip form, route re
 2. The driver submits. The browser sends **two requests at once** with the same body: `POST /trips/primary` and `POST /trips/compare`.
 3. **Primary** (fast path): validate; one TomTom call (fastest, no alternatives, truck, weight); build checkpoints (RR-12 to RR-15); one batched weather call for the checkpoint and heatmap points; rate each checkpoint; summarise; return one route.
 4. The browser draws the primary route with risk colours as soon as it arrives.
-5. **Compare** (full result): validate; two TomTom calls in parallel (fastest with alternatives, and eco with alternatives); the server waits for the eco call only if the first returned fewer than 3 distinct routes; de-duplicate; keep up to 3 routes chosen for variety (always the fastest, then the routes that overlap least with those already kept; weather is not known yet, so "best" can only mean fastest, which would throw away the slower route around a storm); one batched weather call for all routes' checkpoint and heatmap points; rate, summarise, rank, recommend, and build the single de-duplicated heatmap.
+5. **Compare** (full result): validate; two TomTom calls in parallel (fastest with alternatives, and eco with alternatives; on long trips eco without alternatives, section 6); the server waits for the eco call only if the first returned fewer than 3 distinct routes; de-duplicate; keep up to 3 routes chosen for variety (always the fastest, then the routes that overlap least with those already kept; weather is not known yet, so "best" can only mean fastest, which would throw away the slower route around a storm); one batched weather call for all routes' checkpoint and heatmap points; rate, summarise, rank, recommend, and build the single de-duplicated heatmap.
 6. The browser replaces the primary view with the full result. Routes are matched by `id` (a hash of the geometry), so the driver's selection survives. Ordering rules: a late primary response is ignored once compare has arrived; if compare fails but primary succeeded, the primary route stays and the screen says alternatives are unavailable; the compare response always wins, so if it ran in backup mode the whole view switches to backup mode (TomTom and Valhalla routes never appear side by side).
 7. Heatmap data is **one list per response**, built on the server from all routes' heatmap points with duplicates removed (routes share roads near the start and end, and a heatmap adds overlapping points up, so a list per route would glow hotter on shared stretches even in calm weather). Each point carries 49 hourly risk digits (section 7). The slider only changes which hour is displayed; no network, no recomputation.
 
@@ -89,7 +89,7 @@ Errors use one problem format (RFC 9457 style). Decimals are strings (section 8)
 - Deadline: the weather fetch has a 12 s total deadline, checked before each chunk of up to 200 locations (a chunk starts only if at least one read timeout, 5 s, remains). Cells fetched before the deadline are kept (partial data, the rest shows "No data"); if no chunk could start the weather is unavailable.
 - Cache: in-memory, key = cell, value = the whole window kept as compact raw text and parsed into exact decimals only when used (240 hours of 5 values as Python decimal objects would take about 100 KB per cell, and the free server has 512 MB), time to live about one hour, size capped in cells (least recently used). Memory use and download size (a 10-day window is about 4 times a 2 to 3 day one) are measured after the first deploy. Repeat trips and the example trips then cost no provider calls. Weather only (SEC-08).
 - Quota: the free allowance is 600 calls a minute, 5,000 an hour and 10,000 a day (confirmed on the provider's pricing page). A multi-location request is assumed to cost one call per location, up to 1,000 locations per request (reported by the provider's maintainer, not stated on the pricing page, so we design for it). Rough cost of an uncached 880-mile trip (primary plus compare): about 150 calls at 25-mile spacing and about 370 at 10-mile spacing, so two long trips at 10-mile spacing inside one minute would hit the per-minute limit. The limits are reported to be per IP address, and Render's free servers share outgoing addresses with other customers, so others can use up the allowance. Mitigations: the cache, a modest default spacing, and the plain error message below.
-- Failure: the route is still returned with "No data" checkpoints and `weather.status` set accordingly (RR-11, RR-23). A "too many requests" reply from the weather service is its own case (`weather.status` = busy) with the plain message "Weather service busy, try again in a minute", never a generic failure.
+- Failure: the route is still returned with "No data" checkpoints and `weather.status` set accordingly (RR-11, RR-23). A "too many requests" reply from the weather service is its own case (`weather.status` = busy) with the plain message "Weather service busy, try again in a few minutes, or later if it stays busy", never a generic failure.
 
 ## 8. Data representation
 
@@ -109,7 +109,7 @@ Nothing derived from TomTom is stored: no server cache, `Cache-Control: no-store
 | TomTom says no route exists | Not a failure: answer 422 "no route found". No backup route is tried. |
 | Valhalla also fails | Problem response; the screen shows a plain message and the examples stay usable. |
 | Weather unavailable | Routes returned without ratings, no recommendation (RR-23), plain message. |
-| Weather service busy (too many requests) | Same as unavailable, with the message "Weather service busy, try again in a minute". |
+| Weather service busy (too many requests) | Same as unavailable, with the message "Weather service busy, try again in a few minutes, or later if it stays busy" and a Try again button. |
 | Photon down or throttled | Plain "suggestions unavailable" message; the one-click examples still work. |
 | Trip cap reached (4 trips in flight) | After a 1 s wait, 429 with `Retry-After`. |
 | Trip deadline exceeded (25 s, long trips 40 s) | 503 "routing unavailable". |
@@ -136,7 +136,7 @@ Server on Render (Python runtime, gunicorn with **exactly 1 worker process and s
 
 ```
 backend/    config/ (settings, urls)   trips/ (api layer)   services/   providers/   domain/   tests/
-frontend/   src/app/   src/features/{trip-form,route-results,map,heatmap-slider}/   src/shared/   tests/
+frontend/   src/app/   src/features/{trip-form,route-results,share-trip,map,heatmap-slider}/   src/shared/   (tests sit beside the code; browser tests are in frontend/e2e/)
 docs/       requirements, architecture, standards/, domain/, api/
 scripts/    checks (rule coverage), helpers
 ```
@@ -147,7 +147,7 @@ Parallel work is split by folder. An agent edits only its own folders:
 |---|---|
 | A. Risk logic | `backend/domain/`, its tests |
 | B. Providers and orchestration | `backend/providers/`, `backend/services/`, `backend/trips/`, `backend/config/`, their tests |
-| C. Shell, form, theme, results | `frontend/src/app/`, `features/trip-form/`, `features/route-results/`, `shared/` (except `shared/api/generated/`) |
+| C. Shell, form, theme, results, sharing | `frontend/src/app/`, `features/trip-form/`, `features/route-results/`, `features/share-trip/`, `shared/` (except `shared/api/generated/`) |
 | D. Map and heatmap | `frontend/src/features/map/`, `features/heatmap-slider/` |
 
 The contract (`docs/api/openapi.yaml`), the generated API types (`frontend/src/shared/api/generated/`, committed on purpose and kept in sync with the contract by a check that regenerates them and fails on any difference), tool configuration, CI and `docs/` belong to the lead.

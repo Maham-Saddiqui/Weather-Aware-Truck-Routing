@@ -29,6 +29,6 @@ Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval).
 ```
 frontend/src/
   app/       shell, theme, providers, error boundary
-  features/  trip-form/  route-results/  map/  heatmap-slider/
+  features/  trip-form/  route-results/  share-trip/  map/  heatmap-slider/
   shared/    api client, generated types, constants, small utilities
 ```

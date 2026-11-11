@@ -214,7 +214,7 @@ export interface components {
         RoutingProvider: "tomtom" | "valhalla";
         WeatherStatus: {
             /**
-             * @description ok = every checkpoint has data; partial = some checkpoints have No data; unavailable = no weather data at all; busy = the weather service answered "too many requests" and the screen says to try again in a minute
+             * @description ok = every checkpoint has data; partial = some checkpoints have No data; unavailable = no weather data at all; busy = the weather service answered "too many requests" and the screen says to try again in a few minutes
              * @enum {string}
              */
             status: "ok" | "partial" | "unavailable" | "busy";

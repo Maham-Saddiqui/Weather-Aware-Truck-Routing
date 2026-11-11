@@ -26,7 +26,7 @@ Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval).
 
 ```
 backend/
-  config/    settings, urls, wsgi
+  config/    settings, urls, wsgi, startup (checks for missing deployment settings), request_logging, container
   trips/     api layer: views, serializers, urls
   services/  one module per use case (primary trip, compare trip)
   providers/ routing/ (port, tomtom, valhalla)  weather/ (port, open_meteo)  timezone/

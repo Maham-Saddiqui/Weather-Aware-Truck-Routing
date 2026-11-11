@@ -20,7 +20,7 @@ Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval).
 | Map pan and zoom | 60 frames per second |
 | Address suggestions | at most one request per 300 ms pause, first suggestion within 0.5 s median |
 
-The map library alone is about 299 KB gzip (its worker, about 147 KB gzip, loads separately) and cannot be made smaller without dropping it; the eager first-load shell is about 195 KB against its 200 KB budget (measured 194.8 KB gzip on 2026-11-11).
+The map library alone is about 294 KB gzip (the whole map chunk, library plus map screen, is about 319 KB against its 350 KB budget; its worker, about 147 KB gzip, loads separately) and cannot be made smaller without dropping it; the eager first-load shell is about 198 KB against its 200 KB budget (measured 197.9 KB gzip after the final front-end round; about 2 KB of headroom is left).
 
 ## 1a. Measured on the live free instance (2026-11-11)
 

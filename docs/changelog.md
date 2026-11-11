@@ -84,6 +84,20 @@ None of these reaches visitors; they run in the check, in CI or on a developer's
 
 `npm audit --omit=dev` reports 0 vulnerabilities in what ships. `npm audit` for the whole tree reports 7 moderate findings, all in the developer-only lint chain (`minimatch` inside `typescript-eslint`), none in shipped code.
 
+## Documents brought in line with the final code (2026-11-11)
+
+An independent read of the documents against the code found places where a document described the solution as it was first designed and the code had moved on to a better solution. The rule applied: a change in how the solution works updates the document and is recorded here; a change that would loosen a coding, quality, security or performance standard is discussed with the owner first and is not listed here.
+
+| Document | What changed | Why | Code |
+|---|---|---|---|
+| `README.md`, "Run it locally" | The recipe for the real providers now sets the secret key, debug, hosts and origins and starts the server with `uv run --env-file ../.env`. | The server never read `.env` by itself, and `.env.example` leaves the required values empty, so the old recipe stopped at start-up. | `backend/config/settings.py`, `backend/config/startup.py` |
+| `README.md` | `make check` line lists coverage floors and bundle budgets; `make e2e` added; a paragraph on required and optional environment variables; the slider sentence says what updates per tick; the code tour lists the panel layout, the share control, the long-trip code and the start-up check. | The check grew (coverage floors, bundle budgets, browser tests) and the slider now also updates the status line, the truck pin and the checkpoint dots. | `Makefile`, `frontend/src/app/`, `backend/config/startup.py` |
+| `docs/standards/performance.md`, section 1 | Measured sizes: shell about 198 KB (197.9 KB), map library about 294 KB, whole map chunk about 319 KB. | Numbers measured after the final front-end round. | `scripts/check_bundle_size.py` |
+| `docs/architecture.md` | Busy-weather message and Try again button; the front-end layout line and the ownership table include `share-trip`; the compare step says long trips ask for eco without alternatives. | The wording was changed after a real rate-limit stall; the share control and the long-trip handling were added during the build. | `frontend/src/features/route-results/`, `frontend/src/features/share-trip/`, `backend/services/routing_choice.py` |
+| `docs/standards/frontend.md`, `docs/standards/backend.md` | Structure lists include `share-trip/` and the start-up, request-logging and container modules of `config/`. | Modules added during the build. | `frontend/src/features/share-trip/`, `backend/config/` |
+| `docs/api/openapi.yaml` (description only) | The busy-weather description says "a few minutes"; generated types regenerated. | Same wording change as the screen. | `frontend/src/features/route-results/ResultNotices.tsx` |
+| `CLAUDE.md` | The commands line lists `make check`, `make e2e` and the two rehearsal commands. | The scaffolding now defines them. | `Makefile` |
+
 ## Standards audit follow-ups done (2026-11-11)
 
 | Rule | What was done | Why it looks different from the document | Code |

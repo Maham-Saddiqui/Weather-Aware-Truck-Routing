@@ -35,7 +35,7 @@ A web app. A truck driver enters origin, destination, departure time and cargo w
 
 - Python 3.13 through `uv`, in `backend/.venv` (see `.python-version`).
 - Node 26 through nvm (see `.nvmrc`). Project-local settings put Node 26 first on `PATH`; check that `node -v` prints v26. If it prints v20, run `. "$HOME/.nvm/nvm.sh" && nvm use` first.
-- Commands (`make check`, `npm run check` and friends) are listed here once the scaffolding defines them.
+- Commands: `make check` (server, front end, bundle budgets, contract, rule coverage, secret scan: the definition of done), `make e2e` (browser tests with an accessibility scan, against the rehearsal server), `make rehearsal-server` and `make rehearsal-frontend` (the whole app on synthetic data, no keys).
 
 ## Unattended running (nights and long waits)
 

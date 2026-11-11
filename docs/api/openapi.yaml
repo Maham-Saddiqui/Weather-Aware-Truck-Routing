@@ -440,7 +440,7 @@ components:
         status:
           type: string
           enum: [ok, partial, unavailable, busy]
-          description: 'ok = every checkpoint has data; partial = some checkpoints have No data; unavailable = no weather data at all; busy = the weather service answered "too many requests" and the screen says to try again in a minute'
+          description: 'ok = every checkpoint has data; partial = some checkpoints have No data; unavailable = no weather data at all; busy = the weather service answered "too many requests" and the screen says to try again in a few minutes'
     Recommendation:
       type: object
       required: [status, route_id, least_bad_route_id, deciding_criterion, sentence]

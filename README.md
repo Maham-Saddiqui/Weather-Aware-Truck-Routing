@@ -57,7 +57,7 @@ Browser (React, Material UI, TypeScript, Vite)  ->  Django REST Framework server
 - **Server layers** (dependencies point inward, enforced by an import check): `trips` (HTTP, validation) -> `services` (one use case per request) -> `providers` (ports and adapters) -> `domain` (pure rules, exact decimals, no I/O).
 - **Providers:** TomTom Routing for truck routes (the key lives only on the server); Valhalla as a backup routing service, used only when TomTom times out, errors, rate-limits or the daily call guard trips (never mixed into one comparison); Open-Meteo for weather; an offline library for time zones; OpenFreeMap for map tiles; Photon for address suggestions.
 - **Two requests at once:** the browser asks for the fast first route and the full comparison in parallel, so the first route appears while alternatives are still being rated.
-- **One heatmap per response**, built on the server from all routes' points with duplicates removed. Each point carries 49 hourly risk digits, so the slider only changes which hour is drawn: no network and no re-rendering per tick.
+- **One heatmap per response**, built on the server from all routes' points with duplicates removed. Each point carries 49 hourly risk digits, so moving the slider needs no network call and does not redraw the route lines; only the heatmap colours, the status line, the truck pin and the checkpoint dots update.
 - **Why not MapLibre's built-in heatmap layer:** its colour follows how densely points are packed, so a crowd of Moderate points looked worse than a lone Severe one. The app uses one layer of soft circles whose colour is the risk level itself.
 - **No database, no accounts.** Each request is complete on its own. The only server state is a small in-memory weather cache, the rate-limit counters and the daily provider guard, which is why the server runs exactly one process with several threads.
 
@@ -72,7 +72,8 @@ Browser (React, Material UI, TypeScript, Vite)  ->  Django REST Framework server
 7. `frontend/src/app/useTripPlanner.ts` and `features/route-results/tripResults.ts`: how the two parallel requests are combined.
 8. `frontend/src/features/map/` and `features/heatmap-slider/`: the map, the heatmap layer and the slider.
 9. `frontend/src/features/trip-form/`, `features/route-results/`: the form and the results.
-10. [`docs/architecture.md`](docs/architecture.md) and `docs/standards/`: the design and the coding standards the code is held to.
+10. `frontend/src/app/PlannerLayout.tsx` and `MapWithSlider.tsx`, `features/share-trip/`, `backend/services/trip_class.py`, `trip_runner.py` and `backend/config/startup.py`: the layout and panel, the share control, the long-trip handling and the start-up check.
+11. [`docs/architecture.md`](docs/architecture.md) and `docs/standards/`: the design and the coding standards the code is held to.
 
 ## Growing the system
 
@@ -99,11 +100,14 @@ make rehearsal-server      # terminal 1: the real server with synthetic routes a
 make rehearsal-frontend    # terminal 2: the app at http://localhost:5173
 ```
 
-That runs the whole product without any key or external service. To use the real providers, copy `.env.example` to `.env`, add your own `TOMTOM_API_KEY`, and run `cd backend && uv run python manage.py runserver` and `cd frontend && VITE_API_BASE_URL=http://127.0.0.1:8000 npm run dev`.
+That runs the whole product without any key or external service. To use the real providers, copy `.env.example` to `.env` and fill in `DJANGO_SECRET_KEY` (any long random text), `DJANGO_DEBUG=true`, `DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1`, `ALLOWED_ORIGINS=http://localhost:5173` and your own `TOMTOM_API_KEY`. The server does not read `.env` by itself, so start it with `cd backend && uv run --env-file ../.env python manage.py runserver`, then `cd frontend && VITE_API_BASE_URL=http://127.0.0.1:8000 npm run dev`.
 
 ```bash
-make check    # backend lint, types and tests; front-end lint, types and tests; contract sync; rule coverage; secret scan
+make check    # backend lint, formatting, types, import boundaries and tests with coverage floors; front-end lint, formatting, types and tests with coverage floors; bundle-size budgets; contract sync; rule coverage; secret scan
+make e2e      # browser tests (Playwright with an accessibility scan) against the built app and the rehearsal server; CI runs them as a separate job
 ```
+
+With DEBUG off the server refuses to start unless `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS` and `ALLOWED_ORIGINS` are set. Without `TOMTOM_API_KEY` it starts but uses the backup router for every trip. Optional limits: `API_THROTTLE_RATE`, `TRIP_THROTTLE_RATE`, `ATTRIBUTION_THROTTLE_RATE`, `TOMTOM_DAILY_CALL_LIMIT`.
 
 Server configuration (environment variables): `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `ALLOWED_ORIGINS`, `TOMTOM_API_KEY`, `VALHALLA_BASE_URL`, `OPEN_METEO_BASE_URL`, `NUM_PROXIES`. Front end: `VITE_API_BASE_URL`.
 
