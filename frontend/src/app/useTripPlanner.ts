@@ -28,6 +28,9 @@ export function useTripPlanner() {
       setRun((previous) => ({ trip, runId: (previous?.runId ?? 0) + 1 }))
       setHourOffset(0)
     },
+    retry: () => {
+      setRun((previous) => (previous ? { ...previous, runId: previous.runId + 1 } : null))
+    },
     selectRoute: (routeId: string) => {
       setSelection({ routeId, checkpointIndex: null })
     },
@@ -36,3 +39,5 @@ export function useTripPlanner() {
     },
   }
 }
+
+export type TripPlannerState = ReturnType<typeof useTripPlanner>
