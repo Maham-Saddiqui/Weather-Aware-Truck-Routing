@@ -18,6 +18,11 @@ const ALTERNATIVES_NOTICE: Notice = {
   text: 'Alternative routes are unavailable right now. Showing the main route only.',
 }
 
+const ONE_ROUTE_NOTICE: Notice = {
+  severity: 'info',
+  text: 'Only one route could be found for this trip.',
+}
+
 const WEATHER_NOTICES: Record<WeatherStatus, Notice | null> = {
   ok: null,
   partial: {
@@ -35,6 +40,7 @@ function noticesFor(results: TripResults): Notice[] {
   const notices: Notice[] = []
   if (results.routingProvider === 'valhalla') notices.push(BACKUP_NOTICE)
   if (results.alternativesUnavailable) notices.push(ALTERNATIVES_NOTICE)
+  if (results.phase === 'complete' && results.routes.length === 1) notices.push(ONE_ROUTE_NOTICE)
   const weatherNotice = results.weather && WEATHER_NOTICES[results.weather]
   if (weatherNotice) notices.push(weatherNotice)
   return notices
