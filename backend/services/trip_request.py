@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from domain.types import GeoPoint
+from domain.types import CheckpointSpacing, GeoPoint
 
 
 @dataclass(frozen=True, slots=True)
@@ -12,4 +12,4 @@ class TripRequest:
     destination: GeoPoint
     departure_utc: datetime
     load_lb: int
-    spacing_miles: int
+    spacing_miles: CheckpointSpacing

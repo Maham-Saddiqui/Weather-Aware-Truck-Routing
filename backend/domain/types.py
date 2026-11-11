@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from enum import IntEnum
 
 
 @dataclass(frozen=True, slots=True)
@@ -9,6 +10,14 @@ class GeoPoint:
 
     lat: float
     lon: float
+
+
+class CheckpointSpacing(IntEnum):
+    """RR-12: the only distances, in miles, a driver can choose between checkpoints."""
+
+    TEN_MILES = 10
+    TWENTY_FIVE_MILES = 25
+    FIFTY_MILES = 50
 
 
 @dataclass(frozen=True, slots=True)

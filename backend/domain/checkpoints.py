@@ -5,7 +5,7 @@ from decimal import Decimal
 from itertools import pairwise
 
 from domain.constants import METRES_PER_MILE
-from domain.types import GeoPoint, ProgressEntry, ProviderRoute
+from domain.types import CheckpointSpacing, GeoPoint, ProgressEntry, ProviderRoute
 from domain.units import round_half_up
 
 MICROSECONDS_PER_SECOND = Decimal(1_000_000)
@@ -24,7 +24,7 @@ class Stop:
 
 
 def plan_stops(
-    route: ProviderRoute, spacing_miles: int, departure_utc: datetime
+    route: ProviderRoute, spacing_miles: CheckpointSpacing, departure_utc: datetime
 ) -> tuple[Stop, ...]:
     """RR-13 places the checkpoints, RR-15 the arrival times, RR-19 the covered stretches."""
     length_m = Decimal(route.distance_m)
@@ -46,9 +46,11 @@ def plan_stops(
     return tuple(stops)
 
 
-def _checkpoint_distances(length_m: Decimal, spacing_miles: int) -> tuple[Decimal, ...]:
+def _checkpoint_distances(
+    length_m: Decimal, spacing_miles: CheckpointSpacing
+) -> tuple[Decimal, ...]:
     """Origin, each multiple of the spacing and the destination; a set merges an exact multiple."""
-    spacing_m = Decimal(spacing_miles) * METRES_PER_MILE
+    spacing_m = Decimal(CheckpointSpacing(spacing_miles)) * METRES_PER_MILE
     multiples = {spacing_m * count for count in range(int(length_m // spacing_m) + 1)}
     return tuple(sorted(multiples | {length_m}))
 
