@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  FOLLOW_IN_VIEW_SLACK_PX,
   FOLLOW_MEDIUM_PANEL_CLEARANCE_PX,
   FOLLOW_NARROW_PANEL_CLEARANCE_PX,
   FOLLOW_WIDE_PANEL_CLEARANCE_PX,
@@ -15,12 +16,20 @@ describe('isInsideSafeArea keeps the truck in the part of the map the driver can
     expect(isInsideSafeArea({ x: 500, y: 250 }, SIZE, WIDE)).toBe(true)
   })
 
-  it('accepts a truck just inside each margin and refuses one just outside', () => {
+  it('accepts a truck on each margin and refuses one a little way outside it', () => {
+    const outside = FOLLOW_IN_VIEW_SLACK_PX + 1
+
     expect(isInsideSafeArea({ x: WIDE.left, y: 250 }, SIZE, WIDE)).toBe(true)
-    expect(isInsideSafeArea({ x: WIDE.left - 1, y: 250 }, SIZE, WIDE)).toBe(false)
+    expect(isInsideSafeArea({ x: WIDE.left - outside, y: 250 }, SIZE, WIDE)).toBe(false)
     expect(isInsideSafeArea({ x: SIZE.width - WIDE.right, y: 250 }, SIZE, WIDE)).toBe(true)
-    expect(isInsideSafeArea({ x: SIZE.width - WIDE.right + 1, y: 250 }, SIZE, WIDE)).toBe(false)
-    expect(isInsideSafeArea({ x: 500, y: WIDE.top - 1 }, SIZE, WIDE)).toBe(false)
+    expect(isInsideSafeArea({ x: SIZE.width - WIDE.right + outside, y: 250 }, SIZE, WIDE)).toBe(
+      false,
+    )
+    expect(isInsideSafeArea({ x: 500, y: WIDE.top - outside }, SIZE, WIDE)).toBe(false)
+  })
+
+  it('accepts a route start a pixel outside the margin it was fitted to, so the follow does not undo the fit', () => {
+    expect(isInsideSafeArea({ x: WIDE.left - 1, y: WIDE.top - 1 }, SIZE, WIDE)).toBe(true)
   })
 
   it('refuses a truck that left the map', () => {
