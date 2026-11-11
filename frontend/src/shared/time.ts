@@ -20,6 +20,26 @@ export function tomorrowMorning(now: Dayjs, timeZone: string): Dayjs {
     .millisecond(0)
 }
 
+// RR-18: every local time carries its zone abbreviation, generic ("MT") rather than "MST" or "MDT".
+const ZONE_NAME_STYLE = 'shortGeneric'
+
+function clockParts(isoInstant: string, timeZone: string): Map<string, string> {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZoneName: ZONE_NAME_STYLE,
+  }).formatToParts(new Date(isoInstant))
+  return new Map(parts.map((part) => [part.type, part.value]))
+}
+
+export function formatClockTime(isoInstant: string, timeZone: string): string {
+  const part = clockParts(isoInstant, timeZone)
+  return `${part.get('weekday') ?? ''} ${part.get('hour') ?? ''}:${part.get('minute') ?? ''} ${part.get('timeZoneName') ?? ''}`
+}
+
 export function formatLocalTime(isoInstant: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -29,15 +49,12 @@ export function formatLocalTime(isoInstant: string, timeZone: string): string {
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
-    timeZoneName: 'short',
+    timeZoneName: ZONE_NAME_STYLE,
   }).format(new Date(isoInstant))
 }
 
 export function zoneAbbreviation(isoInstant: string, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' }).formatToParts(
-    new Date(isoInstant),
-  )
-  return parts.find((part) => part.type === 'timeZoneName')?.value ?? timeZone
+  return clockParts(isoInstant, timeZone).get('timeZoneName') ?? timeZone
 }
 
 export function formatDuration(totalSeconds: number): string {

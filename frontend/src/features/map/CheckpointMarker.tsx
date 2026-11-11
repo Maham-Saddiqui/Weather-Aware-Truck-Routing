@@ -6,9 +6,9 @@ import { memo } from 'react'
 import { RISK_COLOURS } from '../../shared/colours'
 import { MIN_TOUCH_TARGET_PX } from '../../shared/constants'
 import { LEVEL_LABELS, RiskIcon } from '../../shared/risk'
+import { formatClockTime } from '../../shared/time'
 import type { Checkpoint } from '../../shared/types'
 import { CheckpointCard } from './CheckpointCard'
-import { formatEta } from './formatEta'
 
 const DOT_PX = 24
 const SELECTED_DOT_PX = 34
@@ -21,7 +21,7 @@ interface CheckpointMarkerProps {
 
 function CheckpointMarkerView({ checkpoint, isSelected, onSelect }: CheckpointMarkerProps) {
   const { level, position, index, distance_miles, eta_utc, time_zone } = checkpoint
-  const label = `${LEVEL_LABELS[level]} risk at mile ${distance_miles}, arriving ${formatEta(eta_utc, time_zone)}`
+  const label = `${LEVEL_LABELS[level]} risk at mile ${distance_miles}, arriving ${formatClockTime(eta_utc, time_zone)}`
   const dotSize = isSelected ? SELECTED_DOT_PX : DOT_PX
   return (
     <Marker longitude={position.lon} latitude={position.lat} anchor="center">

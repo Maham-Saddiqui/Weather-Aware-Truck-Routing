@@ -85,7 +85,7 @@ describe('route cards (REQ-06, FE-19)', () => {
     route.checkpoints = [makeCheckpoint({ time_zone: 'America/Denver' })]
     renderResults(resultsWith({ routes: [route] }))
 
-    expect(screen.getByText(/14:05 MST/)).toBeInTheDocument()
+    expect(screen.getByText(/14:05 MT/)).toBeInTheDocument()
   })
 
   it('selects a route by its id when the card is pressed (REQ-08)', async () => {

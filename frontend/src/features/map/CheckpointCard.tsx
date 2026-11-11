@@ -2,8 +2,8 @@ import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { LEVEL_LABELS, RiskIcon } from '../../shared/risk'
+import { formatClockTime } from '../../shared/time'
 import type { Checkpoint } from '../../shared/types'
-import { formatEta } from './formatEta'
 
 interface CheckpointCardProps {
   checkpoint: Checkpoint
@@ -16,7 +16,8 @@ export function CheckpointCard({ checkpoint }: CheckpointCardProps) {
       <Box>
         <Typography variant="subtitle2">{LEVEL_LABELS[checkpoint.level]}</Typography>
         <Typography variant="caption">
-          Mile {checkpoint.distance_miles}, {formatEta(checkpoint.eta_utc, checkpoint.time_zone)}
+          Mile {checkpoint.distance_miles},{' '}
+          {formatClockTime(checkpoint.eta_utc, checkpoint.time_zone)}
         </Typography>
       </Box>
     </Stack>
