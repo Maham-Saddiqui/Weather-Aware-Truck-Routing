@@ -21,7 +21,7 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://maham-spotter.vercel.app,https://weather-aware-truck-routing-ten-iota.vercel.app
       - key: NUM_PROXIES
-        value: "1"
+        value: "3"
       - key: VALHALLA_BASE_URL
         value: https://valhalla1.openstreetmap.de
       - key: OPEN_METEO_BASE_URL

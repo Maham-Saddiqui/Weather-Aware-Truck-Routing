@@ -56,14 +56,6 @@ class RequestIdMiddleware:
         try:
             response = self._get_response(request)
             duration_ms = round((time.monotonic() - started) * 1000)
-            meta = request.META
-            logger.warning(
-                "DIAGNOSTIC-HEADERS xff=%s cf=%s tci=%s remote=%s",
-                meta.get("HTTP_X_FORWARDED_FOR"),
-                meta.get("HTTP_CF_CONNECTING_IP"),
-                meta.get("HTTP_TRUE_CLIENT_IP"),
-                meta.get("REMOTE_ADDR"),
-            )
             logger.info(
                 "%s %s %s %d ms, peak memory %d MB",
                 request.method,
