@@ -16,11 +16,20 @@ describe('example trips', () => {
     }
   })
 
-  it('offers three or four trips with the default spacing (REQ-11)', () => {
+  it('offers three or four trips, with the default spacing unless the example asks for finer checkpoints (REQ-11)', () => {
     expect(EXAMPLE_TRIPS.length).toBeGreaterThanOrEqual(3)
     expect(EXAMPLE_TRIPS.length).toBeLessThanOrEqual(4)
-    for (const example of EXAMPLE_TRIPS) {
-      expect(exampleTripRequest(example, dayjs()).spacing_miles).toBe(25)
-    }
+    const spacings = Object.fromEntries(
+      EXAMPLE_TRIPS.map((example) => [
+        example.name,
+        exampleTripRequest(example, dayjs()).spacing_miles,
+      ]),
+    )
+    expect(spacings).toEqual({
+      'Chicago to Denver': 25,
+      'Reno to Los Angeles': 10,
+      'Seattle to Salt Lake City': 25,
+      'Minneapolis to Kansas City': 25,
+    })
   })
 })

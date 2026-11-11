@@ -9,6 +9,7 @@ export interface ExampleTrip {
   destination: Place
   originTimeZone: string
   loadLb: number
+  spacingMiles?: TripRequest['spacing_miles']
 }
 
 export const EXAMPLE_TRIPS: readonly ExampleTrip[] = [
@@ -25,6 +26,7 @@ export const EXAMPLE_TRIPS: readonly ExampleTrip[] = [
     destination: { label: 'Los Angeles, California', lat: 34.0522, lon: -118.2437 },
     originTimeZone: 'America/Los_Angeles',
     loadLb: 42_000,
+    spacingMiles: 10,
   },
   {
     name: 'Seattle to Salt Lake City',
@@ -48,6 +50,6 @@ export function exampleTripRequest(example: ExampleTrip, now: Dayjs): TripReques
     destination: example.destination,
     departure_utc: tomorrowMorning(now, example.originTimeZone).toISOString(),
     load_lb: example.loadLb,
-    spacing_miles: DEFAULT_SPACING_MILES,
+    spacing_miles: example.spacingMiles ?? DEFAULT_SPACING_MILES,
   }
 }

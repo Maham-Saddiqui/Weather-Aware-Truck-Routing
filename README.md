@@ -95,6 +95,13 @@ The server therefore adapts to the trip's size, which it measures before calling
 
 The first route is always on screen within a few seconds, because the page asks for it separately and in parallel, so the longer wait for alternatives does not hold the driver up. The cut-off and the timeouts are named constants, and the request log records the trip's size class and how long the alternatives call really took, so they can be tuned from real data.
 
+## How it performs on a free server
+
+- The server runs on Render's free plan: a tenth of a processor, 512 MB of memory, and it sleeps after 15 minutes without traffic. The first request after a sleep takes 20 to 50 seconds; the page pings the server when it opens, so it starts waking while the driver types, and a keep-warm check calls it regularly.
+- The server's own work is small. In the live logs on 11 November 2026, rating every checkpoint and building the heatmap took roughly 15 to 100 ms per trip, and peak memory stayed around 125 MB of the 512 MB. That is why one process with a tenth of a processor is enough.
+- Almost all of the time is spent waiting for outside services. TomTom answered a three-route request in about 2 to 4 seconds for trips of a few hundred miles and about 6 seconds at 1,000 miles; longer trips take longer because its compute time grows with route length and with the number of alternatives (see "Very long trips"). The first route appears in about 1 to 2 seconds after the driver submits, because it comes from a separate, faster request, so the screen is never blocked; the full comparison follows, typically within 3 to 6 seconds. Very long trips take longer: that is the routing provider's computing time, not the server's own work, but it is what a driver waits for.
+- Weather is one batched request per trip and is cached per map cell for about an hour, so repeat trips and the example trips cost no provider calls.
+
 ## Run it locally
 
 Requirements: Python 3.13 with [uv](https://docs.astral.sh/uv/), Node 26 (see `.nvmrc`).
