@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HeatmapSlider } from './HeatmapSlider'
+import { WHEN_NARROW_TABLET_MAP, WHEN_TABLET_MAP } from './tabletMap'
 
 const START_UTC = '2026-11-12T23:00:00Z'
 const PLAYBACK_STEP_MS = 1000
@@ -312,6 +313,18 @@ describe('HeatmapSlider caption (REQ-09, FE-07: self-explanatory controls)', () 
     render(<SliderWithState />)
 
     expect(screen.getByText("Times shown in the origin's time zone (MT)")).toBeVisible()
+  })
+
+  it('swaps the time zone note for a short one on a tablet-sized map so the panel stays low', () => {
+    render(<SliderWithState />)
+
+    const rules = Array.from(document.querySelectorAll('style'), (style) => style.textContent).join(
+      '',
+    )
+
+    expect(screen.getByText('Origin time zone (MT)')).toBeInTheDocument()
+    expect(rules).toContain(WHEN_TABLET_MAP)
+    expect(rules).toContain(WHEN_NARROW_TABLET_MAP)
   })
 
   it('names the slider "Forecast time" in visible text', () => {

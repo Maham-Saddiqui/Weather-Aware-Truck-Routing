@@ -1,4 +1,8 @@
 import Typography from '@mui/material/Typography'
+import {
+  WHEN_TABLET_MAP,
+  WHEN_TABLET_MAP_FITS_ARRIVAL_ON_ONE_LINE,
+} from '../features/heatmap-slider/tabletMap'
 import { arrivalEtaUtc, arrivalTimeZone } from '../shared/arrival'
 import { formatClockTime, hoursBetween } from '../shared/time'
 import type { Heatmap, Route } from '../shared/types'
@@ -14,6 +18,8 @@ interface ArrivalNoteProps {
 const RESERVED_ROW_SX = {
   flexBasis: '100%',
   minHeight: { xs: '2lh', lg: '1lh' },
+  [WHEN_TABLET_MAP]: { minHeight: '2lh' },
+  [WHEN_TABLET_MAP_FITS_ARRIVAL_ON_ONE_LINE]: { minHeight: '1lh' },
 }
 
 function whatToDoNext(isAtArrivalHour: boolean, lastHour: number): string {

@@ -60,13 +60,13 @@ describe('safeMargins lets the bottom margin follow the forecast panel, which is
     expect(safeMargins(mapWidth, true).bottom).toBe(clearance)
   })
 
-  it('grows the clearance as the map narrows', () => {
+  it('grows the clearance from a wide map to a medium one, which share one height below it', () => {
     expect(safeMargins(600, true).bottom).toBeGreaterThan(safeMargins(900, true).bottom)
-    expect(safeMargins(400, true).bottom).toBeGreaterThan(safeMargins(600, true).bottom)
+    expect(safeMargins(400, true).bottom).toBe(safeMargins(600, true).bottom)
   })
 
-  it('keeps a truck at 150 px from the bottom in view on a wide map but not on a medium one', () => {
-    const point = { x: 500, y: SIZE.height - 150 }
+  it('keeps a truck at 138 px from the bottom in view on a wide map but not on a medium one', () => {
+    const point = { x: 500, y: SIZE.height - 138 }
 
     expect(isInsideSafeArea(point, SIZE, safeMargins(900, true))).toBe(true)
     expect(isInsideSafeArea(point, SIZE, safeMargins(600, true))).toBe(false)
