@@ -25,8 +25,5 @@ merge-check:
 contract-sync:
 	python3 -I scripts/check_contract_sync.py
 
-# Report-only until the four tracks are merged; the lead removes the flag at the join (RR-31).
-RULE_COVERAGE_FLAGS := --report
-
 rule-coverage:
-	python3 -I scripts/check_rule_coverage.py $(RULE_COVERAGE_FLAGS)
+	python3 -I scripts/check_rule_coverage.py
