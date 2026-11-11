@@ -1,11 +1,10 @@
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'
 import Button from '@mui/material/Button'
 import { styled } from '@mui/material/styles'
+import { MEDIUM_MAP_BELOW_PX, NARROW_MAP_BELOW_PX } from './mapConstants'
 
 // The forecast panel floating over the map grows taller as the map narrows (measured in a browser: about 106 px
 // tall at 820 px wide, 132 at 640, 178 at 428, 208 at 380), and the chip must stay above it with a small gap.
-const NARROW_MAP_BELOW_PX = 440
-const MEDIUM_MAP_BELOW_PX = 700
 const BOTTOM_ABOVE_WIDE_PANEL_PX = 156
 const BOTTOM_ABOVE_MEDIUM_PANEL_PX = 208
 const BOTTOM_ABOVE_NARROW_PANEL_PX = 248

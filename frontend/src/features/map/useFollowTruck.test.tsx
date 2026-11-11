@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { safeAreaCentreOffset, safeMargins } from './safeArea'
 import { useFollowTruck } from './useFollowTruck'
 
 const MIDDLE = { x: 500, y: 250 }
@@ -155,6 +156,35 @@ describe('useFollowTruck keeps the truck in view without changing the zoom (REQ-
     const hook = renderFollowing()
 
     moveTruckTo(hook, { x: 500, y: 560 })
+
+    expect(stub.easeTo).toHaveBeenCalledTimes(1)
+  })
+
+  it('counts a truck behind the taller panel of a medium map as hidden and eases it out from behind', () => {
+    stub.width = 600
+    const hook = renderFollowing()
+
+    moveTruckTo(hook, { x: 300, y: 600 - 150 })
+
+    expect(stub.easeTo).toHaveBeenCalledTimes(1)
+    const offset = (stub.easeTo.mock.calls[0]?.[0] as EaseOptions & { offset: [number, number] })
+      .offset
+    expect(offset[1]).toBeLessThan(safeAreaCentreOffset(safeMargins(1000, true))[1])
+  })
+
+  it('leaves a truck at the same height alone on a wide map, where the panel is shorter', () => {
+    const hook = renderFollowing()
+
+    moveTruckTo(hook, { x: 500, y: 600 - 150 })
+
+    expect(stub.easeTo).not.toHaveBeenCalled()
+  })
+
+  it('eases when the map is resized so the taller panel now covers the truck', () => {
+    renderFollowing({ x: 300, y: 450 })
+
+    stub.width = 600
+    emit('resize')
 
     expect(stub.easeTo).toHaveBeenCalledTimes(1)
   })

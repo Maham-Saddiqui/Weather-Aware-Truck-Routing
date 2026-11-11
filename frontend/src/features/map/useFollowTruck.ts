@@ -17,7 +17,11 @@ export interface FollowTruck {
 function isInView(map: MapRef, truck: LatLon, isPanelOverMap: boolean): boolean {
   const container = map.getContainer()
   const size = { width: container.clientWidth, height: container.clientHeight }
-  return isInsideSafeArea(map.project([truck.lon, truck.lat]), size, safeMargins(isPanelOverMap))
+  return isInsideSafeArea(
+    map.project([truck.lon, truck.lat]),
+    size,
+    safeMargins(size.width, isPanelOverMap),
+  )
 }
 
 // The map's own easing carries no original event; only the driver's hands do.
@@ -49,8 +53,10 @@ function useIsTruckInView(map: MapRef | undefined, truck: LatLon | null, isPanel
   const subscribe = useCallback(
     (notify: () => void) => {
       map?.on('move', notify)
+      map?.on('resize', notify)
       return () => {
         map?.off('move', notify)
+        map?.off('resize', notify)
       }
     },
     [map],
@@ -88,7 +94,7 @@ export function useFollowTruck(
     }
     map.easeTo({
       center: [longitude, latitude],
-      offset: safeAreaCentreOffset(safeMargins(isPanelOverMap)),
+      offset: safeAreaCentreOffset(safeMargins(map.getContainer().clientWidth, isPanelOverMap)),
       duration: prefersReducedMotion ? 0 : FOLLOW_EASE_MS,
     })
   }, [map, longitude, latitude, route, isPaused, isVisible, isPanelOverMap, prefersReducedMotion])
