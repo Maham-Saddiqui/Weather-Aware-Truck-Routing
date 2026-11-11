@@ -3,7 +3,7 @@ import ListItemButton from '@mui/material/ListItemButton'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { RISK_COLOURS } from '../shared/colours'
+import { ACCENT_TURQUOISE, RISK_COLOURS, ROUTE_CASING_COLOUR } from '../shared/colours'
 import { INPUT_BORDER, NAVY_BACKGROUND, NAVY_RAISED, NAVY_SURFACE, theme } from './theme'
 
 describe('keyboard focus (NFR-03, FE-07)', () => {
@@ -39,6 +39,15 @@ function luminance(hex: string): number {
 function contrast(first: string, second: string): number {
   const [lighter = 0, darker = 0] = [luminance(first), luminance(second)].sort((a, b) => b - a)
   return (lighter + 0.05) / (darker + 0.05)
+}
+
+function hueDegrees(hex: string): number {
+  const [red = 0, green = 0, blue = 0] = [1, 3, 5].map(
+    (start) => parseInt(hex.slice(start, start + 2), 16) / 255,
+  )
+  const degrees =
+    (Math.atan2(Math.sqrt(3) * (green - blue), 2 * red - green - blue) * 180) / Math.PI
+  return (degrees + 360) % 360
 }
 
 describe('text box outlines (NFR-03, WCAG 1.4.11)', () => {
@@ -90,6 +99,22 @@ describe('route palette (FE-15)', () => {
 
     expect(new Set(hues).size).toBe(3)
     expect(hues.filter((hue) => Object.values(RISK_COLOURS).includes(hue))).toEqual([])
+  })
+
+  it('keeps every route hue at least 3:1 against the dark basemap', () => {
+    const faint = theme.palette.route.filter((hue) => contrast(hue, ROUTE_CASING_COLOUR) < 3)
+
+    expect(faint).toEqual([])
+  })
+
+  it('keeps every route hue out of the turquoise family of the interface accent', () => {
+    const turquoiseHue = hueDegrees(ACCENT_TURQUOISE)
+
+    const lookalikes = theme.palette.route.filter(
+      (hue) => Math.abs(hueDegrees(hue) - turquoiseHue) < 30,
+    )
+
+    expect(lookalikes).toEqual([])
   })
 })
 

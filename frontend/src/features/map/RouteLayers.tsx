@@ -1,9 +1,16 @@
 import { Layer, Source } from '@vis.gl/react-maplibre'
-import type { ExpressionSpecification } from 'maplibre-gl'
 import { useTheme } from '@mui/material/styles'
 import { ROUTE_CASING_COLOUR } from '../../shared/colours'
 import { ROUTE_HIT_LAYER_ID, ROUTE_HIT_WIDTH_PX, ROUTE_LINE_LAYER_ID } from './mapConstants'
 import type { RouteLines } from './routeGeoJson'
+import {
+  casingPaint,
+  HALO_OPACITY,
+  HALO_WIDTH_PX,
+  linePaint,
+  selectedOnTop,
+  selectedRouteFilter,
+} from './routePaint'
 import { useDirectionArrow } from './useDirectionArrow'
 
 interface RouteLayersProps {
@@ -11,27 +18,7 @@ interface RouteLayersProps {
   selectedRouteId: string | null
 }
 
-const HALO_OPACITY = 0.35
-const HALO_WIDTH_PX = 16
-
-function hueByPosition(hues: readonly string[]): ExpressionSpecification {
-  const [first = '', second = first, third = first] = hues
-  return ['match', ['get', 'position'], 0, first, 1, second, third]
-}
-
 const ROUND_LINES = { 'line-cap': 'round', 'line-join': 'round' } as const
-
-function selectedRouteFilter(selectedRouteId: string | null): ExpressionSpecification {
-  return ['==', ['get', 'routeId'], selectedRouteId ?? '']
-}
-
-function whenSelected(
-  selectedRouteId: string | null,
-  selected: number | string,
-  other: number | string | ExpressionSpecification,
-) {
-  return ['case', selectedRouteFilter(selectedRouteId), selected, other] as ExpressionSpecification
-}
 
 const HIT_PAINT = {
   'line-color': ROUTE_CASING_COLOUR,
@@ -44,7 +31,7 @@ const HIT_PAINT = {
 export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
   const { palette } = useTheme()
   const arrowLayer = useDirectionArrow(selectedRouteId)
-  const sortKey = { ...ROUND_LINES, 'line-sort-key': whenSelected(selectedRouteId, 1, 0) }
+  const sortKey = { ...ROUND_LINES, ...selectedOnTop(selectedRouteId) }
   return (
     <Source id="routes" type="geojson" data={lines}>
       <Layer
@@ -58,23 +45,12 @@ export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
           'line-width': HALO_WIDTH_PX,
         }}
       />
-      <Layer
-        id="route-casing"
-        type="line"
-        layout={sortKey}
-        paint={{
-          'line-color': ROUTE_CASING_COLOUR,
-          'line-width': whenSelected(selectedRouteId, 10, 7),
-        }}
-      />
+      <Layer id="route-casing" type="line" layout={sortKey} paint={casingPaint(selectedRouteId)} />
       <Layer
         id={ROUTE_LINE_LAYER_ID}
         type="line"
         layout={sortKey}
-        paint={{
-          'line-color': hueByPosition(palette.route),
-          'line-width': whenSelected(selectedRouteId, 6, 4),
-        }}
+        paint={linePaint(selectedRouteId, palette.route)}
       />
       {arrowLayer && <Layer {...arrowLayer} />}
       <Layer id={ROUTE_HIT_LAYER_ID} type="line" layout={ROUND_LINES} paint={HIT_PAINT} />
