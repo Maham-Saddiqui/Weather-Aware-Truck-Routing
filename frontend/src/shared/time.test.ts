@@ -39,6 +39,30 @@ describe('time formatting', () => {
     expect(departure.toISOString()).toBe('2026-11-12T16:00:00.000Z')
   })
 
+  it.each([
+    ['America/Chicago', '2026-10-31T23:00:00Z', '2026-11-01T14:00:00.000Z'],
+    ['America/Chicago', '2027-03-13T23:00:00Z', '2027-03-14T13:00:00.000Z'],
+    ['America/Los_Angeles', '2026-10-31T20:00:00Z', '2026-11-01T16:00:00.000Z'],
+    ['America/Los_Angeles', '2027-03-13T20:00:00Z', '2027-03-14T15:00:00.000Z'],
+    ['America/Denver', '2026-10-31T20:00:00Z', '2026-11-01T15:00:00.000Z'],
+    ['America/Denver', '2027-03-13T20:00:00Z', '2027-03-14T14:00:00.000Z'],
+  ])(
+    'keeps 08:00 local on the day before a clock change in %s from %s (RR-18, REQ-11)',
+    (zone, nowIso, expectedIso) => {
+      const departure = tomorrowMorning(dayjs(nowIso), zone)
+
+      expect(departure.toISOString()).toBe(expectedIso)
+    },
+  )
+
+  it('uses the origin calendar day when it differs from the clock in the browser zone (REQ-11)', () => {
+    const lateEveningUtc = dayjs('2026-11-12T03:00:00Z')
+
+    expect(tomorrowMorning(lateEveningUtc, 'America/Los_Angeles').toISOString()).toBe(
+      '2026-11-12T16:00:00.000Z',
+    )
+  })
+
   it('writes travel time as hours and minutes', () => {
     expect(formatDuration(4200)).toBe('1 h 10 min')
     expect(formatDuration(1500)).toBe('25 min')
