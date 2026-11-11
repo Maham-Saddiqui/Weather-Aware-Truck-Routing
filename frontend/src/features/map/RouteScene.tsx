@@ -4,6 +4,7 @@ import { FitToRoutes } from './FitToRoutes'
 import { RouteLayers } from './RouteLayers'
 import { RoutePills } from './RoutePills'
 import { routeLines } from './routeGeoJson'
+import { UnselectedRouteDots } from './UnselectedRouteDots'
 
 export interface RouteSceneProps {
   routes: readonly Route[]
@@ -18,6 +19,7 @@ function RouteSceneView({ routes, selectedRouteId, onSelectRoute }: RouteScenePr
     <>
       <FitToRoutes lines={lines} />
       <RouteLayers lines={lines} selectedRouteId={selectedRouteId} />
+      <UnselectedRouteDots routes={routes} selectedRouteId={selectedRouteId} />
       <RoutePills
         routes={routes}
         lines={lines}

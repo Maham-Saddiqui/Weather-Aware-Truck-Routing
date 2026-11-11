@@ -59,3 +59,11 @@ export const FOLLOW_PANEL_CLEARANCE_PX = 140
 export const FOLLOW_EASE_MS = 600
 // The truck glides between two forecast hours for at most as long as one playback step lasts at normal speed.
 export const TRUCK_TWEEN_MAX_MS = 1000
+
+export const UNSELECTED_DOTS_SOURCE_ID = 'unselected-dots'
+// The dots of routes that are not selected thin out with zoom: tier 0 (every 4th checkpoint and the destination) always,
+// tier 1 (the other even ones) and tier 2 (the odd ones) once zoomed in far enough to keep them apart.
+export const UNSELECTED_DOT_TIER_MIN_ZOOMS = [0, 6, 7] as const
+export const UNSELECTED_DOT_LAYER_IDS = UNSELECTED_DOT_TIER_MIN_ZOOMS.map(
+  (_, tier) => `unselected-dots-${String(tier)}`,
+)

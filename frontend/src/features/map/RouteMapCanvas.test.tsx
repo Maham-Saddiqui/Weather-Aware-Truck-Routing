@@ -68,10 +68,26 @@ describe('RouteMapCanvas (REQ-08: click a route line to select it)', () => {
     expect(onSelectRoute).toHaveBeenCalledWith('route-south')
   })
 
-  it('only listens to clicks on the route lines', () => {
+  it('selects the route when a dot of an unselected route is clicked', () => {
+    renderCanvas()
+    const dot = { properties: { routeId: 'route-south', level: 'moderate', tier: 0 } }
+
+    act(() => {
+      mapProps.current?.onClick({ features: [dot], originalEvent: { target: document.body } })
+    })
+
+    expect(onSelectRoute).toHaveBeenCalledWith('route-south')
+  })
+
+  it('only listens to clicks on the route lines and the dots of the other routes', () => {
     renderCanvas()
 
-    expect(mapProps.current?.interactiveLayerIds).toEqual(['route-hit'])
+    expect(mapProps.current?.interactiveLayerIds).toEqual([
+      'route-hit',
+      'unselected-dots-0',
+      'unselected-dots-1',
+      'unselected-dots-2',
+    ])
   })
 
   it('ignores a click that lands on a checkpoint marker lying on the line', () => {
