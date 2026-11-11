@@ -1,0 +1,39 @@
+# Secrets and private notes (never commit)
+.env
+.env.*
+!.env.example
+*.local.*
+progress/
+.worktrees/
+.claude/settings.local.json
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Node and front end
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+.vercel/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Django
+staticfiles/
+db.sqlite3
+
+# Editors, OS, logs
+.DS_Store
+.idea/
+*.log

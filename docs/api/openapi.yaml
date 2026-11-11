@@ -1,0 +1,474 @@
+openapi: 3.1.0
+info:
+  title: Weather-Aware Truck Routing API
+  version: 1.0.0
+  description: |
+    Status: approved by the owner on 2026-11-11 (changes need the owner's approval).
+    Contract between the front end and the server. The server owns every rating (docs/domain/risk-rules.md).
+    Decimals are strings, already rounded as the rules require; clients display them unchanged and never parse them to floats.
+    Responses that contain TomTom data carry `Cache-Control: no-store` (provider terms). Nothing is stored server-side.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness check (also used by the keep-warm ping)
+      responses:
+        "200":
+          description: Server is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+  /attribution:
+    get:
+      operationId: getAttribution
+      summary: Required credit text from the routing provider
+      responses:
+        "200":
+          description: Credit text. Fetched fresh on every call.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attribution"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/ProviderUnavailable"
+  /timezone:
+    get:
+      operationId: getTimeZone
+      summary: IANA time zone of a place, for the departure picker
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+        - name: lon
+          in: query
+          required: true
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+      responses:
+        "200":
+          description: Time zone
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [time_zone]
+                properties:
+                  time_zone:
+                    type: string
+                    examples: [America/Chicago]
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /trips/primary:
+    post:
+      operationId: planPrimaryTrip
+      summary: The fast first route, rated (one provider call plus weather)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripRequest"
+      responses:
+        "200":
+          description: One rated route
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrimaryTripResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "422":
+          $ref: "#/components/responses/NoRouteFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/ProviderUnavailable"
+        "503":
+          $ref: "#/components/responses/ProviderUnavailable"
+  /trips/compare:
+    post:
+      operationId: compareTrip
+      summary: Up to 3 distinct rated routes, ranked, with the recommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripRequest"
+      responses:
+        "200":
+          description: Rated routes and recommendation
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompareTripResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "422":
+          $ref: "#/components/responses/NoRouteFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "502":
+          $ref: "#/components/responses/ProviderUnavailable"
+        "503":
+          $ref: "#/components/responses/ProviderUnavailable"
+components:
+  headers:
+    NoStore:
+      description: Always `no-store`
+      schema:
+        type: string
+        const: no-store
+  responses:
+    ValidationError:
+      description: The request is invalid (see RR-29)
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NoRouteFound:
+      description: The request is valid but no truck route exists between the two places
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    RateLimited:
+      description: Too many requests from this client
+      headers:
+        Retry-After:
+          description: Seconds to wait
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ProviderUnavailable:
+      description: A required provider failed and no backup could answer
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    DecimalString:
+      type: string
+      pattern: "^-?[0-9]+(\\.[0-9]+)?$"
+      description: Exact decimal, already rounded. Display as is.
+    NullableDecimalString:
+      oneOf:
+        - $ref: "#/components/schemas/DecimalString"
+        - type: "null"
+    LatLon:
+      type: object
+      required: [lat, lon]
+      properties:
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lon:
+          type: number
+          minimum: -180
+          maximum: 180
+    Place:
+      allOf:
+        - $ref: "#/components/schemas/LatLon"
+        - type: object
+          required: [label]
+          properties:
+            label:
+              type: string
+              maxLength: 200
+    TripRequest:
+      type: object
+      description: Origin and destination must lie inside the lower 48 states (a bounding box checked on the server); anything else is a validation error.
+      additionalProperties: false
+      required: [origin, destination, departure_utc, load_lb]
+      properties:
+        origin:
+          $ref: "#/components/schemas/Place"
+        destination:
+          $ref: "#/components/schemas/Place"
+        departure_utc:
+          type: string
+          format: date-time
+          description: Exact instant. The browser converts the picker value from the origin's time zone (RR-18).
+        load_lb:
+          type: integer
+          minimum: 0
+          maximum: 80000
+          description: Cargo weight (RR-29)
+        spacing_miles:
+          type: integer
+          enum: [10, 25, 50]
+          default: 25
+    Level:
+      type: string
+      enum: [low, moderate, high, severe, no_travel]
+    CheckpointLevel:
+      type: string
+      enum: [low, moderate, high, severe, no_travel, no_data]
+    DrivingFactor:
+      type: string
+      enum: [wind, rain, snow]
+    LoadRule:
+      type: string
+      enum: [none, raised_to_severe, raised_to_no_travel]
+    Measurements:
+      type: object
+      required: [wind_mph, rain_in_hr, snow_in_hr, gust_mph]
+      properties:
+        wind_mph:
+          $ref: "#/components/schemas/NullableDecimalString"
+        rain_in_hr:
+          $ref: "#/components/schemas/NullableDecimalString"
+        snow_in_hr:
+          $ref: "#/components/schemas/NullableDecimalString"
+        gust_mph:
+          $ref: "#/components/schemas/NullableDecimalString"
+    Checkpoint:
+      type: object
+      required: [index, distance_miles, covered_miles, position, eta_utc, time_zone, measurements, level, driving_factors, load_rule]
+      properties:
+        index:
+          type: integer
+          minimum: 0
+        distance_miles:
+          $ref: "#/components/schemas/DecimalString"
+        covered_miles:
+          $ref: "#/components/schemas/DecimalString"
+          description: Stretch of road this checkpoint covers (RR-19)
+        position:
+          $ref: "#/components/schemas/LatLon"
+        eta_utc:
+          type: string
+          format: date-time
+        time_zone:
+          type: string
+          description: IANA zone; the browser formats the ETA with its abbreviation (RR-18)
+        measurements:
+          $ref: "#/components/schemas/Measurements"
+        level:
+          $ref: "#/components/schemas/CheckpointLevel"
+        driving_factors:
+          type: array
+          items:
+            $ref: "#/components/schemas/DrivingFactor"
+        load_rule:
+          $ref: "#/components/schemas/LoadRule"
+    MilesByLevel:
+      type: object
+      required: [low, moderate, high, severe, no_travel, no_data]
+      properties:
+        low:
+          $ref: "#/components/schemas/DecimalString"
+        moderate:
+          $ref: "#/components/schemas/DecimalString"
+        high:
+          $ref: "#/components/schemas/DecimalString"
+        severe:
+          $ref: "#/components/schemas/DecimalString"
+        no_travel:
+          $ref: "#/components/schemas/DecimalString"
+        no_data:
+          $ref: "#/components/schemas/DecimalString"
+    RouteSummary:
+      type: object
+      required: [distance_miles, travel_time_s, arrival_utc, miles_by_level, average_risk, worst_level, eligible, ineligible_reason]
+      properties:
+        distance_miles:
+          $ref: "#/components/schemas/DecimalString"
+        travel_time_s:
+          type: integer
+        arrival_utc:
+          type: string
+          format: date-time
+        miles_by_level:
+          $ref: "#/components/schemas/MilesByLevel"
+        average_risk:
+          $ref: "#/components/schemas/NullableDecimalString"
+          description: Null when no mile has weather data; the UI shows a dash (RR-21)
+        worst_level:
+          oneOf:
+            - $ref: "#/components/schemas/Level"
+            - type: "null"
+        eligible:
+          type: boolean
+        ineligible_reason:
+          oneOf:
+            - type: string
+              enum: [no_travel, not_enough_weather_data]
+            - type: "null"
+    Geometry:
+      type: object
+      required: [encoding, precision, data]
+      properties:
+        encoding:
+          type: string
+          const: encoded_polyline
+        precision:
+          type: integer
+          description: Decimal digits of the encoded polyline. TomTom uses 5 (confirmed by a test call); the backup provider may differ, so the browser always decodes with this value.
+        data:
+          type: string
+    HeatmapPoint:
+      type: object
+      required: [position, risk]
+      properties:
+        position:
+          $ref: "#/components/schemas/LatLon"
+        risk:
+          type: string
+          pattern: "^[0-4x]+$"
+          description: One character per hour from the heatmap start, 0 to 4 for Low to No Travel, x for no data (RR-28)
+    Heatmap:
+      type: object
+      description: One per response, built from all routes' points with duplicates removed (a heatmap adds overlapping points up, so per-route lists would glow hotter on shared stretches). Never merged in the browser.
+      required: [start_utc, hours, points]
+      properties:
+        start_utc:
+          type: string
+          format: date-time
+          description: Departure instant; character h of each risk string is departure + h hours
+        hours:
+          type: integer
+          const: 49
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/HeatmapPoint"
+    Route:
+      type: object
+      required: [id, rank, geometry, summary, checkpoints]
+      properties:
+        id:
+          type: string
+          description: Stable hash of the geometry, so the screen keeps its selection between responses
+        rank:
+          type: [integer, "null"]
+          minimum: 1
+          description: Position among eligible routes by RR-24 and RR-25 (1 is the recommended route). Null for ineligible routes and in the primary response. The screen never ranks or sorts (GEN-03).
+        geometry:
+          $ref: "#/components/schemas/Geometry"
+        summary:
+          $ref: "#/components/schemas/RouteSummary"
+        checkpoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Checkpoint"
+    RoutingProvider:
+      type: string
+      enum: [tomtom, valhalla]
+      description: valhalla means backup mode; the screen shows a notice
+    WeatherStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, partial, unavailable, busy]
+          description: 'ok = every checkpoint has data; partial = some checkpoints have No data; unavailable = no weather data at all; busy = the weather service answered "too many requests" and the screen says to try again in a minute'
+    Recommendation:
+      type: object
+      required: [status, route_id, least_bad_route_id, deciding_criterion, sentence]
+      properties:
+        status:
+          type: string
+          enum: [recommended, none_eligible]
+        route_id:
+          type: [string, "null"]
+        least_bad_route_id:
+          type: [string, "null"]
+          description: Set only when status is none_eligible (RR-23)
+        deciding_criterion:
+          type: [string, "null"]
+          enum: [severe_miles, high_miles, average_risk, travel_time, distance, provider_order, only_eligible, null]
+        sentence:
+          type: string
+          description: One plain-language explanation (RR-26)
+    PrimaryTripResponse:
+      type: object
+      required: [route, heatmap, routing_provider, weather]
+      properties:
+        route:
+          $ref: "#/components/schemas/Route"
+        heatmap:
+          $ref: "#/components/schemas/Heatmap"
+        routing_provider:
+          $ref: "#/components/schemas/RoutingProvider"
+        weather:
+          $ref: "#/components/schemas/WeatherStatus"
+    CompareTripResponse:
+      type: object
+      required: [routes, recommendation, heatmap, routing_provider, weather]
+      properties:
+        routes:
+          type: array
+          minItems: 1
+          maxItems: 3
+          description: Already in display order, ranked routes first, then ineligible routes with the least-bad first. The screen shows them in this order.
+          items:
+            $ref: "#/components/schemas/Route"
+        recommendation:
+          $ref: "#/components/schemas/Recommendation"
+        heatmap:
+          $ref: "#/components/schemas/Heatmap"
+        routing_provider:
+          $ref: "#/components/schemas/RoutingProvider"
+        weather:
+          $ref: "#/components/schemas/WeatherStatus"
+    Attribution:
+      type: object
+      required: [routing_copyright]
+      properties:
+        routing_copyright:
+          type: string
+          examples: ["©TomTom"]
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+          enum: [validation_error, rate_limited, routing_unavailable, no_route_found, weather_unavailable, internal_error]
+        field_errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
