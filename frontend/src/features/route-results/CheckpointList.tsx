@@ -4,13 +4,8 @@ import type { Route } from '../../shared/types'
 import { CheckpointRow } from './CheckpointRow'
 import { useRovingRows } from './useRovingRows'
 
-// Only a wide screen scrolls the list inside the panel; on a phone a box inside the page is a scroll trap.
-const listBox: SxProps<Theme> = (theme) => ({
-  [theme.breakpoints.up('md')]: { maxHeight: 280, overflowY: 'auto' },
-  border: 1,
-  borderColor: 'divider',
-  borderRadius: 1,
-})
+// The list flows with the page: on every width the results already scroll, and a box inside them is a scroll trap.
+const listBox: SxProps<Theme> = { border: 1, borderColor: 'divider', borderRadius: 1 }
 
 interface CheckpointListProps {
   route: Route

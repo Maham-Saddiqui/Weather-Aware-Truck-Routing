@@ -24,6 +24,26 @@ function renderList(selectedCheckpointIndex: number | null = null) {
 
 const rows = () => screen.getAllByRole('button').filter((row) => row.textContent.includes('Mile'))
 
+// jsdom does not apply media queries to computed styles, so read the rules the list's classes were given.
+function cssRulesFor(element: HTMLElement): string {
+  const classNames = Array.from(element.classList)
+  const rules = Array.from(document.styleSheets).flatMap((sheet) => Array.from(sheet.cssRules))
+  return rules
+    .map((rule) => rule.cssText)
+    .filter((text) => classNames.some((name) => text.includes(`.${name}`)))
+    .join(' ')
+}
+
+describe('checkpoint list scrolling (REQ-08, FE-07)', () => {
+  it('flows with the results column instead of scrolling inside it', () => {
+    renderList()
+
+    expect(cssRulesFor(screen.getByRole('list', { name: 'Checkpoints' }))).not.toMatch(
+      /overflow|max-height/,
+    )
+  })
+})
+
 describe('checkpoint list keyboard use (FE-07, WCAG 2.4.3)', () => {
   it('is one tab stop, so the slider is not behind every checkpoint row', async () => {
     renderList()
