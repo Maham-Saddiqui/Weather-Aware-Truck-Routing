@@ -255,6 +255,44 @@ def test_an_answer_we_cannot_read_means_unavailable(text: str) -> None:
         service.weather.forecast([POINT])
 
 
+MALFORMED_ANSWERS = [
+    "5",
+    "null",
+    '"a page of text"',
+    '["text"]',
+    "[1]",
+    "[null]",
+    '{"hourly": null}',
+    '{"hourly": []}',
+    '{"hourly": "abc"}',
+    location(time="5"),
+    location(time='"abc"'),
+    location(time="[1.5, 2, 3]"),
+    location(time="[true, 2, 3]"),
+    location(time="[99999999999999999999, 2, 3]"),
+    location(wind_speed_10m='"abc"'),
+    location(wind_speed_10m="[true, 1, 2]"),
+    location(wind_speed_10m="[NaN, 1, 2]"),
+    location(wind_gusts_10m="[Infinity, 1, 2]"),
+    location(rain='{"a": 1, "b": 2, "c": 3}'),
+    location(snowfall="[[1], 2, 3]"),
+    location(showers='["0.1", 0, 0]'),
+    "[" * 5_000,
+]
+
+
+@pytest.mark.parametrize("text", MALFORMED_ANSWERS)
+def test_an_answer_of_the_wrong_shape_means_unavailable_and_nothing_is_cached(text: str) -> None:
+    service = Service(lambda request: httpx.Response(200, text=text))
+
+    with pytest.raises(WeatherUnavailable):
+        service.weather.forecast([POINT])
+    with pytest.raises(WeatherUnavailable):
+        service.weather.forecast([POINT])
+
+    assert len(service.requests) == 2
+
+
 def test_a_network_error_is_retried_once_then_reported_as_unavailable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
