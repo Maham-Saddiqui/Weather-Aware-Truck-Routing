@@ -12,10 +12,6 @@ import { VISUALLY_HIDDEN_STYLE } from '../../shared/visuallyHidden'
 import { LegendItem } from './LegendItem'
 
 const Panel = styled(Paper)(({ theme }) => ({
-  position: 'absolute',
-  top: theme.spacing(1),
-  left: theme.spacing(1),
-  maxWidth: `calc(100% - ${theme.spacing(8)})`,
   padding: theme.spacing(0.5, 1),
   backgroundColor: theme.palette.background.paper,
 }))

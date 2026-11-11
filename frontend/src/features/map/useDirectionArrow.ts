@@ -1,8 +1,13 @@
-import { decomposeColor, useTheme } from '@mui/material/styles'
+import { decomposeColor } from '@mui/material/styles'
 import { useMap } from '@vis.gl/react-maplibre'
 import { useCallback, useSyncExternalStore } from 'react'
 import { ROUTE_CASING_COLOUR } from '../../shared/colours'
-import { ARROW_IMAGE_ID, ARROW_IMAGE_PIXEL_RATIO, arrowImageData } from './directionArrowImage'
+import {
+  ARROW_CORE_COLOUR,
+  ARROW_IMAGE_ID,
+  ARROW_IMAGE_PIXEL_RATIO,
+  arrowImageData,
+} from './directionArrowImage'
 import type { Rgb } from './directionArrowImage'
 import { arrowSpacingPx, directionCueLayerProps } from './directionCue'
 
@@ -17,16 +22,19 @@ function rgbOf(colour: string): Rgb {
 // be gone when this scene is torn down. Only a resize changes it, never a zoom or a frame.
 export function useDirectionArrow(selectedRouteId: string | null) {
   const { current: map } = useMap()
-  const white = useTheme().palette.common.white
   const subscribe = useCallback(
     (notify: () => void) => {
       if (!map) {
         return () => undefined
       }
       if (!map.hasImage(ARROW_IMAGE_ID)) {
-        map.addImage(ARROW_IMAGE_ID, arrowImageData(rgbOf(white), rgbOf(ROUTE_CASING_COLOUR)), {
-          pixelRatio: ARROW_IMAGE_PIXEL_RATIO,
-        })
+        map.addImage(
+          ARROW_IMAGE_ID,
+          arrowImageData(rgbOf(ARROW_CORE_COLOUR), rgbOf(ROUTE_CASING_COLOUR)),
+          {
+            pixelRatio: ARROW_IMAGE_PIXEL_RATIO,
+          },
+        )
       }
       map.on('resize', notify)
       notify()
@@ -34,7 +42,7 @@ export function useDirectionArrow(selectedRouteId: string | null) {
         map.off('resize', notify)
       }
     },
-    [map, white],
+    [map],
   )
   const spacing = useSyncExternalStore(subscribe, () =>
     map?.hasImage(ARROW_IMAGE_ID) ? arrowSpacingPx(map.getContainer().clientWidth) : 0,

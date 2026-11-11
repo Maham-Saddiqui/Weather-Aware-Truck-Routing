@@ -42,16 +42,24 @@ describe('the direction cue shows a driver which way the selected route runs (RE
   })
 
   it('sits beside the line so the checkpoint dots on it never cover it', () => {
-    const [, sideways] = directionCueLayerProps('route-1', SPACING).layout['icon-offset']
+    const { layout } = directionCueLayerProps('route-1', SPACING)
+    const [, sideways] = layout['icon-offset']
 
-    expect(Math.abs(sideways)).toBeGreaterThanOrEqual(16)
+    expect(Math.abs(sideways) * layout['icon-size']).toBeGreaterThanOrEqual(16)
   })
 
-  it('is bright but not solid', () => {
+  it('is clearly visible but softer than a solid mark', () => {
     const opacity = directionCueLayerProps('route-1', SPACING).paint['icon-opacity']
 
-    expect(opacity).toBeGreaterThanOrEqual(0.8)
+    expect(opacity).toBeGreaterThanOrEqual(0.7)
     expect(opacity).toBeLessThan(1)
+  })
+
+  it('is drawn smaller than the arrow image, so it reads as a cue beside the route line', () => {
+    const size = directionCueLayerProps('route-1', SPACING).layout['icon-size']
+
+    expect(size).toBeLessThan(1)
+    expect(size).toBeGreaterThanOrEqual(0.7)
   })
 
   it('spaces the arrows by the gap it is given', () => {

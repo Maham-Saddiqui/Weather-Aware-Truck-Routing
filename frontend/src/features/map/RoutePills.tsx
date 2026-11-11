@@ -2,11 +2,9 @@ import Box from '@mui/material/Box'
 import { Marker } from '@vis.gl/react-maplibre'
 import { useMemo } from 'react'
 import type { Route } from '../../shared/types'
+import { NAMES_HIDDEN_BELOW_MAP_WIDTH_PX } from './mapConstants'
 import { placePills, sideOffset } from './pillPlacement'
 import type { RouteLines } from './routeGeoJson'
-
-// Below this map width the other routes' names are left off the map: the cards name them and there is no room.
-const NAMES_HIDDEN_BELOW_MAP_WIDTH_PX = 420
 
 interface RoutePillsProps {
   routes: readonly Route[]

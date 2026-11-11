@@ -45,6 +45,10 @@ export const HEATMAP_LAYER_ID = 'heatmap-circles'
 
 export const ROUTE_HIT_WIDTH_PX = 22
 
+// At or below this map width the other routes' names are left off the map (the cards name them and there is no
+// room), and a small colour key stands in for them.
+export const NAMES_HIDDEN_BELOW_MAP_WIDTH_PX = 420
+
 // Heatmap circles grow with zoom so a 25 mile spacing stays a continuous band at every zoom.
 export const HEATMAP_RADIUS_STOPS_ZOOM_PX = [3, 12, 6, 26, 9, 70] as const
 export const HEATMAP_BLUR = 0.9

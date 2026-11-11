@@ -15,7 +15,7 @@ import {
   UNSELECTED_DOT_LAYER_IDS,
 } from './mapConstants'
 import { mapLib } from './mapLib'
-import { MapLegend } from './MapLegend'
+import { MapOverlayTopLeft } from './MapOverlayTopLeft'
 import { MapUnavailable } from './MapUnavailable'
 import { useMapFailure } from './useMapFailure'
 import { ReadableLabels } from './ReadableLabels'
@@ -114,7 +114,7 @@ export function RouteMapCanvas(props: RouteMapCanvasProps) {
       >
         <MapContents {...props} />
       </Map>
-      <MapLegend />
+      <MapOverlayTopLeft routeCount={props.routes.length} />
       {failure.hasFailed && <MapUnavailable />}
     </Box>
   )

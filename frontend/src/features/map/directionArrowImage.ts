@@ -1,4 +1,6 @@
 export const ARROW_IMAGE_ID = 'route-direction-arrow'
+// Softer than pure white, so the arrows read as a cue beside the near-white Route 2 line rather than a copy of it.
+export const ARROW_CORE_COLOUR = '#cbd5e1'
 // Drawn at twice the size it is shown at, so it stays sharp on high-density screens.
 export const ARROW_IMAGE_PIXEL_RATIO = 2
 
