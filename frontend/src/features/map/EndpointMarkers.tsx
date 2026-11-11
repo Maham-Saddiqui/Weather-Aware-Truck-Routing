@@ -1,9 +1,13 @@
 import Box from '@mui/material/Box'
+import Tooltip from '@mui/material/Tooltip'
 import { Marker } from '@vis.gl/react-maplibre'
 import { memo } from 'react'
+import { EndpointLetter } from '../../shared/EndpointLetter'
 import type { Checkpoint, Route } from '../../shared/types'
 
-const BADGE_PX = 28
+const LABEL_MAX_WIDTH_PX = 112
+// Above the checkpoint dots, the route name pills and the truck, whichever order they were added to the map in.
+const ABOVE_OTHER_MARKERS = { zIndex: 3 } as const
 
 export interface EndpointLabels {
   origin: string
@@ -16,31 +20,50 @@ interface EndpointBadgeProps {
   position: LatLon
   letter: 'A' | 'B'
   name: string
+  placeLabel: string | undefined
 }
 
-function EndpointBadgeView({ position, letter, name }: EndpointBadgeProps) {
-  const isStart = letter === 'A'
+function cityOf(placeLabel: string): string {
+  return placeLabel.split(',')[0] ?? placeLabel
+}
+
+function EndpointBadgeView({ position, letter, name, placeLabel }: EndpointBadgeProps) {
   return (
-    <Marker longitude={position.lon} latitude={position.lat} anchor="center">
-      <Box
-        role="img"
-        aria-label={name}
-        sx={{
-          display: 'grid',
-          placeItems: 'center',
-          width: BADGE_PX,
-          height: BADGE_PX,
-          borderRadius: 1,
-          border: 2,
-          borderColor: 'common.white',
-          bgcolor: isStart ? 'primary.main' : 'text.primary',
-          color: 'background.default',
-          fontWeight: 'bold',
-          boxShadow: 3,
-        }}
-      >
-        {letter}
-      </Box>
+    <Marker
+      longitude={position.lon}
+      latitude={position.lat}
+      anchor="center"
+      style={ABOVE_OTHER_MARKERS}
+    >
+      <Tooltip title={name} placement="top" arrow>
+        <Box role="img" aria-label={name} sx={{ position: 'relative' }}>
+          <EndpointLetter letter={letter} size="pin" />
+          {placeLabel !== undefined && (
+            <Box
+              aria-hidden="true"
+              sx={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                mt: 0.25,
+                px: 0.75,
+                maxWidth: LABEL_MAX_WIDTH_PX,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                borderRadius: 1,
+                bgcolor: 'background.paper',
+                color: 'text.primary',
+                typography: 'caption',
+                fontWeight: 'bold',
+              }}
+            >
+              {cityOf(placeLabel)}
+            </Box>
+          )}
+        </Box>
+      </Tooltip>
     </Marker>
   )
 }
@@ -69,11 +92,13 @@ export function EndpointMarkers({ route, labels }: EndpointMarkersProps) {
         position={start.position}
         letter="A"
         name={withName('Start', labels?.origin)}
+        placeLabel={labels?.origin}
       />
       <EndpointBadge
         position={destination.position}
         letter="B"
         name={withName('Destination', labels?.destination)}
+        placeLabel={labels?.destination}
       />
     </>
   )

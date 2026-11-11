@@ -3,6 +3,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { EndpointLetter, type EndpointLetterName } from '../../shared/EndpointLetter'
 import { formatLocalTime } from '../../shared/time'
 import type { TripFormValues } from './validation'
 
@@ -18,6 +19,17 @@ function departureText({ departure }: TripFormValues, zone: string | null): stri
   return `, departs ${formatLocalTime(departure.toISOString(), zone)}`
 }
 
+function LetteredPlace({ letter, label }: { letter: EndpointLetterName; label?: string }) {
+  return (
+    <Box
+      component="span"
+      sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}
+    >
+      <EndpointLetter letter={letter} /> <span>{label}</span>
+    </Box>
+  )
+}
+
 export function TripSummary({ values, departureZone, onEdit }: TripSummaryProps) {
   return (
     <Stack
@@ -26,8 +38,13 @@ export function TripSummary({ values, departureZone, onEdit }: TripSummaryProps)
       sx={{ alignItems: 'center', justifyContent: 'space-between' }}
     >
       <Box sx={{ minWidth: 0 }}>
-        <Typography variant="h3" component="h2" sx={{ overflowWrap: 'anywhere' }}>
-          {values.origin?.label} to {values.destination?.label}
+        <Typography
+          variant="h3"
+          component="h2"
+          sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 0.75 }}
+        >
+          <LetteredPlace letter="A" label={values.origin?.label} /> <span>to</span>{' '}
+          <LetteredPlace letter="B" label={values.destination?.label} />
         </Typography>
         <Typography variant="caption" color="text.secondary">
           {values.loadLb} lb, checkpoint every {values.spacingMiles} miles
