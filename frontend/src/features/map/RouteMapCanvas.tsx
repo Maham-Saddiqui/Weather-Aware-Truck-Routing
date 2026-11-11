@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { useState } from 'react'
 import { MAP_MIN_HEIGHT_PX } from '../../shared/constants'
 import type { RouteMapProps } from '../../shared/types'
+import { BlankMissingImages } from './BlankMissingImages'
 import { HeatmapLayer } from './HeatmapLayer'
 import { BASEMAP_STYLE_URL, INITIAL_VIEW, ROUTE_HIT_LAYER_ID } from './mapConstants'
 import { mapLib } from './mapLib'
@@ -58,6 +59,7 @@ export function RouteMapCanvas({ heatmap, hourOffset, onSelectRoute, ...scene }:
       >
         <AttributionControl position="bottom-right" compact={false} />
         <NavigationControl position="top-right" showCompass={false} />
+        <BlankMissingImages />
         {heatmap && <HeatmapLayer heatmap={heatmap} hourOffset={hourOffset} />}
         <RouteScene {...scene} />
         <RouteMarkers {...scene} heatmap={heatmap} hourOffset={hourOffset} />

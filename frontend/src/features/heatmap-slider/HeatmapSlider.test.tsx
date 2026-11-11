@@ -6,15 +6,16 @@ import { HeatmapSlider } from './HeatmapSlider'
 
 const START_UTC = '2026-11-12T23:00:00Z'
 const PLAYBACK_STEP_MS = 1000
-const PLAY = 'Play the 48-hour forecast'
-const REPLAY = 'Replay the 48-hour forecast'
+const PLAY = 'Play the trip'
+const REPLAY = 'Replay the trip'
 
 interface SliderWithStateProps {
   initialHour?: number
+  playUntilHour?: number
   onChange?: (hour: number) => void
 }
 
-function SliderWithState({ initialHour = 0, onChange }: SliderWithStateProps) {
+function SliderWithState({ initialHour = 0, playUntilHour = 48, onChange }: SliderWithStateProps) {
   const [hourOffset, setHourOffset] = useState(initialHour)
   return (
     <HeatmapSlider
@@ -22,6 +23,7 @@ function SliderWithState({ initialHour = 0, onChange }: SliderWithStateProps) {
       timeZone="America/Denver"
       hours={49}
       hourOffset={hourOffset}
+      playUntilHour={playUntilHour}
       onChangeHourOffset={(hour) => {
         setHourOffset(hour)
         onChange?.(hour)
@@ -49,6 +51,12 @@ function advanceTime(milliseconds: number) {
   act(() => {
     vi.advanceTimersByTime(milliseconds)
   })
+}
+
+function advanceSteps(steps: number) {
+  for (let step = 0; step < steps; step += 1) {
+    advanceTime(PLAYBACK_STEP_MS)
+  }
 }
 
 function hoursReported(onChange: ReturnType<typeof vi.fn>): number[] {
@@ -180,6 +188,73 @@ describe('HeatmapSlider play button (FE-07: reduced motion respected, no autopla
     await userEvent.tab()
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent(PLAY)
+  })
+})
+
+describe('HeatmapSlider plays the trip, not the whole forecast (REQ-09, RR-19, RR-28)', () => {
+  beforeEach(() => {
+    mockReducedMotion(false)
+    vi.useFakeTimers()
+  })
+
+  function playToTheEnd(playUntilHour: number, initialHour = 0) {
+    const onChange = vi.fn()
+    render(
+      <SliderWithState
+        playUntilHour={playUntilHour}
+        initialHour={initialHour}
+        onChange={onChange}
+      />,
+    )
+    pressButton(PLAY)
+    advanceSteps(60)
+    return hoursReported(onChange)
+  }
+
+  it('stops one hour after a 2 hour trip arrives and offers a replay', () => {
+    expect(playToTheEnd(3)).toEqual([1, 2, 3])
+    expect(screen.getByRole('button', { name: REPLAY })).toBeVisible()
+  })
+
+  it('stops after a 20 hour trip at its own end', () => {
+    expect(playToTheEnd(21).at(-1)).toBe(21)
+  })
+
+  it('stops at the last slider hour when the trip is longer than the forecast', () => {
+    expect(playToTheEnd(48).at(-1)).toBe(48)
+  })
+
+  it('still lets the driver scrub the whole 48 hours by hand', async () => {
+    vi.useRealTimers()
+    render(<SliderWithState playUntilHour={3} />)
+
+    screen.getByRole('slider').focus()
+    await userEvent.keyboard('{End}')
+
+    expect(screen.getByRole('slider')).toHaveAttribute('aria-valuenow', '48')
+  })
+
+  it('restarts at hour 0 when play is pressed after scrubbing beyond the end', () => {
+    const onChange = vi.fn()
+    render(<SliderWithState playUntilHour={3} initialHour={30} onChange={onChange} />)
+
+    pressButton(REPLAY)
+
+    expect(onChange).toHaveBeenCalledWith(0)
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeVisible()
+  })
+
+  it('does not start playing again by itself when the next route is longer', () => {
+    const onChange = vi.fn()
+    const { rerender } = render(<SliderWithState playUntilHour={2} onChange={onChange} />)
+    pressButton(PLAY)
+    advanceSteps(5)
+    onChange.mockClear()
+
+    rerender(<SliderWithState playUntilHour={10} onChange={onChange} />)
+    advanceSteps(5)
+
+    expect(onChange).not.toHaveBeenCalled()
   })
 })
 

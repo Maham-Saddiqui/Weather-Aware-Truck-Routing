@@ -41,6 +41,35 @@ describe('TruckMarker follows the forecast slider (REQ-09, RR-28, FE-07, FE-08)'
     render(truckAt(48))
 
     expect(screen.getByText('Arrived')).toBeVisible()
-    expect(screen.getByRole('img', { name: /^Truck arrived, / })).toBeVisible()
+    expect(screen.getByRole('img', { name: /^Truck arrived at / })).toBeVisible()
+  })
+
+  it('names the arrival time, not the slider time, at every hour from arrival on (RR-19)', () => {
+    const arrivedAt = 'Truck arrived at Thu 17:54 CT'
+    const { rerender } = render(truckAt(11))
+    expect(screen.getByRole('img', { name: arrivedAt })).toBeVisible()
+
+    rerender(truckAt(30))
+
+    expect(screen.getByRole('img', { name: arrivedAt })).toBeVisible()
+  })
+
+  it('pulses a soft ring while on the move, and not once arrived (NFR-03)', () => {
+    const { rerender } = render(truckAt(0))
+    expect(screen.getByTestId('truck-pulse')).toHaveAttribute('aria-hidden', 'true')
+
+    rerender(truckAt(48))
+
+    expect(screen.queryByTestId('truck-pulse')).not.toBeInTheDocument()
+  })
+
+  it('switches the pulse off when reduced motion is requested (FE-07)', () => {
+    render(truckAt(0))
+
+    const styles = Array.from(document.querySelectorAll('style'))
+      .map((element) => element.textContent)
+      .join('')
+
+    expect(styles).toMatch(/prefers-reduced-motion: reduce\)\{[^}]*animation:none/)
   })
 })

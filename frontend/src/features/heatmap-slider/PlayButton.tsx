@@ -12,7 +12,7 @@ function playLabel({ isUnavailable, isPlaying, isFinished }: Playback): string {
   if (isPlaying) {
     return 'Pause'
   }
-  return isFinished ? 'Replay the 48-hour forecast' : 'Play the 48-hour forecast'
+  return isFinished ? 'Replay the trip' : 'Play the trip'
 }
 
 function PlayIcon({ isPlaying, isFinished }: Playback) {

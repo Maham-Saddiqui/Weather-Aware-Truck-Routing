@@ -63,6 +63,10 @@ export function instantAfterHours(startUtc: string, hours: number): Date {
   return new Date(Date.parse(startUtc) + hours * MS_PER_HOUR)
 }
 
+export function hoursBetween(startUtc: string, laterUtc: string): number {
+  return (Date.parse(laterUtc) - Date.parse(startUtc)) / MS_PER_HOUR
+}
+
 export function formatDuration(totalSeconds: number): string {
   const totalMinutes = Math.round(totalSeconds / SECONDS_PER_MINUTE)
   const hours = Math.floor(totalMinutes / MINUTES_PER_HOUR)
