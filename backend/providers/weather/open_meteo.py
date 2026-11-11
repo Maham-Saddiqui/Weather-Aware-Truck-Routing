@@ -1,4 +1,5 @@
 import json
+import logging
 import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
@@ -9,6 +10,7 @@ import httpx
 
 from domain.heatmap import cell_of
 from domain.types import GeoPoint, HourlyWeather
+from providers.event_log import log_event
 from providers.http import QueryParams, get_with_one_retry
 from providers.provider_call import OPEN_METEO, UNREADABLE_ANSWER, ProviderCall
 from providers.trip_notes import current_notes
@@ -84,10 +86,12 @@ class OpenMeteoWeather:
         stay absent, which the ratings show as no data (RR-11)."""
         for index, chunk in enumerate(_chunks(missing, POINTS_PER_REQUEST)):
             if deadline - monotonic() < OPEN_METEO_READ_TIMEOUT_S:
+                log_event(logging.WARNING, "weather_time_ran_out", chunks_fetched=index)
                 if index == 0:
                     raise WeatherUnavailable("The weather service is too slow")
                 return
             if not self._budget.try_spend(len(chunk)):
+                log_event(logging.WARNING, "weather_budget_exceeded", locations=len(chunk))
                 raise WeatherBusy("The weather allowance is spent for now")
             for cell, text in self._fetch(chunk).items():
                 self._cache.put(cell, text)

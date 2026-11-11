@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from config import container
 from domain.types import GeoPoint
+from providers.event_log import log_guard_spent
 from providers.routing.port import RoutingUnavailable
 from providers.timezone.offline import TimeZoneNotFound
 from services.compare_trip import plan_compare_trip
@@ -36,6 +37,7 @@ class AttributionView(APIView):
     def get(self, request: Request) -> Response:
         providers = container.providers()
         if not providers.trips.call_guard.try_acquire():
+            log_guard_spent(fell_back_to="no_credit_text")
             raise RoutingUnavailable("The daily routing budget is spent")
         credit = providers.attribution.routing_copyright()
         return no_store(Response({"routing_copyright": credit}))

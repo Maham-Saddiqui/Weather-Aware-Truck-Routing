@@ -11,6 +11,7 @@ from trips import limits
 
 OUTSIDE_LOWER_48 = "Choose a place inside the lower 48 states."
 NOT_A_NUMBER = "Enter a number."
+UNKNOWN_FIELD = "Unknown field."
 
 
 class FiniteFloatField(serializers.FloatField):
@@ -32,7 +33,7 @@ class StrictSerializer(serializers.Serializer[Any]):
         if isinstance(data, Mapping):
             unknown = sorted(set(data) - set(self.fields))
             if unknown:
-                raise serializers.ValidationError({name: ["Unknown field."] for name in unknown})
+                raise serializers.ValidationError({name: [UNKNOWN_FIELD] for name in unknown})
         internal: dict[str, Any] = super().to_internal_value(data)
         return internal
 
