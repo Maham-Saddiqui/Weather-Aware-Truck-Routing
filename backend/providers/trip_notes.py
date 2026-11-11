@@ -13,6 +13,7 @@ class TripNotes:
 
     routing_provider: str = ""
     backup_reason: str = ""
+    alternatives_unavailable: bool = False
     routes: int = 0
     weather_status: str = ""
     checkpoints: int = 0

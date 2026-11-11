@@ -47,12 +47,17 @@ def fixed_clock() -> datetime:
 
 
 class FakeCallGuard:
-    def __init__(self, *, allowed: bool = True) -> None:
+    """Allows every call, none, or only the first `allowed_calls` of them."""
+
+    def __init__(self, *, allowed: bool = True, allowed_calls: int | None = None) -> None:
         self.allowed = allowed
+        self.allowed_calls = allowed_calls
         self.acquired = 0
 
     def try_acquire(self) -> bool:
         self.acquired += 1
+        if self.allowed_calls is not None:
+            return self.acquired <= self.allowed_calls
         return self.allowed
 
 

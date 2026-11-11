@@ -72,6 +72,41 @@ def test_a_compare_trip_writes_its_own_summary_with_the_route_count(
 
     summary = only_summary(caplog)
     assert (summary["endpoint"], summary["outcome"], summary["routes"]) == ("compare", "ok", 2)
+    assert summary["alternatives_unavailable"] is False
+
+
+def timing_out_on_alternatives() -> FakeRouting:
+    return FakeRouting(
+        {RoutePreference.FASTEST: RoutingUnavailable("timed out"), RoutePreference.ECO: ()},
+        without_alternatives=(route_bent(0.0),),
+    )
+
+
+def test_a_compare_trip_that_got_one_route_after_a_timeout_is_degraded_but_not_a_backup(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """REQ-12, BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle(routing=timing_out_on_alternatives()))
+
+    assert post(client, "compare") == 200
+
+    summary = only_summary(caplog)
+    assert (summary["outcome"], summary["routes"]) == ("degraded", 1)
+    assert (summary["routing_provider"], summary["backup_used"]) == ("tomtom", False)
+    assert summary["alternatives_unavailable"] is True
+
+
+def test_the_one_route_fallback_logs_no_sensitive_values(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """SEC-11"""
+    caplog.set_level(logging.DEBUG)
+    use_fakes(bundle(routing=timing_out_on_alternatives()))
+
+    post(client, "compare")
+
+    assert_nothing_sensitive_was_logged(caplog)
 
 
 def test_a_spent_daily_guard_is_a_degraded_trip_that_says_the_backup_answered(

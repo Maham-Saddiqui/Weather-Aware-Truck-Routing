@@ -7,6 +7,7 @@ from domain.dedupe import ShapeBook, choose_variety, drop_near_duplicates
 from domain.types import ProviderRoute
 from domain.units import vehicle_weight_kg
 from providers.event_log import log_guard_spent
+from providers.http import without_retry_after_read_timeout
 from providers.routing.port import (
     RoutePreference,
     RouteQuery,
@@ -20,7 +21,7 @@ from services.environment import TripEnvironment
 from services.trip_request import TripRequest
 
 MAX_ROUTES_SHOWN = 3
-ALTERNATIVES_REQUESTED = 3
+ALTERNATIVES_REQUESTED = MAX_ROUTES_SHOWN - 1
 BACKUP_GUARD_SPENT = "daily_guard_spent"
 BACKUP_TOMTOM_UNAVAILABLE = "tomtom_unavailable"
 
@@ -74,11 +75,29 @@ def _compare_routes(env: TripEnvironment, request: TripRequest) -> RoutedRoutes:
         distinct = drop_near_duplicates(fastest_call.result(), shapes)
     except RoutingUnavailable:
         eco_call.cancel()
-        current_notes().backup_reason = BACKUP_TOMTOM_UNAVAILABLE
-        return _from_backup(env.backup_routing, fastest)
+        return _single_route_or_backup(env, fastest)
     if len(distinct) < MAX_ROUTES_SHOWN:
         distinct = drop_near_duplicates((*distinct, *eco_call.result()), shapes)
     return RoutedRoutes(env.routing.name, choose_variety(distinct, MAX_ROUTES_SHOWN, shapes))
+
+
+def _single_route_or_backup(env: TripEnvironment, alternatives: RouteQuery) -> RoutedRoutes:
+    """Long trips can time out with alternatives: ask TomTom once for one route, then the backup.
+
+    One attempt only, so the alternatives wait plus this wait stay inside the trip deadline.
+    """
+    if env.call_guard.try_acquire():
+        try:
+            with without_retry_after_read_timeout():
+                single = env.routing.routes(replace(alternatives, max_alternatives=0))
+        except RoutingUnavailable:
+            current_notes().backup_reason = BACKUP_TOMTOM_UNAVAILABLE
+        else:
+            current_notes().alternatives_unavailable = True
+            return RoutedRoutes(env.routing.name, single)
+    else:
+        _backup_because_guard_is_spent()
+    return _from_backup(env.backup_routing, alternatives)
 
 
 def _submit[T](env: TripEnvironment, work: Callable[[], T]) -> Future[T]:

@@ -6,13 +6,14 @@ import pytest
 from providers.routing.port import (
     NoRouteFound,
     RoutePreference,
+    RouteQuery,
     RoutingProviderName,
     RoutingUnavailable,
 )
 from services.compare_trip import plan_compare_trip
 from services.primary_trip import plan_primary_trip
 from tests.fakes.bundle import NOW, FakeCallGuard
-from tests.fakes.routing import FakeRouting
+from tests.fakes.routing import FakeRouting, Outcome
 from tests.fakes.trips import route_bent, tomtom_answering, trip_environment, trip_request
 
 FASTEST = RoutePreference.FASTEST
@@ -136,3 +137,105 @@ def test_a_later_departure_is_sent_to_the_provider_unchanged() -> None:
     plan_primary_trip(trip_environment(routing=tomtom), trip_request())
 
     assert [query.depart_at for query in tomtom.calls] == [NOW + timedelta(hours=3)]
+
+
+def alternatives_calls(tomtom: FakeRouting) -> list[RouteQuery]:
+    return [query for query in tomtom.calls if query.max_alternatives > 0]
+
+
+def single_route_calls(tomtom: FakeRouting) -> list[RouteQuery]:
+    return [query for query in tomtom.calls if query.max_alternatives == 0]
+
+
+def timing_out_on_alternatives(single_route: Outcome) -> FakeRouting:
+    return FakeRouting(
+        {FASTEST: RoutingUnavailable("timed out"), RoutePreference.ECO: ()},
+        without_alternatives=single_route,
+    )
+
+
+def test_compare_asks_tomtom_for_the_routes_it_shows_minus_the_main_one() -> None:
+    """REQ-03"""
+    tomtom = tomtom_answering((route_bent(0.0),), (route_bent(0.6),))
+
+    plan_compare_trip(trip_environment(routing=tomtom), trip_request())
+
+    assert {query.max_alternatives for query in tomtom.calls} == {2}
+
+
+def test_when_alternatives_time_out_one_tomtom_route_answers_without_the_backup() -> None:
+    """REQ-03, REQ-12, BE-07: a long trip still gets its fastest route, from TomTom"""
+    tomtom = timing_out_on_alternatives((route_bent(0.0),))
+    backup = valhalla_with(0.0, 0.6)
+
+    result = plan_compare_trip(
+        trip_environment(routing=tomtom, backup_routing=backup), trip_request()
+    )
+
+    assert result.routing_provider is RoutingProviderName.TOMTOM
+    assert len(result.routes) == 1
+    assert backup.calls == []
+    assert len(alternatives_calls(tomtom)) == 2
+    assert [query.preference for query in single_route_calls(tomtom)] == [FASTEST]
+
+
+def test_the_single_route_fallback_is_the_same_query_the_primary_sends() -> None:
+    """REQ-03"""
+    tomtom = timing_out_on_alternatives((route_bent(0.0),))
+
+    plan_compare_trip(trip_environment(routing=tomtom), trip_request())
+
+    (single,) = single_route_calls(tomtom)
+    (alternatives,) = [q for q in alternatives_calls(tomtom) if q.preference is FASTEST]
+    assert single == replace(alternatives, max_alternatives=0)
+
+
+def test_when_the_single_route_fails_too_the_backup_answers() -> None:
+    """BE-07"""
+    tomtom = timing_out_on_alternatives(RoutingUnavailable("timed out again"))
+
+    result = plan_compare_trip(
+        trip_environment(routing=tomtom, backup_routing=valhalla_with(0.0, 0.6)), trip_request()
+    )
+
+    assert result.routing_provider is VALHALLA
+    assert len(result.routes) == 2
+
+
+def test_no_route_found_on_the_single_route_call_is_still_an_answer_not_a_failure() -> None:
+    """BE-07"""
+    tomtom = timing_out_on_alternatives(NoRouteFound("none"))
+    backup = valhalla_with(0.0)
+
+    with pytest.raises(NoRouteFound):
+        plan_compare_trip(trip_environment(routing=tomtom, backup_routing=backup), trip_request())
+
+    assert backup.calls == []
+
+
+def test_a_spent_budget_stops_the_single_route_fallback_and_the_backup_answers() -> None:
+    """SEC-07: the guard allows the alternatives call only"""
+    tomtom = timing_out_on_alternatives((route_bent(0.0),))
+
+    result = plan_compare_trip(
+        trip_environment(
+            routing=tomtom,
+            backup_routing=valhalla_with(0.0),
+            call_guard=FakeCallGuard(allowed_calls=1),
+        ),
+        trip_request(),
+    )
+
+    assert single_route_calls(tomtom) == []
+    assert result.routing_provider is VALHALLA
+
+
+def test_the_single_route_fallback_counts_against_the_daily_budget() -> None:
+    """SEC-07"""
+    guard = FakeCallGuard()
+    tomtom = timing_out_on_alternatives((route_bent(0.0),))
+
+    plan_compare_trip(trip_environment(routing=tomtom, call_guard=guard), trip_request())
+
+    assert len(single_route_calls(tomtom)) == 1
+    assert guard.acquired >= 2

@@ -99,6 +99,22 @@ def test_a_compare_response_matches_the_contract(
     assert len(json_of(response)["routes"]) == 3
 
 
+def test_a_compare_response_with_the_one_route_fallback_matches_the_contract(
+    client: Client, use_fakes: UseFakes
+) -> None:
+    """REQ-03"""
+    timed_out = FakeRouting(
+        {RoutePreference.FASTEST: RoutingUnavailable("timed out"), RoutePreference.ECO: ()},
+        without_alternatives=(route_bent(0.0),),
+    )
+    use_fakes(with_trips(three_routes_with(calm), routing=timed_out))
+
+    response = post_trip(client, "/trips/compare", trip_body())
+
+    assert_conforms(response, "/trips/compare", "post")
+    assert len(json_of(response)["routes"]) == 1
+
+
 def test_a_primary_response_matches_the_contract(client: Client, use_fakes: UseFakes) -> None:
     use_fakes(three_routes_with(calm))
 
