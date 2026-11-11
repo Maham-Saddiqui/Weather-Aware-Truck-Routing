@@ -26,6 +26,8 @@ The map library alone is about 294 KB gzip (the whole map chunk, library plus ma
 
 First route 1.6 s (786 miles); full comparison 5 to 6 s (786 miles), 10.4 s (about 1,570 miles), 15 to 19 s (about 3,300 miles, three routes, 670 KB uncompressed). These are single manual runs on the live server. The compare budget of 12 s (95th percentile) is exceeded only by the longest trips, which get the long-trip deadline of 40 s (architecture section 6); the first route is on screen within seconds because it comes from the separate primary request.
 
+Measured on the live page by an independent assessor: first contentful paint about 0.4 to 0.5 s on a warm load; Play, slider drag, pan and zoom at about 60 frames per second (99th-percentile frame gap 19 ms, no gap over 34 ms); first-load shell about 198 KB and map chunk about 319 KB gzip. Not measured: a Lighthouse score, layout shift, the compare endpoint's 95th percentile under many concurrent visitors, and compressed response sizes. The budgets above are therefore met where a number is given here, and unmeasured otherwise.
+
 ## 2. Rules
 
 | ID | Rule |

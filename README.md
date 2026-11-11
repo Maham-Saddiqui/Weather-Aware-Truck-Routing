@@ -123,6 +123,19 @@ The server runs on Render (gunicorn with exactly one worker process and eight th
 - TomTom's free key is for evaluation. Nothing from TomTom is cached or stored, its credit text is shown in the app, and no comparison with other providers is published.
 - The weather service gives hourly values, so ratings reflect the hour, not minute-level weather.
 
+## How this was built, and the time it took
+
+**Agentic AI development, directed by the owner.** The project was built with Claude Code (Anthropic's AI coding assistant) working as a small team of agents, with the owner as product owner, researcher, architect and planner:
+
+- **The owner** researched the problem and the providers, wrote the requirements (including the performance and security requirements) and the coding standards, and challenged many of the agents' proposals until the documents were agreed (the requirements, the risk rules, the architecture and the standards). After that the owner handed the agents the build, approved every document change, ran manual tests on a laptop and a phone, and reported what they found (for example the map not following the truck after a manual zoom, a confusing slider after arrival, a cramped date picker), which became the next fixes.
+- **One lead developer agent** planned the work, wrote the API contract and the tool configuration, split the work into tracks with their own branches and folders, merged and verified every branch with the same automated check, kept the decision log, and was the only agent that pushed code.
+- **Four specialist agents started the build in parallel**, each with its own branch, its own folders and a written brief: **risk logic** (the rating, checkpoint, ranking and recommendation rules, plus the backup router, the time-zone adapter and the daily call guard), **providers and API** (the routing and weather adapters, the use-case services and the HTTP layer), **app shell, form and results** (theme, trip form, route cards) and **map and heatmap** (the map, the corridor heatmap and the forecast slider). Over forty further small tracks followed, each with one job (for example the long-trip handling, the UX fixes, the browser tests), in the same way.
+- **Independent reviewer, auditor and assessor agents** read the finished work without being allowed to change it: a standards audit of every rule against the code, three UX reviews of the live app, a checker that re-derived the risk answers from the rules alone, and two gradings against the brief.
+
+Decisions about the product, the risk rules and the scope were the owner's. Smaller implementation choices inside those decisions were made by the agents and are recorded, with the reasons, in [`docs/changelog.md`](docs/changelog.md) wherever they changed an approved document. Every commit carries a `Co-Authored-By: Claude` line.
+
+**Time (all times Pakistan Standard Time, PKT):** the repository was created on 11 November 2026 at 00:18 and the owner started working on the project at about 02:30. Research, planning and project set-up (requirements, risk rules, standards, architecture, hosting) took about **3 hours 50 minutes** (02:30 to about 06:20), after which the agents started building in parallel. Counting that phase and the implementation together, the project took about **15 hours of working time**, against the brief's 16-hour limit. The clock stopped whenever work was waiting for the owner (for example for an approval) or blocked by the weather service's rate limit, so the calendar span is longer, and the history shows quiet gaps and bursts of many commits in one hour, which are several agents working in parallel. The number of commits is therefore not a measure of hours.
+
 ## Credits
 
 Routing: TomTom. Map data: OpenStreetMap contributors, tiles by OpenFreeMap and OpenMapTiles. Weather data by Open-Meteo.com. Address search: Photon (komoot) on OpenStreetMap data. The same credits are in the app under "Credits".

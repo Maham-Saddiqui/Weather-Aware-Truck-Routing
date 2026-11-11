@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box'
 import Slider from '@mui/material/Slider'
 import { useId } from 'react'
 import { VISUALLY_HIDDEN_STYLE } from '../../shared/visuallyHidden'
@@ -57,9 +58,9 @@ export function HoursSlider({
         }}
       />
       {arrivalMark && (
-        <span id={descriptionId} style={VISUALLY_HIDDEN_STYLE}>
+        <Box component="span" id={descriptionId} sx={VISUALLY_HIDDEN_STYLE}>
           {arrivalMark.description}
-        </span>
+        </Box>
       )}
     </>
   )
