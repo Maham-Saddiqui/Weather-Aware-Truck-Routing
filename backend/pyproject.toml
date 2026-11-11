@@ -38,6 +38,21 @@ plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
 [tool.django-stubs]
 django_settings_module = "config.settings"
 
+[tool.importlinter]
+root_packages = ["domain", "providers", "services", "trips"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers point inward (BE-01)"
+type = "layers"
+layers = ["trips", "services", "providers", "domain"]
+
+[[tool.importlinter.contracts]]
+name = "Domain imports only the standard library (BE-01)"
+type = "forbidden"
+source_modules = ["domain"]
+forbidden_modules = ["django", "rest_framework", "httpx", "yaml", "tzfpy", "config"]
+
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 pythonpath = ["."]
