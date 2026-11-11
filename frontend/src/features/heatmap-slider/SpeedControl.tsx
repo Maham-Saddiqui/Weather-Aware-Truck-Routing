@@ -17,7 +17,7 @@ function nextSpeed(speed: PlaybackSpeed): PlaybackSpeed {
 
 // One button that steps through 1x, 2x and 4x, so it adds a single stop to the keyboard order.
 export function SpeedControl({ playback }: SpeedControlProps) {
-  const label = `Playback speed ${String(playback.speed)}x. Press to play at ${String(nextSpeed(playback.speed))}x.`
+  const label = `${String(playback.speed)}x speed. Press to change to ${String(nextSpeed(playback.speed))}x speed.`
   return (
     <Tooltip title={label} {...TOOLTIP_ABOVE_DOCK}>
       <Button

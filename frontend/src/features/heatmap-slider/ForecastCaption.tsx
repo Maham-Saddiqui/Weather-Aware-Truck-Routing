@@ -11,7 +11,9 @@ const TOUCH_TOOLTIP_MS = 6000
 export function ForecastCaption({ zoneName }: { zoneName: string }) {
   return (
     <Stack direction="row" useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 1 }}>
-      <Typography variant="subtitle2">Forecast time</Typography>
+      <Typography variant="subtitle2" component="span">
+        Forecast time
+      </Typography>
       <Tooltip title={EXPLANATION} enterTouchDelay={0} leaveTouchDelay={TOUCH_TOOLTIP_MS}>
         <IconButton size="small" aria-label="What the forecast time shows">
           <InfoOutlined fontSize="small" />

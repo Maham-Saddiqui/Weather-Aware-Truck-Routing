@@ -320,6 +320,12 @@ describe('HeatmapSlider caption (REQ-09, FE-07: self-explanatory controls)', () 
     expect(screen.getByText('Forecast time')).toBeVisible()
   })
 
+  it('does not make "Forecast time" a heading, so it cannot break the heading order', () => {
+    render(<SliderWithState />)
+
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+  })
+
   it('explains map, truck and dots in a tooltip reachable by keyboard', async () => {
     render(<SliderWithState />)
 
