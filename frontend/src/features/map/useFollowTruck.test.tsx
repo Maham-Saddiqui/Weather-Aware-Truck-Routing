@@ -19,10 +19,12 @@ const stub = vi.hoisted(() => {
   return {
     handlers,
     point: { x: 0, y: 0 },
+    isZooming: false,
     easeTo: vi.fn<(options: EaseOptions) => void>(),
     map: {
       project: () => stub.point,
       getContainer: () => ({ clientWidth: 1000, clientHeight: 600 }),
+      isZooming: () => stub.isZooming,
       easeTo: (options: EaseOptions) => {
         stub.easeTo(options)
       },
@@ -75,6 +77,7 @@ beforeEach(() => {
   mockScreen({ isWide: true, isReducedMotion: false })
   stub.handlers.clear()
   stub.easeTo.mockClear()
+  stub.isZooming = false
 })
 
 afterEach(() => {
@@ -100,6 +103,15 @@ describe('useFollowTruck keeps the truck in view without changing the zoom (REQ-
     const options = stub.easeTo.mock.calls[0]?.[0]
     expect(options).toMatchObject({ center: [TRUCK_B.lon, TRUCK_B.lat], duration: 600 })
     expect(options).not.toHaveProperty('zoom')
+  })
+
+  it('leaves the map alone while it is zooming to fit the routes, or the fit would be cut short', () => {
+    const hook = renderFollowing()
+    stub.isZooming = true
+
+    moveTruckTo(hook, FAR_RIGHT)
+
+    expect(stub.easeTo).not.toHaveBeenCalled()
   })
 
   it('eases when the truck is near the edge but inside the margin, not when it is just inside it', () => {

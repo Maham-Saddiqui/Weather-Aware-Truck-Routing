@@ -15,6 +15,7 @@ const stub = vi.hoisted(() => {
     map: {
       project: () => stub.point,
       getContainer: () => ({ clientWidth: 1000, clientHeight: 600 }),
+      isZooming: () => false,
       easeTo: (options: { duration: number }) => {
         stub.easeTo(options)
       },
