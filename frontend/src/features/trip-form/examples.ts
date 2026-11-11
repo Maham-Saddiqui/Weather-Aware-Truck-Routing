@@ -20,11 +20,11 @@ export const EXAMPLE_TRIPS: readonly ExampleTrip[] = [
     loadLb: 42_000,
   },
   {
-    name: 'Dallas to Atlanta',
-    origin: { label: 'Dallas, Texas', lat: 32.7767, lon: -96.797 },
-    destination: { label: 'Atlanta, Georgia', lat: 33.749, lon: -84.388 },
-    originTimeZone: 'America/Chicago',
-    loadLb: 20_000,
+    name: 'Reno to Los Angeles',
+    origin: { label: 'Reno, Nevada', lat: 39.5296, lon: -119.8138 },
+    destination: { label: 'Los Angeles, California', lat: 34.0522, lon: -118.2437 },
+    originTimeZone: 'America/Los_Angeles',
+    loadLb: 42_000,
   },
   {
     name: 'Seattle to Salt Lake City',

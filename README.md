@@ -24,6 +24,10 @@ The single source of truth is [`docs/domain/risk-rules.md`](docs/domain/risk-rul
 - **Recommendation:** a route with any No Travel checkpoint, or with more than 10% of its miles lacking weather data, is not eligible. Eligible routes are ranked by fewest Severe miles, fewest High miles, lowest average risk, then shortest travel time. If none is eligible the app says so, shows the least-bad route greyed out, and suggests leaving later.
 - Numbers are exact decimals, rounded once on the server (halves round up). The browser shows the server's strings and never rounds, ranks or rates anything.
 
+### A worked example: the faster route is not always the safer one
+
+The route choice follows the brief's order (fewest Severe miles first, travel time last). On 13 November 2026 a truck leaving **Reno for Los Angeles at 18:00 Pacific time with 42,000 lb** (checkpoint every 10 miles) was offered three routes. The app recommended **Route 1**, the eastern route (497.3 mi, 9 h 29 min, 0.0 Severe miles), over the two western routes that cross the Sierra, which were 44 minutes quicker but had **20.0 miles of Severe weather** on the forecast. Its sentence reads: "Route 1 has fewer Severe-weather miles than Route 2 (0.0 against 20.0 miles)." The weather decides the result, so on another day the same trip can recommend a different route; the "Reno to Los Angeles" example button plans it for tomorrow morning.
+
 ## Assumptions
 
 - Cargo weight is what the driver types; the routing provider is sent cargo plus an assumed 35,000 lb empty tractor-trailer.
@@ -31,7 +35,7 @@ The single source of truth is [`docs/domain/risk-rules.md`](docs/domain/risk-rul
 - ETAs are **driving time only**: no rest breaks or hours-of-service rules.
 - The departure time is read in the origin's time zone; every time shown carries its zone.
 - Changing the checkpoint spacing can change which route wins, because the miles per level are measured at the checkpoints.
-- Trips are limited to the lower 48 states, a departure within 7 days, and a load of 0 to 80,000 lb. The limits keep a hand-made request from spending the free provider quotas.
+- Trips are limited to the lower 48 states, a departure within 7 days, and a load of 0 to 80,000 lb. The limits keep a hand-made request from spending the free provider quotas. The lower-48 check is a simple bounding box, so a place just outside the US that falls inside the box (for example Toronto) is accepted.
 - Per-level miles are each rounded once to 0.1 mile, so they can differ from the total in the last digit.
 
 ### Where the brief can be read two ways, and what we chose
@@ -134,7 +138,7 @@ The server runs on Render (gunicorn with exactly one worker process and eight th
 
 Decisions about the product, the risk rules and the scope were the owner's. Smaller implementation choices inside those decisions were made by the agents and are recorded, with the reasons, in [`docs/changelog.md`](docs/changelog.md) wherever they changed an approved document. Every commit carries a `Co-Authored-By: Claude` line.
 
-**Time (all times Pakistan Standard Time, PKT):** the repository was created on 11 November 2026 at 00:18 and the owner started working on the project at about 02:30. Research, planning and project set-up (requirements, risk rules, standards, architecture, hosting) took about **3 hours 50 minutes** (02:30 to about 06:20), after which the agents started building in parallel. Counting that phase and the implementation together, the project took about **15 hours of working time**, against the brief's 16-hour limit. The clock stopped whenever work was waiting for the owner (for example for an approval) or blocked by the weather service's rate limit, so the calendar span is longer, and the history shows quiet gaps and bursts of many commits in one hour, which are several agents working in parallel. The number of commits is therefore not a measure of hours.
+**Time (all times Pakistan Standard Time, PKT):** the repository was created on 11 November 2026 at 00:18 and the owner started working on the project at about 02:30. Research, planning and project set-up (requirements, risk rules, standards, architecture, hosting) took about **3 hours 50 minutes** (02:30 to about 06:20), after which the agents started building in parallel. Counting that phase and the implementation together, the project took about **15 hours of working time**. The clock stopped whenever work was waiting for the owner (for example for an approval) or blocked by the weather service's rate limit, so the calendar span is longer, and the history shows quiet gaps and bursts of many commits in one hour, which are several agents working in parallel. The number of commits is therefore not a measure of hours.
 
 ## Credits
 
