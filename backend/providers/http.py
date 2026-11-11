@@ -1,6 +1,8 @@
 import secrets
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 import httpx
 
@@ -14,6 +16,17 @@ RETRY_PAUSE_RANGE_S = (0.1, 0.4)
 type QueryParams = Mapping[str, str | int | Sequence[str]]
 
 _jitter = secrets.SystemRandom()
+_retry_after_read_timeout: ContextVar[bool] = ContextVar("retry_after_read_timeout", default=True)
+
+
+@contextmanager
+def without_retry_after_read_timeout() -> Iterator[None]:
+    """A call that already waited a long time must not wait again: it gets one attempt."""
+    earlier = _retry_after_read_timeout.set(False)
+    try:
+        yield
+    finally:
+        _retry_after_read_timeout.reset(earlier)
 
 
 def make_client(
@@ -38,7 +51,9 @@ def send_with_one_retry(send: Callable[[], httpx.Response], call: ProviderCall) 
     """Retries once, after a short random pause, and only for network errors (architecture 10)."""
     try:
         return _attempt(send, call)
-    except httpx.TransportError:
+    except httpx.TransportError as error:
+        if isinstance(error, httpx.ReadTimeout) and not _retry_after_read_timeout.get():
+            raise
         time.sleep(_jitter.uniform(*RETRY_PAUSE_RANGE_S))
     return _attempt(send, call)
 
