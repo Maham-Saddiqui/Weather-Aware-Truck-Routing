@@ -22,11 +22,11 @@ function summary(values: TripFormValues = VALUES) {
 }
 
 describe('collapsed trip summary (REQ-08)', () => {
-  it('reads as the two places joined by "to", whatever letters decorate it', () => {
+  it('tells a screen reader "from the origin to the destination" with no visible "to"', () => {
     summary()
 
     expect(
-      screen.getByRole('heading', { name: 'Chicago, Illinois to Denver, Colorado' }),
+      screen.getByRole('heading', { name: 'from Chicago, Illinois to Denver, Colorado' }),
     ).toBeVisible()
   })
 
@@ -34,7 +34,14 @@ describe('collapsed trip summary (REQ-08)', () => {
     summary()
 
     const heading = screen.getByRole('heading')
-    expect(heading).toHaveTextContent('A Chicago, Illinois to B Denver, Colorado')
+    expect(heading).toHaveTextContent('Afrom Chicago, IllinoisB to Denver, Colorado')
+  })
+
+  it('puts the departure on its own line, apart from weight and checkpoint spacing', () => {
+    summary()
+
+    expect(screen.getByText('Departs Thu, Nov 12, 08:00 CT')).toBeVisible()
+    expect(screen.getByText('42,000 lb, checkpoint every 25 miles')).toBeVisible()
   })
 
   it('shows the cargo weight with a thousands separator while the input keeps plain digits', () => {
