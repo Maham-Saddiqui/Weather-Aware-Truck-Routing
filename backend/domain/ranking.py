@@ -173,8 +173,10 @@ def _data_coverage_note(winner: Candidate, candidates: Sequence[Candidate]) -> s
     """RR-26: say how many miles the rating rests on when any route has No data miles."""
     if all(c.summary.metres_by_level.no_data == 0 for c in candidates):
         return ""
-    rated = miles_from_metres(winner.summary.metres_by_level.rated)
     total = miles_from_metres(winner.summary.distance_m)
+    if winner.summary.metres_by_level.no_data == 0:
+        return f" This route's rating is based on all {total} of its miles."
+    rated = miles_from_metres(winner.summary.metres_by_level.rated)
     return f" This route's rating is based on {rated} of its {total} miles; the rest has no data."
 
 

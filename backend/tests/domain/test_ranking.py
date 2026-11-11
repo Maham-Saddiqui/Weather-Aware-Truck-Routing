@@ -234,3 +234,16 @@ def test_rr22_ranking_no_routes_at_all_is_refused_with_a_clear_message() -> None
     """RR-22."""
     with pytest.raises(ValueError, match="At least one route is needed"):
         rank_routes([])
+
+
+def test_rr26_a_fully_rated_winner_is_not_said_to_lack_data_because_another_route_does() -> None:
+    """RR-26."""
+    complete = candidate("a", ["100"], [LOW])
+    gaps = candidate("b", ["5", "95"], [None, MODERATE])
+
+    ranking = rank_routes([complete, gaps])
+
+    assert ranking.recommendation.route_id == "a"
+    assert ranking.recommendation.sentence.endswith(
+        "This route's rating is based on all 100.0 of its miles."
+    )

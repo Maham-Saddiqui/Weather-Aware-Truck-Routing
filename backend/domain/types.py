@@ -6,7 +6,11 @@ from enum import IntEnum
 
 @dataclass(frozen=True, slots=True)
 class GeoPoint:
-    """Coordinates are only passed through and looked up, never rated or compared (RR-30)."""
+    """The only floats in the domain (RR-30).
+
+    They place points and group nearby ones into cells; they never enter ratings, distances or
+    comparisons of risk.
+    """
 
     lat: float
     lon: float
