@@ -1,6 +1,7 @@
 import { styled } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { HeatmapSlider } from '../features/heatmap-slider'
+import { WHEN_TABLET_MAP } from '../features/heatmap-slider/tabletMap'
 import { HeatmapStatus } from '../features/map'
 import { ArrivalNote } from './ArrivalNote'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -15,6 +16,11 @@ const StatusSlot = styled('div')(({ theme }) => ({
   display: 'flex',
   minHeight: STATUS_TWO_LINES_PX,
   [theme.breakpoints.up('lg')]: { minHeight: 'auto' },
+  [WHEN_TABLET_MAP]: {
+    flex: '1 1 0',
+    minWidth: 0,
+    minHeight: 'auto',
+  },
 }))
 
 export function heatmapSliderFor(

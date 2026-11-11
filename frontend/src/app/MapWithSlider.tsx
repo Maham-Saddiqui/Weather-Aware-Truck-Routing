@@ -1,6 +1,7 @@
 import { styled } from '@mui/material/styles'
 import Skeleton from '@mui/material/Skeleton'
 import { Suspense, useState } from 'react'
+import { WHEN_TABLET_MAP } from '../features/heatmap-slider/tabletMap'
 import { MAP_MIN_HEIGHT_PX, PHONE_MAP_HEIGHT_PX } from '../shared/constants'
 import { EmptyMapCard } from './EmptyMapCard'
 import { heatmapSliderFor } from './heatmapSliderFor'
@@ -20,6 +21,7 @@ const MapArea = styled('div')(({ theme }) => ({
     display: 'block',
     position: 'relative',
     minHeight: MAP_MIN_HEIGHT_PX,
+    containerType: 'inline-size',
   },
 }))
 
@@ -47,6 +49,12 @@ const SliderDock = styled('div')(({ theme }) => ({
     borderRadius: theme.shape.borderRadius,
     border: `1px solid ${theme.palette.divider}`,
     boxShadow: theme.shadows[6],
+    [WHEN_TABLET_MAP]: {
+      left: theme.spacing(1),
+      right: theme.spacing(1),
+      bottom: theme.spacing(1.5),
+      padding: theme.spacing(0.5, 1),
+    },
   },
 }))
 
