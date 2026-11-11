@@ -2,6 +2,7 @@ import { EmptyResults } from './EmptyResults'
 import { FailedResults } from './FailedResults'
 import { LoadingResults } from './LoadingResults'
 import { ReadyResults } from './ReadyResults'
+import { ResultsAnnouncement } from './ResultsAnnouncement'
 import type { TripResults } from './tripResults'
 
 export interface RouteResultsProps {
@@ -13,7 +14,7 @@ export interface RouteResultsProps {
   onRetry: () => void
 }
 
-export function RouteResults(props: RouteResultsProps) {
+function CurrentResults(props: RouteResultsProps) {
   const { results } = props
   switch (results.phase) {
     case 'idle':
@@ -25,4 +26,13 @@ export function RouteResults(props: RouteResultsProps) {
     default:
       return <ReadyResults {...props} />
   }
+}
+
+export function RouteResults(props: RouteResultsProps) {
+  return (
+    <>
+      <ResultsAnnouncement phase={props.results.phase} />
+      <CurrentResults {...props} />
+    </>
+  )
 }

@@ -271,7 +271,7 @@ describe('states (REQ-10, REQ-12)', () => {
     (isServerWaking, words) => {
       renderResults({ ...EMPTY_RESULTS, phase: 'loading', isServerWaking })
 
-      expect(screen.getByRole('status')).toHaveTextContent(words)
+      expect(screen.getByText(new RegExp(words)).closest('[role="status"]')).not.toBeNull()
     },
   )
 
