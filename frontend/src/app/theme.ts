@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles'
+import type {} from '@mui/x-date-pickers/themeAugmentation'
 import { ACCENT_TURQUOISE, RISK_COLOURS } from '../shared/colours'
 import { MIN_TOUCH_TARGET_PX } from '../shared/constants'
 import type { CheckpointLevel } from '../shared/types'
@@ -130,6 +131,7 @@ export const theme = createTheme({
     },
     MuiTableCell: { styleOverrides: { sizeSmall: { padding: '6px 8px' } } },
     MuiOutlinedInput: { styleOverrides: { notchedOutline: { borderColor: INPUT_BORDER } } },
+    MuiPickersOutlinedInput: { styleOverrides: { notchedOutline: { borderColor: INPUT_BORDER } } },
     MuiTextField: { defaultProps: { fullWidth: true } },
     MuiChip: { styleOverrides: { root: { fontWeight: 600 } } },
   },

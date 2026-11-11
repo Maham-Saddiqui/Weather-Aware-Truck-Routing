@@ -54,10 +54,12 @@ describe('text box outlines (NFR-03, WCAG 1.4.11)', () => {
     expect(contrast(theme.palette.primary.main, NAVY_SURFACE)).toBeGreaterThanOrEqual(3)
   })
 
-  it('is applied to every outlined text box by the theme', () => {
-    const outline = theme.components?.MuiOutlinedInput?.styleOverrides?.notchedOutline
+  it('is applied by the theme to ordinary text boxes and to the date picker box', () => {
+    const textBox = theme.components?.MuiOutlinedInput?.styleOverrides?.notchedOutline
+    const pickerBox = theme.components?.MuiPickersOutlinedInput?.styleOverrides?.notchedOutline
 
-    expect(outline).toEqual({ borderColor: INPUT_BORDER })
+    expect(textBox).toEqual({ borderColor: INPUT_BORDER })
+    expect(pickerBox).toEqual({ borderColor: INPUT_BORDER })
   })
 })
 
