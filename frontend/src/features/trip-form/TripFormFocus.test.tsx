@@ -81,7 +81,7 @@ describe.each(['phone', 'desktop'] as const)(
 
       await userEvent.click(screen.getByRole('button', { name: /Chicago to Denver/ }))
 
-      expect(await screen.findByText(/departs .* CT/)).toBeInTheDocument()
+      expect(await screen.findByText(/Departs .* CT/)).toBeInTheDocument()
     })
   },
 )
