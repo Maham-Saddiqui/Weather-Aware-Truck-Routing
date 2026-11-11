@@ -39,8 +39,8 @@ export const theme = createTheme({
     text: { primary: TEXT_PRIMARY, secondary: TEXT_SECONDARY },
     divider: BORDER,
     risk: RISK_PALETTE,
-    action: { focus: TURQUOISE },
   },
+  focusVisible: true,
   shape: { borderRadius: 10 },
   spacing: 8,
   typography: {
