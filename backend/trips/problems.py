@@ -89,9 +89,6 @@ def problem_response(exc: Exception, context: dict[str, Any]) -> Response:
 
 
 def _problem_of(exc: Exception) -> Problem:
-    if isinstance(exc, RecursionError):
-        logger.warning("Rejected a request body nested too deeply")
-        return replace(VALIDATION, detail=UNUSABLE_REQUEST_DETAIL)
     if isinstance(exc, NoRouteFound):
         return NO_ROUTE
     if isinstance(exc, RoutingUnavailable):

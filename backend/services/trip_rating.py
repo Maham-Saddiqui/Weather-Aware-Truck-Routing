@@ -36,11 +36,11 @@ def rate_routes(
     env: TripEnvironment, request: TripRequest, routes: Sequence[ProviderRoute]
 ) -> RatedTrip:
     """One batched weather call for every checkpoint and heatmap cell of every route (PERF-01)."""
-    planned = [(route, _checkpoints(route, request.spacing_miles, request)) for route in routes]
+    planned = _plans(routes, request.spacing_miles, request)
     grid_cells = _unique_cells(
         checkpoint.position
-        for route in routes
-        for checkpoint in _checkpoints(route, HEATMAP_GRID_SPACING, request)
+        for _, checkpoints in _grid_plans(planned, request)
+        for checkpoint in checkpoints
     )
     checkpoint_cells = _unique_cells(
         checkpoint.position for _, checkpoints in planned for checkpoint in checkpoints
@@ -55,10 +55,22 @@ def rate_routes(
     )
 
 
-def _checkpoints(
-    route: ProviderRoute, spacing_miles: CheckpointSpacing, request: TripRequest
-) -> tuple[Checkpoint, ...]:
-    return plan_checkpoints(route, spacing_miles, request.departure_utc)
+type Plans = list[tuple[ProviderRoute, tuple[Checkpoint, ...]]]
+
+
+def _plans(
+    routes: Sequence[ProviderRoute], spacing_miles: CheckpointSpacing, request: TripRequest
+) -> Plans:
+    return [
+        (route, plan_checkpoints(route, spacing_miles, request.departure_utc)) for route in routes
+    ]
+
+
+def _grid_plans(planned: Plans, request: TripRequest) -> Plans:
+    """Planned once more only when the driver's spacing differs from the heatmap's."""
+    if request.spacing_miles == HEATMAP_GRID_SPACING:
+        return planned
+    return _plans([route for route, _ in planned], HEATMAP_GRID_SPACING, request)
 
 
 def _unique_cells(positions: Iterable[GeoPoint]) -> tuple[GeoPoint, ...]:

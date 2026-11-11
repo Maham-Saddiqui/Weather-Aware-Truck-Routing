@@ -16,7 +16,6 @@ from providers.weather.cache import CellKey, WindowCache
 from providers.weather.port import WeatherBusy, WeatherUnavailable
 from providers.weather.series import CompactSeries
 
-OPEN_METEO_BASE_URL = "https://api.open-meteo.com"
 OPEN_METEO_READ_TIMEOUT_S = 5.0
 WEATHER_TOTAL_TIMEOUT_S = 12.0
 WINDOW_HOURS = 240
