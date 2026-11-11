@@ -43,6 +43,9 @@ export function MapLegend({ heatmap, hourOffset }: MapLegendProps) {
           <LegendItem key={level} level={level} />
         ))}
       </Stack>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+        Grey stretches on the map have no weather data.
+      </Typography>
       {heatmap && (
         <Typography variant="caption" role="status" sx={{ display: 'block', mt: 0.5 }}>
           {heatmapSummary(heatmap, hourOffset)}

@@ -18,7 +18,7 @@ const FILL_OPACITY_HEX: Record<Exclude<CheckpointLevel, 'low'>, string> = {
   high: 'a6',
   severe: 'bf',
   no_travel: 'cc',
-  no_data: '1f',
+  no_data: '73',
 }
 
 function fillFor(level: CheckpointLevel): string {
