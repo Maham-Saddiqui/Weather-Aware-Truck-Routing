@@ -102,17 +102,26 @@ def _route_params(query: RouteQuery) -> QueryParams:
 def _raise_for_failure(response: httpx.Response) -> None:
     if response.status_code == HTTP_OK:
         return
-    is_no_route = response.status_code == HTTP_BAD_REQUEST and any(
-        marker in response.text for marker in NO_ROUTE_MARKERS
-    )
-    if is_no_route:
+    if _says_no_route(response):
         raise NoRouteFound("TomTom found no route")
     raise RoutingUnavailable(f"TomTom answered with status {response.status_code}")
 
 
-def _parse_route(raw: JsonObject) -> ProviderRoute:
+def _says_no_route(response: httpx.Response) -> bool:
+    """Not confirmed against a live answer: the error text and codes are our best reading."""
+    return response.status_code == HTTP_BAD_REQUEST and any(
+        marker in response.text for marker in NO_ROUTE_MARKERS
+    )
+
+
+def _leg_geometry(raw: JsonObject) -> RouteGeometry:
+    """Not confirmed against a live answer: where the line sits (legs[0].encodedPolyline)."""
     (leg,) = raw["legs"]
-    geometry = RouteGeometry(leg["encodedPolyline"], int(leg["encodedPolylinePrecision"]))
+    return RouteGeometry(leg["encodedPolyline"], int(leg["encodedPolylinePrecision"]))
+
+
+def _parse_route(raw: JsonObject) -> ProviderRoute:
+    geometry = _leg_geometry(raw)
     return ProviderRoute(
         geometry=geometry,
         path=decode_polyline(geometry.encoded, geometry.precision),
