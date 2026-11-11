@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { RISK_COLOURS } from '../shared/colours'
-import { theme } from './theme'
+import { INPUT_BORDER, NAVY_BACKGROUND, NAVY_RAISED, NAVY_SURFACE, theme } from './theme'
 
 describe('keyboard focus (NFR-03, FE-07)', () => {
   it('keeps the translucent default for the focused row background, not solid turquoise', () => {
@@ -25,6 +25,39 @@ describe('keyboard focus (NFR-03, FE-07)', () => {
     const outline = getComputedStyle(row)
     expect(outline.outlineStyle).toBe('solid')
     expect(outline.outlineColor).toBe('rgb(45, 212, 191)')
+  })
+})
+
+function luminance(hex: string): number {
+  const channels = [1, 3, 5].map((start) => {
+    const value = parseInt(hex.slice(start, start + 2), 16) / 255
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * (channels[0] ?? 0) + 0.7152 * (channels[1] ?? 0) + 0.0722 * (channels[2] ?? 0)
+}
+
+function contrast(first: string, second: string): number {
+  const [lighter = 0, darker = 0] = [luminance(first), luminance(second)].sort((a, b) => b - a)
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
+describe('text box outlines (NFR-03, WCAG 1.4.11)', () => {
+  it.each([
+    ['the page', NAVY_BACKGROUND],
+    ['a panel', NAVY_SURFACE],
+    ['a raised card', NAVY_RAISED],
+  ])('has at least 3:1 against %s', (_name, surface) => {
+    expect(contrast(INPUT_BORDER, surface)).toBeGreaterThanOrEqual(3)
+  })
+
+  it('has at least 3:1 for the focused outline on a panel', () => {
+    expect(contrast(theme.palette.primary.main, NAVY_SURFACE)).toBeGreaterThanOrEqual(3)
+  })
+
+  it('is applied to every outlined text box by the theme', () => {
+    const outline = theme.components?.MuiOutlinedInput?.styleOverrides?.notchedOutline
+
+    expect(outline).toEqual({ borderColor: INPUT_BORDER })
   })
 })
 

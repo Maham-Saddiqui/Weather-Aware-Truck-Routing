@@ -12,11 +12,13 @@ declare module '@mui/material/styles' {
   }
 }
 
-const NAVY_BACKGROUND = '#0a1524'
-const NAVY_SURFACE = '#101f33'
-const NAVY_RAISED = '#172b45'
+export const NAVY_BACKGROUND = '#0a1524'
+export const NAVY_SURFACE = '#101f33'
+export const NAVY_RAISED = '#172b45'
 const TEXT_PRIMARY = '#e9eff7'
 const TEXT_SECONDARY = '#a3b4c8'
+// WCAG 1.4.11: the edge that identifies a text box needs 3:1 against every surface a field can sit on.
+export const INPUT_BORDER = '#6b7f99'
 const BORDER = 'rgba(163, 180, 200, 0.2)'
 const ACCENT_LIGHT = '#5eead4'
 const ACCENT_DARK = '#14b8a6'
@@ -127,6 +129,7 @@ export const theme = createTheme({
       },
     },
     MuiTableCell: { styleOverrides: { sizeSmall: { padding: '6px 8px' } } },
+    MuiOutlinedInput: { styleOverrides: { notchedOutline: { borderColor: INPUT_BORDER } } },
     MuiTextField: { defaultProps: { fullWidth: true } },
     MuiChip: { styleOverrides: { root: { fontWeight: 600 } } },
   },
