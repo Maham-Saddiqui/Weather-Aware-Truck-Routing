@@ -1,0 +1,152 @@
+import json
+import threading
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from typing import Any
+
+import httpx
+
+from domain.types import GeoPoint, HourlyWeather
+from providers.http import QueryParams, get_with_one_retry
+from providers.weather.cache import CellKey, WindowCache
+from providers.weather.port import WeatherBusy, WeatherUnavailable
+
+OPEN_METEO_BASE_URL = "https://api.open-meteo.com"
+OPEN_METEO_READ_TIMEOUT_S = 10.0
+WINDOW_HOURS = 240
+POINTS_PER_REQUEST = 200
+CELL_DECIMALS = 2
+HOURLY_VARIABLES = "wind_speed_10m,wind_gusts_10m,rain,showers,snowfall"
+HTTP_OK = 200
+HTTP_TOO_MANY_REQUESTS = 429
+
+type JsonObject = dict[str, Any]
+
+
+class OpenMeteoWeather:
+    """One batched request per trip; cells already held in the cache cost no call (PERF-04)."""
+
+    def __init__(
+        self,
+        base_url: str,
+        client: httpx.Client,
+        cache: WindowCache,
+        clock: Callable[[], datetime],
+    ) -> None:
+        self._base_url = base_url
+        self._client = client
+        self._cache = cache
+        self._clock = clock
+        self._fetch_lock = threading.Lock()
+
+    def forecast(self, points: Sequence[GeoPoint]) -> Mapping[GeoPoint, HourlyWeather]:
+        cell_of_point = {point: _cell(point) for point in points}
+        with self._fetch_lock:
+            windows = self._windows_for(set(cell_of_point.values()))
+        return {
+            point: _expand(windows[cell])
+            for point, cell in cell_of_point.items()
+            if cell in windows
+        }
+
+    def _windows_for(self, cells: set[CellKey]) -> dict[CellKey, str]:
+        windows = {cell: text for cell in cells if (text := self._cache.get(cell)) is not None}
+        missing = sorted(cells - windows.keys())
+        for chunk in _chunks(missing, POINTS_PER_REQUEST):
+            for cell, text in self._fetch(chunk).items():
+                self._cache.put(cell, text)
+                windows[cell] = text
+        return windows
+
+    def _fetch(self, cells: Sequence[CellKey]) -> dict[CellKey, str]:
+        try:
+            response = get_with_one_retry(
+                self._client, self._base_url + "/v1/forecast", self._params(cells)
+            )
+        except httpx.TransportError:
+            raise WeatherUnavailable("The weather service could not be reached") from None
+        if response.status_code == HTTP_TOO_MANY_REQUESTS:
+            raise WeatherBusy("The weather service is busy")
+        if response.status_code != HTTP_OK:
+            raise WeatherUnavailable(f"The weather service answered {response.status_code}")
+        return _compact_by_cell(cells, response.text)
+
+    def _params(self, cells: Sequence[CellKey]) -> QueryParams:
+        start = self._clock().astimezone(UTC).replace(minute=0, second=0, microsecond=0)
+        end = start + timedelta(hours=WINDOW_HOURS - 1)
+        return {
+            "latitude": ",".join(str(lat) for lat, _ in cells),
+            "longitude": ",".join(str(lon) for _, lon in cells),
+            "hourly": HOURLY_VARIABLES,
+            "wind_speed_unit": "mph",
+            "precipitation_unit": "inch",
+            "timeformat": "unixtime",
+            "timezone": "GMT",
+            "start_hour": start.strftime("%Y-%m-%dT%H:%M"),
+            "end_hour": end.strftime("%Y-%m-%dT%H:%M"),
+        }
+
+
+def _cell(point: GeoPoint) -> CellKey:
+    return (round(point.lat, CELL_DECIMALS), round(point.lon, CELL_DECIMALS))
+
+
+def _chunks(cells: Sequence[CellKey], size: int) -> Iterable[Sequence[CellKey]]:
+    return (cells[start : start + size] for start in range(0, len(cells), size))
+
+
+def _compact_by_cell(cells: Sequence[CellKey], text: str) -> dict[CellKey, str]:
+    try:
+        body = json.loads(text, parse_float=Decimal)
+        locations: list[JsonObject] = body if isinstance(body, list) else [body]
+        if len(locations) != len(cells):
+            raise ValueError("One answer per requested location expected")
+        return {
+            cell: _compact(location["hourly"])
+            for cell, location in zip(cells, locations, strict=True)
+            if location.get("hourly", {}).get("time")
+        }
+    except (KeyError, TypeError, ValueError, ArithmeticError):
+        raise WeatherUnavailable("The weather service sent an answer we cannot read") from None
+
+
+def _compact(hourly: JsonObject) -> str:
+    """Rain plus showers in exact decimals (RR-02); a missing part stays missing."""
+    rain_and_showers = [
+        _add(rain, showers) for rain, showers in zip(hourly["rain"], hourly["showers"], strict=True)
+    ]
+    rows = [
+        hourly["wind_speed_10m"],
+        hourly["wind_gusts_10m"],
+        rain_and_showers,
+        hourly["snowfall"],
+    ]
+    if any(len(row) != len(hourly["time"]) for row in rows):
+        raise ValueError("Every series must cover every hour")
+    lines = [",".join("" if value is None else str(value) for value in row) for row in rows]
+    return "\n".join([str(hourly["time"][0]), *lines])
+
+
+def _add(first: Decimal | int | None, second: Decimal | int | None) -> Decimal | None:
+    if first is None or second is None:
+        return None
+    return Decimal(first) + Decimal(second)
+
+
+def _expand(window: str) -> HourlyWeather:
+    first_hour, *rows = window.split("\n")
+    wind, gust, rain, snow = (
+        tuple(_decimal_or_none(cell) for cell in row.split(",")) for row in rows
+    )
+    return HourlyWeather(
+        first_hour_utc=datetime.fromtimestamp(int(first_hour), UTC),
+        wind_mph=wind,
+        gust_mph=gust,
+        rain_in=rain,
+        snow_in=snow,
+    )
+
+
+def _decimal_or_none(text: str) -> Decimal | None:
+    return Decimal(text) if text else None
