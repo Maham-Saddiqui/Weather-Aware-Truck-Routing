@@ -1,0 +1,53 @@
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import Button from '@mui/material/Button'
+import Link from '@mui/material/Link'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemText from '@mui/material/ListItemText'
+import { useRoutingCopyright } from './useAttribution'
+
+interface CreditsDialogProps {
+  open: boolean
+  onClose: () => void
+}
+
+export function CreditsDialog({ open, onClose }: CreditsDialogProps) {
+  const routingCopyright = useRoutingCopyright()
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs" aria-labelledby="credits-title">
+      <DialogTitle id="credits-title">Credits</DialogTitle>
+      <DialogContent>
+        <List dense disablePadding>
+          <ListItem disableGutters>
+            <ListItemText primary="Routing" secondary={routingCopyright} />
+          </ListItem>
+          <ListItem disableGutters>
+            <ListItemText
+              primary="Map data"
+              secondary="© OpenStreetMap contributors, © OpenMapTiles"
+            />
+          </ListItem>
+          <ListItem disableGutters>
+            <ListItemText primary="Address search" secondary="Photon, using OpenStreetMap data" />
+          </ListItem>
+          <ListItem disableGutters>
+            <ListItemText
+              primary="Weather"
+              secondary={
+                <Link href="https://open-meteo.com/" target="_blank" rel="noreferrer">
+                  Weather data by Open-Meteo.com
+                </Link>
+              }
+            />
+          </ListItem>
+        </List>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  )
+}

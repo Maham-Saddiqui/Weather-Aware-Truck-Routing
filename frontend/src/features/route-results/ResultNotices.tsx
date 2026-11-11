@@ -1,0 +1,53 @@
+import Alert from '@mui/material/Alert'
+import Stack from '@mui/material/Stack'
+import type { WeatherStatus } from '../../shared/types'
+import type { TripResults } from './tripResults'
+
+interface Notice {
+  severity: 'warning' | 'info'
+  text: string
+}
+
+const BACKUP_NOTICE: Notice = {
+  severity: 'info',
+  text: 'Backup routing is in use, so fewer route options may be shown.',
+}
+
+const ALTERNATIVES_NOTICE: Notice = {
+  severity: 'info',
+  text: 'Alternative routes are unavailable right now. Showing the main route only.',
+}
+
+const WEATHER_NOTICES: Record<WeatherStatus, Notice | null> = {
+  ok: null,
+  partial: {
+    severity: 'info',
+    text: 'Some checkpoints have no weather data. Their miles are shown as "No data" and are never treated as safe.',
+  },
+  unavailable: {
+    severity: 'warning',
+    text: 'Weather data is unavailable right now. Routes are shown without ratings and no route is recommended.',
+  },
+  busy: { severity: 'warning', text: 'Weather service busy, try again in a minute' },
+}
+
+function noticesFor(results: TripResults): Notice[] {
+  const notices: Notice[] = []
+  if (results.routingProvider === 'valhalla') notices.push(BACKUP_NOTICE)
+  if (results.alternativesUnavailable) notices.push(ALTERNATIVES_NOTICE)
+  const weatherNotice = results.weather && WEATHER_NOTICES[results.weather]
+  if (weatherNotice) notices.push(weatherNotice)
+  return notices
+}
+
+export function ResultNotices({ results }: { results: TripResults }) {
+  return (
+    <Stack spacing={1} aria-live="polite">
+      {noticesFor(results).map((notice) => (
+        <Alert key={notice.text} severity={notice.severity}>
+          {notice.text}
+        </Alert>
+      ))}
+    </Stack>
+  )
+}
