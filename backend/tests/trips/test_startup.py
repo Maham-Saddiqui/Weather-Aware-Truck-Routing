@@ -16,15 +16,17 @@ from config.startup import configured_worker_count, log_worker_count
         (["gunicorn", "app"], {}, 1),
     ],
 )
-def test_the_worker_count_follows_gunicorns_own_precedence_BE_09(
+def test_the_worker_count_follows_gunicorns_own_precedence(
     argv: list[str], environ: dict[str, str], expected: int
 ) -> None:
+    """BE-09"""
     assert configured_worker_count(argv, environ) == expected
 
 
-def test_one_worker_is_logged_as_information_BE_09(
+def test_one_worker_is_logged_as_information(
     caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """BE-09"""
     monkeypatch.setattr("sys.argv", ["gunicorn", "app", "--workers", "1"])
     caplog.set_level(logging.INFO, logger="trips.startup")
 
@@ -35,9 +37,10 @@ def test_one_worker_is_logged_as_information_BE_09(
     ]
 
 
-def test_more_than_one_worker_is_logged_as_a_warning_BE_09(
+def test_more_than_one_worker_is_logged_as_a_warning(
     caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """BE-09"""
     monkeypatch.setattr("sys.argv", ["gunicorn", "app", "--workers", "2"])
     caplog.set_level(logging.INFO, logger="trips.startup")
 

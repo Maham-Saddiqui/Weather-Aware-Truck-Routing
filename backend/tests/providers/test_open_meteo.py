@@ -64,6 +64,7 @@ def failing(status: int) -> Service:
 
 
 def test_rain_and_showers_are_added_in_exact_decimals_and_nothing_becomes_a_float() -> None:
+    """RR-02"""
     weather = Service().weather.forecast([POINT])[POINT]
 
     assert weather.rain_in[0] == Decimal("0.3")
@@ -91,7 +92,8 @@ def test_one_batched_request_asks_for_every_point_with_units_and_the_window() ->
     assert params["timeformat"] == "unixtime"
 
 
-def test_a_reading_with_a_missing_part_stays_missing_instead_of_being_guessed_RR_11() -> None:
+def test_a_reading_with_a_missing_part_stays_missing_instead_of_being_guessed() -> None:
+    """RR-11"""
     service = Service(lambda request: answer(location(showers="[null, 0.0, 0.0]")))
 
     weather = service.weather.forecast([POINT])[POINT]

@@ -47,6 +47,7 @@ def answering(status: int, body: object) -> httpx.MockTransport:
 
 
 def test_a_route_answer_becomes_a_provider_route_with_its_progress_table() -> None:
+    """RR-14, RR-15: distances and travel times are the provider's own"""
     transport = answering(200, {"routes": [route_payload()]})
 
     (route,) = routing_with(transport).routes(QUERY)

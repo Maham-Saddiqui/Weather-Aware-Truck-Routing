@@ -40,9 +40,10 @@ def test_a_routing_failure_while_fetching_the_credit_is_a_plain_503_problem(
     assert "secret provider detail" not in response.content.decode()
 
 
-def test_the_timezone_endpoint_names_the_zone_of_a_place_RR_18(
+def test_the_timezone_endpoint_names_the_zone_of_a_place(
     client: Client, use_fakes: UseFakes
 ) -> None:
+    """RR-18"""
     use_fakes(replace(default_fakes(), timezone=FakeTimeZone("America/Denver")))
 
     response = client.get("/api/v1/timezone", {"lat": "39.7", "lon": "-104.9"})
@@ -99,9 +100,10 @@ def test_a_wrong_method_is_a_problem_response_too(client: Client, use_fakes: Use
     assert response["Content-Type"] == "application/problem+json"
 
 
-def test_requests_are_throttled_per_forwarded_address_with_retry_after_SEC_05(
+def test_requests_are_throttled_per_forwarded_address_with_retry_after(
     client: Client, use_fakes: UseFakes, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """SEC-05"""
     monkeypatch.setitem(AnonRateThrottle.THROTTLE_RATES, "anon", "2/min")
 
     def call(address: str) -> Any:
@@ -115,9 +117,10 @@ def test_requests_are_throttled_per_forwarded_address_with_retry_after_SEC_05(
     assert call("203.0.113.2").status_code == 200
 
 
-def test_the_health_check_is_never_throttled_SEC_05(
+def test_the_health_check_is_never_throttled(
     client: Client, use_fakes: UseFakes, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """SEC-05"""
     monkeypatch.setitem(AnonRateThrottle.THROTTLE_RATES, "anon", "1/min")
 
     statuses = {client.get("/api/v1/health").status_code for _ in range(5)}
@@ -125,9 +128,10 @@ def test_the_health_check_is_never_throttled_SEC_05(
     assert statuses == {200}
 
 
-def test_every_response_carries_a_fresh_request_id_that_a_client_cannot_choose_BE_12(
+def test_every_response_carries_a_fresh_request_id_that_a_client_cannot_choose(
     client: Client, use_fakes: UseFakes
 ) -> None:
+    """BE-12"""
     first = client.get("/api/v1/health", HTTP_X_REQUEST_ID="attacker-chosen")
     second = client.get("/api/v1/health")
 
@@ -135,9 +139,10 @@ def test_every_response_carries_a_fresh_request_id_that_a_client_cannot_choose_B
     assert first["X-Request-ID"] != second["X-Request-ID"]
 
 
-def test_the_request_log_line_has_the_path_but_no_query_string_so_no_coordinates_BE_12(
+def test_the_request_log_line_has_the_path_but_no_query_string_so_no_coordinates(
     client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
 ) -> None:
+    """BE-12"""
     caplog.set_level(logging.INFO, logger="trips.requests")
 
     client.get("/api/v1/timezone", {"lat": "39.7392", "lon": "-104.9903"})
@@ -147,6 +152,7 @@ def test_the_request_log_line_has_the_path_but_no_query_string_so_no_coordinates
     assert "39.7392" not in messages
 
 
-def test_the_http_client_libraries_never_log_request_addresses_that_hold_the_key_SEC_02() -> None:
+def test_the_http_client_libraries_never_log_request_addresses_that_hold_the_key() -> None:
+    """SEC-02"""
     assert logging.getLogger("httpx").getEffectiveLevel() >= logging.WARNING
     assert logging.getLogger("httpcore").getEffectiveLevel() >= logging.WARNING
