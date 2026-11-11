@@ -12,7 +12,7 @@ MICROSECONDS_PER_SECOND = Decimal(1_000_000)
 
 
 @dataclass(frozen=True, slots=True)
-class Stop:
+class Checkpoint:
     """A checkpoint on the route: where it is, when the truck arrives, what stretch it covers."""
 
     index: int
@@ -22,19 +22,19 @@ class Stop:
     eta_utc: datetime
 
 
-def plan_stops(
+def plan_checkpoints(
     route: ProviderRoute, spacing_miles: CheckpointSpacing, departure_utc: datetime
-) -> tuple[Stop, ...]:
+) -> tuple[Checkpoint, ...]:
     """RR-13 places the checkpoints, RR-15 the arrival times, RR-19 the covered stretches."""
     length_m = Decimal(route.distance_m)
     distances = _checkpoint_distances(length_m, spacing_miles)
     covered = _covered_stretches(distances, length_m)
     table = _progress_table(route)
-    stops = []
+    checkpoints = []
     for index, (distance_m, covered_m) in enumerate(zip(distances, covered, strict=True)):
         point_index, elapsed_s = _read_progress(table, distance_m)
-        stops.append(
-            Stop(
+        checkpoints.append(
+            Checkpoint(
                 index=index,
                 distance_m=distance_m,
                 covered_m=covered_m,
@@ -42,7 +42,7 @@ def plan_stops(
                 eta_utc=departure_utc + _duration(elapsed_s),
             )
         )
-    return tuple(stops)
+    return tuple(checkpoints)
 
 
 def _checkpoint_distances(

@@ -15,8 +15,8 @@ from services.results import (
     CompareTripResult,
     Heatmap,
     PrimaryTripResult,
-    RatedCheckpoint,
     RatedRoute,
+    RouteCheckpoint,
 )
 
 HEATMAP_HOURS = 49
@@ -77,16 +77,16 @@ def _miles_by_level(metres: MetresByLevel) -> Json:
     return {**by_level, NO_DATA: _miles(metres.no_data)}
 
 
-def _checkpoint(checkpoint: RatedCheckpoint) -> Json:
-    stop, rating = checkpoint.stop, checkpoint.rating
+def _checkpoint(route_checkpoint: RouteCheckpoint) -> Json:
+    checkpoint, rating = route_checkpoint.checkpoint, route_checkpoint.rating
     return {
-        "index": stop.index,
-        "distance_miles": _miles(stop.distance_m),
-        "covered_miles": _miles(stop.covered_m),
-        "position": _position(stop.position),
-        "eta_utc": _instant(stop.eta_utc),
-        "time_zone": checkpoint.time_zone,
-        "measurements": _measurements(checkpoint.measurements),
+        "index": checkpoint.index,
+        "distance_miles": _miles(checkpoint.distance_m),
+        "covered_miles": _miles(checkpoint.covered_m),
+        "position": _position(checkpoint.position),
+        "eta_utc": _instant(checkpoint.eta_utc),
+        "time_zone": route_checkpoint.time_zone,
+        "measurements": _measurements(route_checkpoint.measurements),
         "level": _level_name(rating.level) or NO_DATA,
         "driving_factors": [factor.value for factor in rating.driving_factors],
         "load_rule": rating.load_rule.value,
