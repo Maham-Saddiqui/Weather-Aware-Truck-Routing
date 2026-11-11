@@ -1,7 +1,14 @@
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'
 import Button from '@mui/material/Button'
 import { styled } from '@mui/material/styles'
-import { FOLLOW_PANEL_CLEARANCE_PX } from './mapConstants'
+
+// The forecast panel floating over the map grows taller as the map narrows (measured in a browser: about 106 px
+// tall at 820 px wide, 132 at 640, 178 at 428, 208 at 380), and the chip must stay above it with a small gap.
+const NARROW_MAP_BELOW_PX = 440
+const MEDIUM_MAP_BELOW_PX = 700
+const BOTTOM_ABOVE_WIDE_PANEL_PX = 156
+const BOTTOM_ABOVE_MEDIUM_PANEL_PX = 208
+const BOTTOM_ABOVE_NARROW_PANEL_PX = 248
 
 const Floating = styled(Button)(({ theme }) => ({
   position: 'absolute',
@@ -12,7 +19,13 @@ const Floating = styled(Button)(({ theme }) => ({
   boxShadow: theme.shadows[8],
   fontSize: theme.typography.body1.fontSize,
   [theme.breakpoints.up('md')]: {
-    bottom: `calc(${theme.spacing(1)} + ${String(FOLLOW_PANEL_CLEARANCE_PX)}px)`,
+    bottom: BOTTOM_ABOVE_WIDE_PANEL_PX,
+    [`@container (max-width: ${String(MEDIUM_MAP_BELOW_PX)}px)`]: {
+      bottom: BOTTOM_ABOVE_MEDIUM_PANEL_PX,
+    },
+    [`@container (max-width: ${String(NARROW_MAP_BELOW_PX)}px)`]: {
+      bottom: BOTTOM_ABOVE_NARROW_PANEL_PX,
+    },
   },
 }))
 
