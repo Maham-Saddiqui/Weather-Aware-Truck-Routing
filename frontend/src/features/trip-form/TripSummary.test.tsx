@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Providers } from '../../app/Providers'
 import { dayjs } from '../../shared/time'
 import { TripSummary } from './TripSummary'
@@ -20,6 +20,35 @@ function summary(values: TripFormValues = VALUES) {
     </Providers>,
   )
 }
+
+function showOnPhone(isPhone: boolean) {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: isPhone && query.includes('max-width'),
+    media: query,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }))
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('collapsed trip summary spacing (REQ-08)', () => {
+  it('sits tighter on a phone so the forecast slider stays on the first screen', () => {
+    showOnPhone(true)
+    summary()
+
+    expect(getComputedStyle(screen.getByRole('heading')).marginBottom).toBe('4px')
+  })
+
+  it('keeps the roomier spacing on a tablet or desktop', () => {
+    showOnPhone(false)
+    summary()
+
+    expect(getComputedStyle(screen.getByRole('heading')).marginBottom).toBe('8px')
+  })
+})
 
 describe('collapsed trip summary (REQ-08)', () => {
   it('tells a screen reader "from the origin to the destination" with no visible "to"', () => {

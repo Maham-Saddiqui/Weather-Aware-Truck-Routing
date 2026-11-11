@@ -2,7 +2,9 @@ import EditIcon from '@mui/icons-material/EditOutlined'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
+import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ReactNode } from 'react'
 import { EndpointLetter, type EndpointLetterName } from '../../shared/EndpointLetter'
 import { formatLocalTime } from '../../shared/time'
@@ -66,7 +68,7 @@ function LetteredPlace({ letter, label, spokenPrefix }: LetteredPlaceProps) {
   )
 }
 
-function TripPlaces({ values }: { values: TripFormValues }) {
+function TripPlaces({ values, isPhone }: { values: TripFormValues; isPhone: boolean }) {
   return (
     <Typography
       variant="h3"
@@ -75,8 +77,8 @@ function TripPlaces({ values }: { values: TripFormValues }) {
         display: 'grid',
         gridTemplateColumns: 'auto minmax(0, 1fr)',
         columnGap: 1,
-        rowGap: 1.5,
-        marginBottom: 1,
+        rowGap: isPhone ? 0.5 : 1.5,
+        marginBottom: isPhone ? 0.5 : 1,
       }}
     >
       <LetteredPlace letter="A" label={values.origin?.label} spokenPrefix="from " />
@@ -109,16 +111,18 @@ function TripDetails({
   )
 }
 
+// On a phone every pixel above the map pushes the forecast slider off the first screen, so the rows sit closer.
 export function TripSummary({ values, departureZone, onEdit, actions }: TripSummaryProps) {
+  const isPhone = useMediaQuery(useTheme().breakpoints.down('md'))
   return (
-    <Stack spacing={1.5}>
+    <Stack spacing={isPhone ? 0.5 : 1.5}>
       <Stack
         direction="row"
         spacing={1}
         sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
       >
         <Box sx={{ minWidth: 0 }}>
-          <TripPlaces values={values} />
+          <TripPlaces values={values} isPhone={isPhone} />
           <TripDetails values={values} departureZone={departureZone} />
         </Box>
         <Box
