@@ -2,9 +2,9 @@ import { Layer, Source } from '@vis.gl/react-maplibre'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import { useTheme } from '@mui/material/styles'
 import { ROUTE_CASING_COLOUR } from '../../shared/colours'
-import { directionCueLayerProps } from './directionCue'
 import { ROUTE_HIT_LAYER_ID, ROUTE_HIT_WIDTH_PX, ROUTE_LINE_LAYER_ID } from './mapConstants'
 import type { RouteLines } from './routeGeoJson'
+import { useDirectionArrow } from './useDirectionArrow'
 
 interface RouteLayersProps {
   lines: RouteLines
@@ -21,13 +21,16 @@ function hueByPosition(hues: readonly string[]): ExpressionSpecification {
 
 const ROUND_LINES = { 'line-cap': 'round', 'line-join': 'round' } as const
 
+function selectedRouteFilter(selectedRouteId: string | null): ExpressionSpecification {
+  return ['==', ['get', 'routeId'], selectedRouteId ?? '']
+}
+
 function whenSelected(
   selectedRouteId: string | null,
   selected: number | string,
   other: number | string | ExpressionSpecification,
 ) {
-  const isSelected: ExpressionSpecification = ['==', ['get', 'routeId'], selectedRouteId ?? '']
-  return ['case', isSelected, selected, other] as ExpressionSpecification
+  return ['case', selectedRouteFilter(selectedRouteId), selected, other] as ExpressionSpecification
 }
 
 const HIT_PAINT = {
@@ -40,14 +43,14 @@ const HIT_PAINT = {
 // The layers must stay direct children of the source, which hands them its id.
 export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
   const { palette } = useTheme()
-  const isSelected: ExpressionSpecification = ['==', ['get', 'routeId'], selectedRouteId ?? '']
+  const arrowLayer = useDirectionArrow(selectedRouteId)
   const sortKey = { ...ROUND_LINES, 'line-sort-key': whenSelected(selectedRouteId, 1, 0) }
   return (
     <Source id="routes" type="geojson" data={lines}>
       <Layer
         id="route-halo"
         type="line"
-        filter={isSelected}
+        filter={selectedRouteFilter(selectedRouteId)}
         layout={ROUND_LINES}
         paint={{
           'line-color': palette.common.white,
@@ -73,7 +76,7 @@ export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
           'line-width': whenSelected(selectedRouteId, 6, 4),
         }}
       />
-      <Layer {...directionCueLayerProps(selectedRouteId, palette.common.white)} />
+      {arrowLayer && <Layer {...arrowLayer} />}
       <Layer id={ROUTE_HIT_LAYER_ID} type="line" layout={ROUND_LINES} paint={HIT_PAINT} />
     </Source>
   )
