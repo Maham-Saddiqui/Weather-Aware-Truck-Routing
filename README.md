@@ -63,6 +63,18 @@ Browser (React, Material UI, TypeScript, Vite)  ->  Django REST Framework server
 
 The server is a deliberate modular monolith: one process, because the weather cache, the daily provider counter, the rate limits and the backup router's limiter live in memory and must be shared. The layer boundaries are already the cut lines if it ever has to be split: the risk rules in `backend/domain/` are pure and could become a shared library, and each outside service sits behind a small interface in `backend/providers/*/port.py`, so it could move behind its own service by replacing the code behind that interface with a network call. The first candidates would be a weather service (cache and budget together), then a routing gateway (TomTom, Valhalla and the daily counter). The shared in-memory state would have to move to a shared store first, and every in-process call that becomes a network call needs timeouts, retries and request-id propagation. Splitting before there is a scaling or ownership reason would make each trip slower and the free hosting insufficient, so it is deferred on purpose.
 
+## Very long trips
+
+Routing providers do more work the longer a route is, and asking for alternatives adds more. TomTom's documentation says computing time depends mostly on route length and that any request is cancelled after an internal limit of about 30 seconds. In testing, a 1,000-mile trip returned three routes in about 6 seconds, but trips of about 1,500 miles and more timed out when alternatives were requested. This is a limit of the routing provider's computation, not of our server, so a faster server would not change it.
+
+The server therefore adapts to the trip's size, which it measures before calling anyone from the straight-line distance between the two places (the cut-off is 1,000 straight-line miles, roughly 1,200 road miles):
+
+- **Normal trips:** ask for two alternatives and wait up to about 12 seconds.
+- **Long trips:** ask for one alternative, wait up to about 22 seconds, skip the extra eco-route request, and allow the whole request up to 40 seconds.
+- **If alternatives still do not arrive:** ask TomTom once for the fastest route without alternatives and show that single route with the note "Only one route could be found for this trip". The backup router is tried only after that, and only works for shorter trips.
+
+The first route is always on screen within a few seconds, because the page asks for it separately and in parallel, so the longer wait for alternatives does not hold the driver up. The cut-off and the timeouts are named constants, and the request log records the trip's size class and how long the alternatives call really took, so they can be tuned from real data.
+
 ## Run it locally
 
 Requirements: Python 3.13 with [uv](https://docs.astral.sh/uv/), Node 26 (see `.nvmrc`).
