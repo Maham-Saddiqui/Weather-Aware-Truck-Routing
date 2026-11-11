@@ -45,6 +45,25 @@ describe('the two parallel trip requests (FE-18, REQ-10)', () => {
     expect(result.current.routes).toHaveLength(2)
   })
 
+  it('keeps the same routes array between renders while waiting for compare, so the map does not refit (REQ-09, FE-08)', async () => {
+    server.use(
+      http.post('*/api/v1/trips/compare', async () => {
+        await delay(400)
+        return HttpResponse.json(makeCompareResponse())
+      }),
+    )
+
+    const { result, rerender } = renderHook(() => useTripResults(RUN), { wrapper })
+    await waitFor(() => {
+      expect(result.current.phase).toBe('partial')
+    })
+    const routesBefore = result.current.routes
+
+    rerender()
+
+    expect(result.current.routes).toBe(routesBefore)
+  })
+
   it('ignores a late primary once compare has arrived', async () => {
     server.use(
       http.post('*/api/v1/trips/primary', async () => {
