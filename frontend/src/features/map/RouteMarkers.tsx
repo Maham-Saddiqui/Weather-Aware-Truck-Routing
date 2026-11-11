@@ -32,7 +32,9 @@ export function RouteMarkers({
   const forecastMs = heatmap && instantAfterHours(heatmap.start_utc, hourOffset).getTime()
   return (
     <>
-      {heatmap && <TruckMarker route={route} heatmap={heatmap} hourOffset={hourOffset} />}
+      {heatmap && (
+        <TruckMarker key={route.id} route={route} heatmap={heatmap} hourOffset={hourOffset} />
+      )}
       {heatmap && <TruckFollower route={route} heatmap={heatmap} hourOffset={hourOffset} />}
       <CheckpointMarkers route={route} forecastMs={forecastMs} {...checkpoints} />
       <EndpointMarkers route={route} labels={endpointLabels} />

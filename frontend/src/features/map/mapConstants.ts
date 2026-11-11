@@ -23,6 +23,8 @@ export const ROUTE_HIT_WIDTH_PX = 22
 // Heatmap circles grow with zoom so a 25 mile spacing stays a continuous band at every zoom.
 export const HEATMAP_RADIUS_STOPS_ZOOM_PX = [3, 12, 6, 26, 9, 70] as const
 export const HEATMAP_BLUR = 0.9
+// One playback step lasts 1000 ms at normal speed; the glow fades well inside it.
+export const HEATMAP_FADE_MS = 400
 
 // The truck is kept as far below the top edge as a route start is, so its pin never sits behind the legend.
 export const FOLLOW_TOP_CLEARANCE_PX = FIT_TOP_CLEARANCE_PX
@@ -30,3 +32,5 @@ export const FOLLOW_EDGE_CLEARANCE_PX = 24
 // Measured in a browser: the forecast panel floats 24 px above the bottom and is about 106 px tall.
 export const FOLLOW_PANEL_CLEARANCE_PX = 140
 export const FOLLOW_EASE_MS = 600
+// The truck glides between two forecast hours for at most as long as one playback step lasts at normal speed.
+export const TRUCK_TWEEN_MAX_MS = 1000

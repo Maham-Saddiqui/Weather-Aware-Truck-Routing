@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography'
 import type { HeatmapSliderProps } from '../../shared/types'
 import { formatHourLabel } from './formatHourLabel'
 import { PlayButton } from './PlayButton'
+import { SpeedControl } from './SpeedControl'
 import { usePlayback } from './usePlayback'
 
 const LABEL_MIN_WIDTH_PX = 150
@@ -23,6 +24,7 @@ export function SliderRow({
   return (
     <Stack direction="row" useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 2 }}>
       <PlayButton playback={playback} />
+      <SpeedControl playback={playback} />
       <Slider
         aria-label="Hours after departure"
         min={0}
