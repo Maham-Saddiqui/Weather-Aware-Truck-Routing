@@ -1,0 +1,157 @@
+"""Hand-worked expectations for the rating rules, written from docs/domain/risk-rules.md only.
+
+Every number is a string so no binary float can sneak in. None means "reading missing".
+Levels use the contract names: low, moderate, high, severe, no_travel, no_data.
+Part 1 of 3 (rating, rounding, load rules, missing readings, hour rule).
+"""
+
+# (measurement, raw value, level, derivation). Load 10,000 lb and the other two readings 0.
+BAND_CASES: list[tuple[str, str, str, str]] = [
+    ("wind", "0", "low", "RR-03 below 25"),
+    ("wind", "24", "low", "RR-03 24 is below 25"),
+    ("wind", "25", "moderate", "RR-03 lower edge 25 is included in Moderate"),
+    ("wind", "34", "moderate", "RR-03 25 to 34"),
+    ("wind", "35", "high", "RR-03 35 starts High"),
+    ("wind", "44", "high", "RR-03 35 to 44, load 10,000 is not above 40,000"),
+    ("wind", "45", "severe", "RR-03 45 starts Severe, load 10,000 is not above 30,000"),
+    ("wind", "54", "severe", "RR-03 45 to 54"),
+    ("wind", "55", "no_travel", "RR-03/RR-06 55 or more"),
+    ("wind", "90", "no_travel", "RR-06 any wind above 55"),
+    ("rain", "0", "low", "RR-04 below 0.10"),
+    ("rain", "0.09", "low", "RR-04 below 0.10"),
+    ("rain", "0.10", "moderate", "RR-04 lower edge included"),
+    ("rain", "0.24", "moderate", "RR-04 below 0.25"),
+    ("rain", "0.25", "high", "RR-04 touching edge goes to the higher band"),
+    ("rain", "0.49", "high", "RR-04 below 0.50"),
+    ("rain", "0.50", "severe", "RR-04 0.50 is Severe"),
+    ("rain", "1.00", "severe", "RR-04 up to and including 1.00"),
+    ("rain", "1.01", "no_travel", "RR-04 strictly above 1.00"),
+    ("snow", "0", "low", "RR-05 below 0.5"),
+    ("snow", "0.49", "low", "RR-05 below 0.5"),
+    ("snow", "0.50", "moderate", "RR-05 lower edge included"),
+    ("snow", "0.99", "moderate", "RR-05 below 1.0"),
+    ("snow", "1.00", "high", "RR-05 1.0 is High"),
+    ("snow", "1.99", "high", "RR-05 below 2.0"),
+    ("snow", "2.00", "severe", "RR-05 2.0 is Severe"),
+    ("snow", "3.00", "severe", "RR-05 up to and including 3.0"),
+    ("snow", "3.01", "no_travel", "RR-05 strictly above 3.0"),
+]
+
+# (wind, load_lb, level, derivation). Rain and snow 0.
+LOAD_CASES: list[tuple[str, int, str, str]] = [
+    ("44", 40000, "high", "RR-08 exactly 40,000 is not more than"),
+    ("44", 40001, "severe", "RR-08 40,001 is more than 40,000"),
+    ("35", 45000, "severe", "RR-08 wind 35 with 45,000"),
+    ("35", 40000, "high", "RR-08 40,000 does not trigger"),
+    ("35", 40001, "severe", "RR-08 40,001 triggers at the lower wind edge"),
+    ("34", 80000, "moderate", "RR-08 wind 34 is outside the 35 to 44 band"),
+    ("25", 80000, "moderate", "load never lowers or raises wind below 35"),
+    ("24", 80000, "low", "load never raises wind below 35"),
+    ("45", 0, "severe", "RR-07 empty trailer, Severe"),
+    ("45", 30000, "severe", "RR-07 exactly 30,000 does not trigger"),
+    ("45", 30001, "no_travel", "RR-07 30,001 triggers"),
+    ("54", 30000, "severe", "RR-07 upper edge, exactly 30,000"),
+    ("54", 30001, "no_travel", "RR-07 upper edge, 30,001"),
+    ("54", 80000, "no_travel", "RR-07 heavy load"),
+    ("55", 0, "no_travel", "RR-06 empty trailer"),
+    ("55", 80000, "no_travel", "RR-06 any load"),
+    ("44", 30001, "high", "RR-08 needs more than 40,000; 30,001 only matters for 45+"),
+    ("44", 80000, "severe", "RR-08 maximum load"),
+    ("40", 30001, "high", "RR-08 40,000 not exceeded"),
+]
+
+# (kind, raw, rounded, level, derivation). Other readings 0, load 10,000.
+ROUNDING_CASES: list[tuple[str, str, str, str, str]] = [
+    ("wind", "34.5", "35", "high", "RR-02 half rounds up; Python round gives 34"),
+    ("wind", "34.49", "34", "moderate", "RR-02 below half"),
+    ("wind", "24.5", "25", "moderate", "RR-02 half up crosses into Moderate"),
+    ("wind", "24.49", "24", "low", "RR-02 below half stays Low"),
+    ("wind", "44.5", "45", "severe", "RR-02 half up crosses into Severe"),
+    ("wind", "44.49", "44", "high", "RR-02 below half"),
+    ("wind", "54.5", "55", "no_travel", "RR-02 half up crosses into No Travel"),
+    ("wind", "54.49", "54", "severe", "RR-02 below half"),
+    ("wind", "0.5", "1", "low", "RR-02 half up, whole mph"),
+    ("wind", "2.5", "3", "low", "RR-02 half up (banker would give 2)"),
+    ("rain", "0.245", "0.25", "high", "RR-02 half up; binary float gives 0.24"),
+    ("rain", "0.244", "0.24", "moderate", "RR-02 below half"),
+    ("rain", "0.495", "0.50", "severe", "RR-02 half up"),
+    ("rain", "0.494", "0.49", "high", "RR-02 below half"),
+    ("rain", "0.095", "0.10", "moderate", "RR-02 half up crosses into Moderate"),
+    ("rain", "0.094", "0.09", "low", "RR-02 below half"),
+    ("rain", "0.995", "1.00", "severe", "RR-02 rounds to 1.00, still Severe (not above 1.00)"),
+    ("rain", "1.005", "1.01", "no_travel", "RR-02 half up, binary float gives 1.00"),
+    ("rain", "1.004", "1.00", "severe", "RR-02 below half"),
+    ("rain", "2.675", "2.68", "no_travel", "RR-02 half up; binary float gives 2.67"),
+    ("rain", "0.005", "0.01", "low", "RR-02 half up to 0.01"),
+    ("rain", "0.004", "0.00", "low", "RR-02 below half"),
+    ("rain", "0.015", "0.02", "low", "RR-02 half up"),
+    ("rain", "0.285", "0.29", "high", "RR-02 half up; binary float gives 0.28"),
+    ("rain", "0.145", "0.15", "moderate", "RR-02 half up; binary float gives 0.14"),
+    ("rain", "1.115", "1.12", "no_travel", "RR-02 half up"),
+    ("snow", "0.495", "0.50", "moderate", "RR-02 half up crosses into Moderate"),
+    ("snow", "0.494", "0.49", "low", "RR-02 below half"),
+    ("snow", "0.995", "1.00", "high", "RR-02 half up crosses into High"),
+    ("snow", "1.995", "2.00", "severe", "RR-02 half up crosses into Severe"),
+    ("snow", "2.995", "3.00", "severe", "RR-02 rounds to 3.00, still Severe"),
+    ("snow", "3.005", "3.01", "no_travel", "RR-02 half up crosses into No Travel"),
+    ("snow", "3.004", "3.00", "severe", "RR-02 below half"),
+]
+
+# (rain, showers, rounded sum, level, derivation): added exactly BEFORE rounding.
+RAIN_PLUS_SHOWERS_CASES: list[tuple[str, str, str, str, str]] = [
+    ("0.122", "0.123", "0.25", "high", "RR-02 sum 0.245 rounds up; rounding each first would give 0.24"),
+    ("0.2", "0.045", "0.25", "high", "RR-02 sum 0.245 rounds to 0.25"),
+    ("0", "0.495", "0.50", "severe", "RR-02 showers only, 0.495 rounds up"),
+    ("0.1", "0.2", "0.30", "high", "RR-02 0.1+0.2 is exactly 0.3 in decimals"),
+    ("0.004", "0.004", "0.01", "low", "RR-02 sum 0.008 rounds to 0.01 (rounding first would give 0)"),
+]
+
+# (wind, rain, snow, load_lb, level, derivation). None = missing.
+MISSING_CASES: list[tuple[str | None, str | None, str | None, int, str, str]] = [
+    ("30", None, "0", 10000, "no_data", "RR-11 wind 30 and rain missing"),
+    ("50", None, "0", 10000, "no_data", "RR-11 Severe so far but rain missing"),
+    ("60", None, "0", 10000, "no_travel", "RR-11 No Travel already reached"),
+    (None, "0", "0", 10000, "no_data", "RR-11 wind missing"),
+    ("0", "0", None, 10000, "no_data", "RR-11 snow missing"),
+    (None, None, None, 10000, "no_data", "RR-11 everything missing"),
+    ("20", "0", "0", 10000, "low", "RR-11 nothing missing, all Low"),
+    (None, "1.01", "0", 10000, "no_travel", "RR-11 rain No Travel, wind missing"),
+    (None, None, "3.01", 10000, "no_travel", "RR-11 snow No Travel, others missing"),
+    ("0", "0.30", None, 10000, "no_data", "RR-11 High so far, snow missing"),
+    ("45", None, "0", 30001, "no_travel", "RR-07 load makes wind No Travel, rain missing"),
+    ("38", None, "0", 41000, "no_data", "RR-11 Severe by load rule only, rain missing"),
+    (None, "0.50", "0", 10000, "no_data", "RR-11 Severe rain but wind missing"),
+    ("55", "0", None, 0, "no_travel", "RR-06 snow missing, wind already No Travel"),
+    ("34.5", None, "0", 10000, "no_data", "RR-11 wind rounds to 35 High, rain missing"),
+]
+
+# (wind, rain, snow, load_lb, level, factors, load_rule, derivation).
+COMBINED_CASES: list[tuple[str, str, str, int, str, frozenset[str], str, str]] = [
+    ("30", "0.30", "0", 10000, "high", frozenset({"rain"}), "none", "RR-09 rain High beats wind Moderate"),
+    ("38", "0.60", "0", 41000, "severe", frozenset({"wind", "rain"}), "raised_to_severe", "RR-09 both Severe"),
+    ("38", "0", "0", 41000, "severe", frozenset({"wind"}), "raised_to_severe", "RR-08 only wind drives"),
+    ("38", "0", "0", 10000, "high", frozenset({"wind"}), "none", "RR-03 no load rule at 10,000"),
+    ("50", "0", "0", 31000, "no_travel", frozenset({"wind"}), "raised_to_no_travel", "RR-07 raised"),
+    ("46", "0", "0", 10000, "severe", frozenset({"wind"}), "none", "RR-03"),
+    ("30", "0.30", "0", 80000, "high", frozenset({"rain"}), "none", "load never changes rain"),
+    ("34", "0.30", "0.50", 10000, "high", frozenset({"rain"}), "none", "RR-09 rain High is the worst"),
+    ("40", "0.30", "1.00", 10000, "high", frozenset({"wind", "rain", "snow"}), "none", "RR-10 three-way tie"),
+    ("25", "0", "0", 10000, "moderate", frozenset({"wind"}), "none", "RR-03 Moderate from wind"),
+    ("0", "0", "0.50", 80000, "moderate", frozenset({"snow"}), "none", "load never changes snow"),
+    ("0", "1.50", "0", 80000, "no_travel", frozenset({"rain"}), "none", "RR-04 rain No Travel"),
+    ("38", "1.50", "0", 41000, "no_travel", frozenset({"rain"}), "none", "rain No Travel; load rule did not decide"),
+]
+
+# (arrival ISO, wind hour ISO, rain/snow hour ISO, derivation).
+HOUR_CASES: list[tuple[str, str, str, str]] = [
+    ("2026-11-12T13:00:00+00:00", "2026-11-12T13:00:00+00:00", "2026-11-12T14:00:00+00:00", "RR-17 exactly 13:00"),
+    ("2026-11-12T13:00:01+00:00", "2026-11-12T13:00:00+00:00", "2026-11-12T14:00:00+00:00", "RR-17 just after"),
+    ("2026-11-12T13:20:00+00:00", "2026-11-12T13:00:00+00:00", "2026-11-12T14:00:00+00:00", "RR-17 worked example"),
+    ("2026-11-12T13:29:59+00:00", "2026-11-12T13:00:00+00:00", "2026-11-12T14:00:00+00:00", "RR-17 just below half"),
+    ("2026-11-12T13:30:00+00:00", "2026-11-12T14:00:00+00:00", "2026-11-12T14:00:00+00:00", "RR-17 half rounds up"),
+    ("2026-11-12T13:40:00+00:00", "2026-11-12T14:00:00+00:00", "2026-11-12T14:00:00+00:00", "RR-17 worked example"),
+    ("2026-11-12T13:59:59+00:00", "2026-11-12T14:00:00+00:00", "2026-11-12T14:00:00+00:00", "RR-17"),
+    ("2026-11-12T23:20:00+00:00", "2026-11-12T23:00:00+00:00", "2026-11-13T00:00:00+00:00", "RR-17 midnight"),
+    ("2026-11-12T23:40:00+00:00", "2026-11-13T00:00:00+00:00", "2026-11-13T00:00:00+00:00", "RR-17 midnight"),
+    ("2026-11-12T00:00:00+00:00", "2026-11-12T00:00:00+00:00", "2026-11-12T01:00:00+00:00", "RR-17 exactly midnight"),
+]
