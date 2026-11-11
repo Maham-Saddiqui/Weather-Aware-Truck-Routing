@@ -12,6 +12,7 @@ import { MapLegend } from './MapLegend'
 import { MapUnavailable } from './MapUnavailable'
 import { useMapFailure } from './useMapFailure'
 import { RouteScene } from './RouteScene'
+import { TruckMarker } from './TruckMarker'
 
 const INTERACTIVE_LAYER_IDS = [ROUTE_HIT_LAYER_ID]
 
@@ -58,6 +59,7 @@ export function RouteMapCanvas({ heatmap, hourOffset, onSelectRoute, ...scene }:
         <AttributionControl position="bottom-right" compact={false} />
         <NavigationControl position="top-right" showCompass={false} />
         {heatmap && <HeatmapLayer heatmap={heatmap} hourOffset={hourOffset} />}
+        <TruckMarker {...scene} heatmap={heatmap} hourOffset={hourOffset} />
         <RouteScene {...scene} />
       </Map>
       <MapLegend />
