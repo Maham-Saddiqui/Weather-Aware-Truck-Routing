@@ -3,9 +3,12 @@ import { ARROW_IMAGE_ID } from './directionArrowImage'
 
 const DIRECTION_CUE_LAYER_ID = 'route-direction'
 
-// Sideways from the line, so the checkpoint dots that sit on it never cover the arrows.
-const ARROW_OFFSET_PX: [number, number] = [0, -22]
-const ARROW_OPACITY = 0.85
+// A cue, not a mark: smaller and softer than the line it sits beside, yet still clearly visible at the default fit.
+const ARROW_SIZE = 0.8
+const ARROW_OPACITY = 0.75
+// Sideways from the line, so the checkpoint dots that sit on it never cover the arrows. The map scales the offset
+// by the icon size, so this is about 19 px on screen.
+const ARROW_OFFSET_PX: [number, number] = [0, -24]
 
 const ARROWS_ACROSS_THE_MAP = 10
 const MIN_SPACING_PX = 40
@@ -31,6 +34,7 @@ const DIRECTION_CUE_LAYOUT = {
   'symbol-placement': 'line',
   'icon-image': ARROW_IMAGE_ID,
   'icon-offset': ARROW_OFFSET_PX,
+  'icon-size': ARROW_SIZE,
   'icon-rotation-alignment': 'map',
   'icon-keep-upright': false,
   'icon-allow-overlap': true,
