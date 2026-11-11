@@ -72,7 +72,7 @@ class _TomTomHttp:
             response = get_with_one_retry(
                 self._client, self._base_url + path, {**params, "key": self._api_key}
             )
-        except httpx.TransportError:
+        except httpx.RequestError:
             raise RoutingUnavailable("TomTom could not be reached") from None
         _raise_for_failure(response)
         try:
@@ -93,7 +93,7 @@ def _route_params(query: RouteQuery) -> QueryParams:
         "travelMode": "truck",
         "vehicleCommercial": "true",
         "vehicleWeight": query.vehicle_weight_kg,
-        "departAt": query.depart_at.astimezone(UTC).isoformat(),
+        "departAt": query.depart_at.astimezone(UTC).replace(microsecond=0).isoformat(),
         "routeType": query.preference.value,
         "maxAlternatives": query.max_alternatives,
         "routeRepresentation": "encodedPolyline",

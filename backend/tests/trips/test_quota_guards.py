@@ -43,6 +43,25 @@ def test_a_spent_daily_budget_makes_the_credit_a_plain_503_without_calling_tomto
     assert attribution.calls == 0
 
 
+def test_the_credit_text_has_its_own_strict_limit_so_it_cannot_drain_the_daily_budget(
+    client: Client, use_fakes: UseFakes, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-05, SEC-07"""
+    guard = FakeCallGuard()
+    use_fakes(with_trips(default_fakes(), call_guard=guard))
+    monkeypatch.setitem(AnonRateThrottle.THROTTLE_RATES, "attribution", "2/min")
+
+    statuses = [client.get(ATTRIBUTION).status_code for _ in range(4)]
+
+    assert statuses == [200, 200, 429, 429]
+    assert guard.acquired == 2
+
+
+def test_the_credit_text_limit_defaults_to_six_a_minute_per_address() -> None:
+    """SEC-05"""
+    assert AnonRateThrottle.THROTTLE_RATES["attribution"] == "6/min"
+
+
 @pytest.mark.parametrize("path", TRIP_PATHS)
 def test_trip_requests_have_their_own_stricter_limit_per_address(
     client: Client, use_fakes: UseFakes, monkeypatch: pytest.MonkeyPatch, path: str

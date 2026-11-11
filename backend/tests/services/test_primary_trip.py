@@ -1,6 +1,10 @@
+from typing import Any
+
 import pytest
 
+from domain.checkpoints import plan_checkpoints
 from domain.levels import Level
+from domain.types import CheckpointSpacing
 from providers.routing.port import (
     RoutePreference,
     RoutingProviderName,
@@ -57,6 +61,27 @@ def test_weather_for_all_checkpoints_and_heatmap_points_is_one_batched_call() ->
     plan_primary_trip(environment(weather=weather), trip_request())
 
     assert len(weather.calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("spacing", "plans_per_route"),
+    [(CheckpointSpacing.TWENTY_FIVE_MILES, 1), (CheckpointSpacing.TEN_MILES, 2)],
+)
+def test_a_route_is_planned_once_per_distinct_spacing(
+    monkeypatch: pytest.MonkeyPatch, spacing: CheckpointSpacing, plans_per_route: int
+) -> None:
+    """RR-13, RR-28: the heatmap grid reuses the plan when the spacings match"""
+    planned: list[CheckpointSpacing] = []
+
+    def counting(*args: Any) -> Any:
+        planned.append(args[1])
+        return plan_checkpoints(*args)
+
+    monkeypatch.setattr("services.trip_rating.plan_checkpoints", counting)
+
+    plan_primary_trip(environment(), trip_request(spacing_miles=spacing))
+
+    assert len(planned) == plans_per_route
 
 
 def test_the_heatmap_has_one_point_per_grid_cell_with_49_hourly_digits() -> None:

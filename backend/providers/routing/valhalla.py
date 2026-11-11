@@ -68,7 +68,7 @@ class ValhallaRouting:
         body = _request_body(query)
         try:
             response = send_with_one_retry(lambda: self._post(body))
-        except httpx.TransportError as error:
+        except httpx.RequestError as error:
             raise RoutingUnavailable("The backup routing service did not answer.") from error
         return _routes_from(self._payload_of(response))
 

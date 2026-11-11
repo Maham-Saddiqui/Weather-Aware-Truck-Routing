@@ -6,12 +6,12 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from config import container
-from config.settings import TRIP_THROTTLE_SCOPE
 from domain.types import GeoPoint
 from providers.routing.port import RoutingUnavailable
 from providers.timezone.offline import TimeZoneNotFound
 from services.compare_trip import plan_compare_trip
 from services.primary_trip import plan_primary_trip
+from trips.limits import ATTRIBUTION_THROTTLE_SCOPE, TRIP_THROTTLE_SCOPE
 from trips.presenters import present_compare, present_primary
 from trips.responses import no_store
 from trips.serializers import TimeZoneQuerySerializer, parse_trip_request
@@ -29,6 +29,9 @@ class HealthView(APIView):
 
 
 class AttributionView(APIView):
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = ATTRIBUTION_THROTTLE_SCOPE
+
     def get(self, request: Request) -> Response:
         providers = container.providers()
         if not providers.trips.call_guard.try_acquire():

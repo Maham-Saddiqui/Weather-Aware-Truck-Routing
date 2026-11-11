@@ -248,6 +248,14 @@ def test_be08_two_network_errors_in_a_row_are_routing_unavailable(
     assert len(attempts) == 2
 
 
+def test_be08_a_body_that_cannot_be_decoded_is_routing_unavailable() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.DecodingError("synthetic broken gzip", request=request)
+
+    with pytest.raises(RoutingUnavailable):
+        adapter(handler).routes(QUERY)
+
+
 def test_be08_a_client_error_answer_is_never_retried() -> None:
     attempts: list[int] = []
 

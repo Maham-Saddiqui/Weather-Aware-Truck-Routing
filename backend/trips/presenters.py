@@ -5,6 +5,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Any
 
+from domain.constants import HEATMAP_HOURS
 from domain.levels import Level
 from domain.ranking import Recommendation
 from domain.rating import Measurements
@@ -19,7 +20,6 @@ from services.results import (
     RouteCheckpoint,
 )
 
-HEATMAP_HOURS = 49
 NO_DATA = "no_data"
 
 type Json = dict[str, Any]

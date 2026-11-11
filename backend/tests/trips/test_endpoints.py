@@ -4,7 +4,7 @@ from dataclasses import replace
 from typing import Any
 
 import pytest
-from django.test import Client
+from django.test import Client, override_settings
 from rest_framework.throttling import AnonRateThrottle
 
 from config.container import Providers
@@ -107,7 +107,9 @@ def test_requests_are_throttled_per_forwarded_address_with_retry_after(
     monkeypatch.setitem(AnonRateThrottle.THROTTLE_RATES, "anon", "2/min")
 
     def call(address: str) -> Any:
-        return client.get("/api/v1/attribution", HTTP_X_FORWARDED_FOR=address)
+        return client.get(
+            "/api/v1/timezone", {"lat": "39.7", "lon": "-104.9"}, HTTP_X_FORWARDED_FOR=address
+        )
 
     assert [call("203.0.113.1").status_code for _ in range(2)] == [200, 200]
     blocked = call("203.0.113.1")
@@ -115,6 +117,23 @@ def test_requests_are_throttled_per_forwarded_address_with_retry_after(
     assert blocked.json()["code"] == "rate_limited"
     assert int(blocked["Retry-After"]) >= 1
     assert call("203.0.113.2").status_code == 200
+
+
+def test_a_browser_from_an_allowed_origin_can_read_retry_after_on_a_throttled_answer(
+    client: Client, use_fakes: UseFakes, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-05"""
+    origin = "https://app.example.test"
+    monkeypatch.setitem(AnonRateThrottle.THROTTLE_RATES, "anon", "1/min")
+    place = {"lat": "39.7", "lon": "-104.9"}
+
+    with override_settings(CORS_ALLOWED_ORIGINS=[origin]):
+        client.get("/api/v1/timezone", place, HTTP_ORIGIN=origin)
+        blocked = client.get("/api/v1/timezone", place, HTTP_ORIGIN=origin)
+
+    assert blocked.status_code == 429
+    assert blocked["Access-Control-Allow-Origin"] == origin
+    assert "Retry-After" in blocked["Access-Control-Expose-Headers"]
 
 
 def test_the_health_check_is_never_throttled(

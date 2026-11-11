@@ -98,6 +98,23 @@ def test_a_place_no_time_zone_covers_is_a_validation_problem_not_a_crash(
     assert "lat" in response.json()["field_errors"]
 
 
+def test_a_checkpoint_no_time_zone_covers_is_a_plain_422_problem_not_a_500(
+    client: Client, use_fakes: UseFakes
+) -> None:
+    class NowhereToBeFound:
+        def zone_name(self, point: GeoPoint) -> str:
+            raise TimeZoneNotFound("secret lookup detail")
+
+    routing = tomtom_answering((route_bent(0.0),))
+    use_fakes(with_trips(default_fakes(), routing=routing, timezone=NowhereToBeFound()))
+
+    response, body = post(client, "/trips/primary")
+
+    assert response.status_code == 422
+    assert body["code"] == "validation_error"
+    assert "secret lookup detail" not in json.dumps(body)
+
+
 def test_the_real_offline_lookup_names_the_zone_of_a_chicago_address() -> None:
     """RR-18"""
     assert OfflineTimeZoneLookup().zone_name(GeoPoint(41.8781, -87.6298)) == "America/Chicago"
