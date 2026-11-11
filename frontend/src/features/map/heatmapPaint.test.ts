@@ -1,17 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RISK_COLOURS } from '../../shared/colours'
-import type { Heatmap } from '../../shared/types'
-import { circleFillForHour, heatmapFeatures, riskDigitAt, worstLevelAtHour } from './heatmapPaint'
-
-const START_UTC = '2026-11-12T13:00:00Z'
-
-function heatmapOf(...risks: string[]): Heatmap {
-  return {
-    start_utc: START_UTC,
-    hours: 49,
-    points: risks.map((risk, index) => ({ position: { lat: 40, lon: -100 + index }, risk })),
-  }
-}
+import { makeHeatmapOfRisks } from '../../shared/testing/fixtures'
+import { circleFillForHour, heatmapFeatures, levelForDigit, riskDigitAt } from './heatmapPaint'
 
 describe('riskDigitAt (RR-28: character h of the risk string is departure + h hours)', () => {
   it('reads character h of the string for slider position h', () => {
@@ -28,20 +18,20 @@ describe('riskDigitAt (RR-28: character h of the risk string is departure + h ho
   })
 })
 
-describe('worstLevelAtHour (RR-01: worst of is the maximum and no data is not a level)', () => {
-  it('picks the worst level among the points at that hour', () => {
-    expect(worstLevelAtHour(heatmapOf('0100', '0300', '0000'), 1)).toBe('severe')
-    expect(worstLevelAtHour(heatmapOf('0100', '0300', '0000'), 2)).toBe('low')
+describe('levelForDigit (RR-01: the server digit names the level, x is no level)', () => {
+  it.each([
+    ['0', 'low'],
+    ['1', 'moderate'],
+    ['2', 'high'],
+    ['3', 'severe'],
+    ['4', 'no_travel'],
+  ])('maps digit %s to %s', (digit, level) => {
+    expect(levelForDigit(digit)).toBe(level)
   })
 
-  it('never lets no data count as a level, even when it is all there is', () => {
-    expect(worstLevelAtHour(heatmapOf('2xx', 'x1x'), 0)).toBe('high')
-    expect(worstLevelAtHour(heatmapOf('2xx', 'x1x'), 1)).toBe('moderate')
-    expect(worstLevelAtHour(heatmapOf('2xx', 'xxx'), 2)).toBeNull()
-  })
-
-  it('reports no level for a heatmap without points', () => {
-    expect(worstLevelAtHour(heatmapOf(), 0)).toBeNull()
+  it('gives no level for x, an empty text or anything else', () => {
+    expect(levelForDigit('x')).toBeNull()
+    expect(levelForDigit('')).toBeNull()
   })
 })
 
@@ -84,7 +74,7 @@ describe('circleFillForHour (FE-09: colour shows the risk level, Low is invisibl
 
 describe('heatmapFeatures (RR-28: one list per response, drawn as it came)', () => {
   it('keeps one feature per server point with its risk string and longitude first', () => {
-    const { features } = heatmapFeatures(heatmapOf('012', '340'))
+    const { features } = heatmapFeatures(makeHeatmapOfRisks('012', '340'))
 
     expect(features).toHaveLength(2)
     expect(features[1]?.properties.risk).toBe('340')

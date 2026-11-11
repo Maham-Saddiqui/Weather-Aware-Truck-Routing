@@ -3,7 +3,7 @@ import Typography from '@mui/material/Typography'
 import { RISK_COLOURS } from '../../shared/colours'
 import { LEVEL_LABELS, RiskIcon } from '../../shared/risk'
 import type { CheckpointLevel, Heatmap } from '../../shared/types'
-import { worstLevelAtHour } from './heatmapPaint'
+import { levelForDigit, riskDigitAt } from './heatmapPaint'
 
 interface HeatmapStatusProps {
   heatmap: Heatmap
@@ -19,10 +19,10 @@ function statusText(worstLevel: CheckpointLevel | null): string {
     : `Worst along these routes: ${LEVEL_LABELS[worstLevel]}`
 }
 
-// Low is transparent on the map, so this words what the heatmap shows when there is nothing to see (FE-09, FE-07).
+// Low is transparent on the map, so this words the server's worst level for the hour when there is nothing to see (FE-09, FE-07).
 // The region stays mounted and React rewrites it only when the words change, so playback does not spam screen readers.
 export function HeatmapStatus({ heatmap, hourOffset }: HeatmapStatusProps) {
-  const worstLevel = worstLevelAtHour(heatmap, hourOffset)
+  const worstLevel = levelForDigit(riskDigitAt(heatmap.worst_level_by_hour, hourOffset))
   const iconLevel = worstLevel ?? 'no_data'
   return (
     <Stack

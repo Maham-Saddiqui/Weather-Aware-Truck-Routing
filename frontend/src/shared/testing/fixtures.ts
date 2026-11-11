@@ -56,11 +56,41 @@ export function makeRoute(id: string, overrides: Partial<Route> = {}): Route {
   }
 }
 
-export const HEATMAP: Heatmap = {
-  start_utc: '2026-11-12T14:00:00Z',
-  hours: 49,
-  points: [{ position: { lat: 41.88, lon: -87.63 }, risk: '0'.repeat(49) }],
+const NO_DATA_DIGIT = 'x'
+const HEATMAP_HOURS = 49
+const DEFAULT_START_UTC = '2026-11-12T14:00:00Z'
+
+// Same rule as the server (RR-28): per hour the highest digit over all points, x when none has data.
+function worstDigitsByHour(risks: readonly string[]): string {
+  return Array.from({ length: HEATMAP_HOURS }, (_, hour) => {
+    const digits = risks
+      .map((risk) => risk.charAt(hour))
+      .filter((digit) => digit !== '' && digit !== NO_DATA_DIGIT)
+    return digits.sort().at(-1) ?? NO_DATA_DIGIT
+  }).join('')
 }
+
+export function makeHeatmap(
+  points: Heatmap['points'],
+  startUtc: string = DEFAULT_START_UTC,
+): Heatmap {
+  return {
+    start_utc: startUtc,
+    hours: HEATMAP_HOURS,
+    worst_level_by_hour: worstDigitsByHour(points.map((point) => point.risk)),
+    points,
+  }
+}
+
+export function makeHeatmapOfRisks(...risks: string[]): Heatmap {
+  return makeHeatmap(
+    risks.map((risk, index) => ({ position: { lat: 40, lon: -100 + index }, risk })),
+  )
+}
+
+export const HEATMAP: Heatmap = makeHeatmap([
+  { position: { lat: 41.88, lon: -87.63 }, risk: '0'.repeat(HEATMAP_HOURS) },
+])
 
 export const RECOMMENDATION: Recommendation = {
   status: 'recommended',

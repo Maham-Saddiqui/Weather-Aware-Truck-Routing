@@ -6,7 +6,6 @@ import type { CheckpointLevel, Heatmap } from '../../shared/types'
 
 const INVISIBLE = '#00000000'
 
-const NO_DATA_DIGIT = 'x'
 const DIGIT_LEVELS = LEVEL_ORDER.filter((level) => level !== 'no_data')
 const LEVEL_FOR_DIGIT: Record<string, CheckpointLevel> = Object.fromEntries(
   DIGIT_LEVELS.map((level, digit) => [String(digit), level]),
@@ -41,16 +40,9 @@ export function circleFillForHour(hourOffset: number): ExpressionSpecification {
   return ['match', digitAtHour, ...branches, fillFor('no_data')] as ExpressionSpecification
 }
 
-// RR-01: a larger digit is a worse level and "no data" is never a level, so it is skipped.
-export function worstLevelAtHour(heatmap: Heatmap, hourOffset: number): CheckpointLevel | null {
-  let worstDigit = ''
-  for (const point of heatmap.points) {
-    const digit = riskDigitAt(point.risk, hourOffset)
-    if (digit !== NO_DATA_DIGIT && digit > worstDigit) {
-      worstDigit = digit
-    }
-  }
-  return LEVEL_FOR_DIGIT[worstDigit] ?? null
+// FE-07: the server's worst-by-hour character (0 to 4 or x) in the shared level words.
+export function levelForDigit(digit: string): CheckpointLevel | null {
+  return LEVEL_FOR_DIGIT[digit] ?? null
 }
 
 export function heatmapFeatures(heatmap: Heatmap): FeatureCollection<Point, { risk: string }> {

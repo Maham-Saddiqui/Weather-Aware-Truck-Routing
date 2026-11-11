@@ -1,4 +1,5 @@
 import type { Checkpoint, Heatmap, Route } from '../../shared/types'
+import { makeHeatmap } from '../../shared/testing/fixtures'
 import type { LonLat } from './polyline'
 
 const DEPARTURE_UTC = '2026-11-12T13:00:00Z'
@@ -134,29 +135,24 @@ export function riskStringFor(pointNumber: number): string {
 
 export function heatmapWithPoints(pointCount: number): Heatmap {
   const columns = 100
-  return {
-    start_utc: DEPARTURE_UTC,
-    hours: HOURS_IN_HEATMAP,
-    points: Array.from({ length: pointCount }, (_, pointNumber) => ({
+  return makeHeatmap(
+    Array.from({ length: pointCount }, (_, pointNumber) => ({
       position: {
         lat: 32 + Math.floor(pointNumber / columns) * 1.2 + (pointNumber % columns) * 0.02,
         lon: -118 + (pointNumber % columns) * 0.4,
       },
       risk: riskStringFor(pointNumber),
     })),
-  }
+    DEPARTURE_UTC,
+  )
 }
 
 export function heatmapFromCheckpoints(routes: readonly Route[]): Heatmap {
   const positions = routes.flatMap((route) =>
     route.checkpoints.map((checkpoint) => checkpoint.position),
   )
-  return {
-    start_utc: DEPARTURE_UTC,
-    hours: HOURS_IN_HEATMAP,
-    points: positions.map((position, pointNumber) => ({
-      position,
-      risk: riskStringFor(pointNumber),
-    })),
-  }
+  return makeHeatmap(
+    positions.map((position, pointNumber) => ({ position, risk: riskStringFor(pointNumber) })),
+    DEPARTURE_UTC,
+  )
 }

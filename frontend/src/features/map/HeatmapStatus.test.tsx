@@ -1,19 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { Heatmap } from '../../shared/types'
+import { makeHeatmapOfRisks } from '../../shared/testing/fixtures'
 import { HeatmapStatus } from './HeatmapStatus'
-
-function heatmapOf(...risks: string[]): Heatmap {
-  return {
-    start_utc: '2026-11-12T13:00:00Z',
-    hours: 49,
-    points: risks.map((risk, index) => ({ position: { lat: 40, lon: -100 + index }, risk })),
-  }
-}
 
 describe('HeatmapStatus words what the heatmap shows at the chosen hour (REQ-09, RR-28, FE-09)', () => {
   it('says all clear when the worst digit is Low, because Low is drawn transparent', () => {
-    render(<HeatmapStatus heatmap={heatmapOf('0', '0')} hourOffset={0} />)
+    render(<HeatmapStatus heatmap={makeHeatmapOfRisks('0', '0')} hourOffset={0} />)
 
     expect(screen.getByRole('status')).toHaveTextContent(
       'All clear along these routes at this time',
@@ -26,13 +18,13 @@ describe('HeatmapStatus words what the heatmap shows at the chosen hour (REQ-09,
     ['3', 'Severe'],
     ['4', 'No Travel'],
   ])('names the worst level with its word for digit %s (FE-07)', (digit, word) => {
-    render(<HeatmapStatus heatmap={heatmapOf('0', digit)} hourOffset={0} />)
+    render(<HeatmapStatus heatmap={makeHeatmapOfRisks('0', digit)} hourOffset={0} />)
 
     expect(screen.getByRole('status')).toHaveTextContent(`Worst along these routes: ${word}`)
   })
 
   it('says there is no weather data when every point is missing at that hour (RR-11)', () => {
-    render(<HeatmapStatus heatmap={heatmapOf('x', 'x')} hourOffset={0} />)
+    render(<HeatmapStatus heatmap={makeHeatmapOfRisks('x', 'x')} hourOffset={0} />)
 
     expect(screen.getByRole('status')).toHaveTextContent(
       'No weather data along these routes at this time',
@@ -40,15 +32,25 @@ describe('HeatmapStatus words what the heatmap shows at the chosen hour (REQ-09,
   })
 
   it('reads the digit of the chosen hour, not the first one', () => {
-    render(<HeatmapStatus heatmap={heatmapOf('02')} hourOffset={1} />)
+    render(<HeatmapStatus heatmap={makeHeatmapOfRisks('02')} hourOffset={1} />)
 
     expect(screen.getByRole('status')).toHaveTextContent('Worst along these routes: High')
   })
 })
 
+describe('HeatmapStatus shows the server aggregate (GEN-03)', () => {
+  it('words the worst_level_by_hour character, never a level worked out from the points', () => {
+    const heatmap = { ...makeHeatmapOfRisks('0'), worst_level_by_hour: '3'.repeat(49) }
+
+    render(<HeatmapStatus heatmap={heatmap} hourOffset={0} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent('Worst along these routes: Severe')
+  })
+})
+
 describe('HeatmapStatus live region (FE-07: announce changes, never spam)', () => {
   it('is a status region that does not change while the words stay the same', () => {
-    const heatmap = heatmapOf('0012')
+    const heatmap = makeHeatmapOfRisks('0012')
     const { rerender } = render(<HeatmapStatus heatmap={heatmap} hourOffset={0} />)
     const observer = new MutationObserver(() => undefined)
     observer.observe(screen.getByRole('status'), {
