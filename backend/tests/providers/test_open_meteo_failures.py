@@ -5,13 +5,41 @@ import httpx
 import pytest
 
 from providers.weather.budget import BudgetLimit, WeatherBudget
+from providers.weather.open_meteo import RATE_LIMIT_REASON_MAX_CHARS
 from providers.weather.port import WeatherBusy, WeatherUnavailable
+from tests.fakes.logs import capture_events, events
 from tests.fakes.open_meteo import NOW, OTHER_POINT, POINT, Service, failing, location
 
 
 def test_too_many_requests_is_its_own_case() -> None:
     with pytest.raises(WeatherBusy):
         failing(429).weather.forecast([POINT])
+
+
+@pytest.mark.parametrize(
+    ("answer", "reason"),
+    [
+        (
+            httpx.Response(
+                429, json={"error": True, "reason": "Daily API request limit exceeded."}
+            ),
+            "Daily API request limit exceeded.",
+        ),
+        (httpx.Response(429, text="not json"), ""),
+        (httpx.Response(429, json=["unexpected"]), ""),
+        (httpx.Response(429, json={"reason": "x" * 500}), "x" * RATE_LIMIT_REASON_MAX_CHARS),
+    ],
+)
+def test_too_many_requests_logs_the_providers_reason(
+    answer: httpx.Response, reason: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    capture_events(caplog)
+    service = Service(lambda request: answer)
+
+    with pytest.raises(WeatherBusy):
+        service.weather.forecast([POINT])
+
+    assert events(caplog, "weather_rate_limited") == [{"reason": reason, "level": "WARNING"}]
 
 
 @pytest.mark.parametrize("status", [400, 500, 503])

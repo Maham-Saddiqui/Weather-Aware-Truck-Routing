@@ -26,6 +26,17 @@ POINTS_PER_REQUEST = 200
 HOURLY_VARIABLES = "wind_speed_10m,wind_gusts_10m,rain,showers,snowfall"
 HTTP_OK = 200
 HTTP_TOO_MANY_REQUESTS = 429
+RATE_LIMIT_REASON_MAX_CHARS = 200
+
+
+def _rate_limit_reason(response: httpx.Response) -> str:
+    """The provider's own words for refusing us (which allowance is spent), so the log says why."""
+    try:
+        payload: object = response.json()
+    except ValueError:
+        return ""
+    reason = payload.get("reason") if isinstance(payload, dict) else None
+    return str(reason)[:RATE_LIMIT_REASON_MAX_CHARS] if reason else ""
 
 
 class OpenMeteoWeather:
@@ -108,6 +119,9 @@ class OpenMeteoWeather:
         if response.status_code != HTTP_OK:
             call.status_failed(response.status_code)
             if response.status_code == HTTP_TOO_MANY_REQUESTS:
+                log_event(
+                    logging.WARNING, "weather_rate_limited", reason=_rate_limit_reason(response)
+                )
                 raise WeatherBusy("The weather service is busy")
             raise WeatherUnavailable(f"The weather service answered {response.status_code}")
         return _compact_by_cell(cells, response.text, call)
