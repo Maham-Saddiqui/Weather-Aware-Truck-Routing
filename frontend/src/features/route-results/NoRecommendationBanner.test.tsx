@@ -32,23 +32,24 @@ describe('advice when no route is recommended (RR-23)', () => {
     },
   )
 
-  it('says plainly that the weather service is busy, and does not suggest leaving later', () => {
-    renderBanner('busy')
+  it.each(['busy', 'unavailable'] as const)(
+    'says the routes are real and only the ratings are missing when the weather is %s, without repeating per route',
+    (weather) => {
+      renderBanner(weather)
 
-    expect(
-      screen.getByText(
-        /The weather service is busy, so no route could be rated\. Try again in a few minutes, or later if it stays busy\./,
-      ),
-    ).toBeInTheDocument()
-    expect(screen.queryByText(/Leaving later may help/)).not.toBeInTheDocument()
-  })
+      expect(
+        screen.getByText(
+          /The routes and travel times are real; only the weather ratings are missing\./,
+        ),
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Leaving later may help/)).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Why no route is recommended')).not.toBeInTheDocument()
+    },
+  )
 
-  it('says weather data is unavailable, and does not suggest leaving later', () => {
+  it('names the unavailable weather data', () => {
     renderBanner('unavailable')
 
-    expect(
-      screen.getByText(/Weather data is unavailable, so no route could be rated/),
-    ).toBeInTheDocument()
-    expect(screen.queryByText(/Leaving later may help/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Weather data is unavailable right now/)).toBeInTheDocument()
   })
 })

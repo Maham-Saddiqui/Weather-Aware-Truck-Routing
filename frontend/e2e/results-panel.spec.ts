@@ -1,13 +1,12 @@
-import type { Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { planChicagoToDenver } from './planTrip'
-import { expect, test } from '@playwright/test'
 
 async function pressShiftTabFromToggle(page: Page, toggleName: string) {
   await page.getByRole('button', { name: toggleName }).focus()
   await page.keyboard.press('Shift+Tab')
 }
 
-test('hides and shows the results panel and remembers the choice (REQ-11, NFR-03)', async ({
+test('hides and shows the results panel, and never hides the form on an empty page (REQ-11, NFR-03)', async ({
   page,
 }) => {
   await planChicagoToDenver(page)
@@ -24,13 +23,20 @@ test('hides and shows the results panel and remembers the choice (REQ-11, NFR-03
   await pressShiftTabFromToggle(page, 'Show results panel')
   await expect(results.locator(':focus')).toHaveCount(0)
 
-  await page.goto('/')
-  await expect(show).toHaveAttribute('aria-expanded', 'false')
-  await pressShiftTabFromToggle(page, 'Show results panel')
-  await expect(page.getByRole('region', { name: 'Trip details' }).locator(':focus')).toHaveCount(0)
-
   await show.click()
 
   await expect(hide).toHaveAttribute('aria-expanded', 'true')
+})
+
+test('shows the form and the examples on an empty page even after the panel was hidden', async ({
+  page,
+}) => {
+  await planChicagoToDenver(page)
+  await page.getByRole('button', { name: 'Hide results panel' }).click()
+  await expect(page.getByRole('button', { name: 'Show results panel' })).toBeVisible()
+
+  await page.goto('/')
+
   await expect(page.getByRole('button', { name: 'Chicago to Denver' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Hide results panel' })).toHaveCount(0)
 })

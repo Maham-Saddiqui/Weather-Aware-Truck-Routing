@@ -12,23 +12,31 @@ interface NoRecommendationBannerProps {
   weather: WeatherStatus | null
 }
 
-const WEATHER_PROBLEM_ENDINGS: Partial<Record<WeatherStatus, string>> = {
-  busy: 'The weather service is busy, so no route could be rated. Try again in a few minutes, or later if it stays busy.',
-  unavailable: 'Weather data is unavailable, so no route could be rated. Try again in a minute.',
+const ROUTES_ARE_REAL_NOTE =
+  'The routes and travel times are real; only the weather ratings are missing.'
+
+const WEATHER_PROBLEM_NOTES: Partial<Record<WeatherStatus, string>> = {
+  busy: ROUTES_ARE_REAL_NOTE,
+  unavailable: `Weather data is unavailable right now. ${ROUTES_ARE_REAL_NOTE}`,
 }
 
 const LEAVE_LATER_ENDING =
   'Leaving later may help. Pick a later departure time and plan the trip again.'
-
-function closingSentence(weather: WeatherStatus | null): string {
-  return (weather && WEATHER_PROBLEM_ENDINGS[weather]) ?? LEAVE_LATER_ENDING
-}
 
 export function NoRecommendationBanner({
   recommendation,
   routes,
   weather,
 }: NoRecommendationBannerProps) {
+  const weatherNote = weather ? WEATHER_PROBLEM_NOTES[weather] : undefined
+  if (weatherNote) {
+    return (
+      <Alert severity="warning" icon={<BlockIcon />}>
+        <AlertTitle>No route is recommended</AlertTitle>
+        {weatherNote}
+      </Alert>
+    )
+  }
   const problems = routes.flatMap((route, index) => describeRouteProblems(route, index + 1))
   return (
     <Alert severity="warning" icon={<BlockIcon />}>
@@ -41,7 +49,7 @@ export function NoRecommendationBanner({
           </ListItem>
         ))}
       </List>
-      {closingSentence(weather)}
+      {LEAVE_LATER_ENDING}
     </Alert>
   )
 }
