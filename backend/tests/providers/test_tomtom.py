@@ -15,7 +15,7 @@ from providers.routing.port import (
 from providers.routing.tomtom import TomTomAttribution, TomTomRouting
 from tests.fakes.polyline import encode_polyline
 
-FAKE_API_KEY = "synthetic-test-key-1234"
+FAKE_API_KEY = "fake-key-for-tests"
 PATH = (GeoPoint(41.0, -87.0), GeoPoint(41.5, -87.5), GeoPoint(42.0, -88.0))
 QUERY = RouteQuery(
     origin=PATH[0],
