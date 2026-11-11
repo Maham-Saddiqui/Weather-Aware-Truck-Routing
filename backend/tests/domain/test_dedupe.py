@@ -1,11 +1,13 @@
 from dataclasses import replace
+from time import perf_counter
 
-from domain.dedupe import choose_variety, drop_near_duplicates, route_id
+from domain.dedupe import ShapeBook, choose_variety, drop_near_duplicates, route_id
 from domain.types import GeoPoint, ProviderRoute, RouteGeometry
-from tests.fakes.routing import straight_route
+from tests.fakes.routing import straight_route, with_denser_vertices
 
 SEATTLE = GeoPoint(47.6, -122.3)
 MIAMI = GeoPoint(25.8, -80.2)
+GENEROUS_SECONDS = 2.0
 
 POINTS_PER_ROUTE = 100
 
@@ -119,3 +121,60 @@ def test_section5_routes_differing_by_one_second_or_one_metre_are_not_taken_as_e
     kept = drop_near_duplicates([first, one_second_slower, one_metre_longer])
 
     assert kept == (first, one_second_slower, one_metre_longer)
+
+
+def test_section5_the_same_road_with_different_vertex_density_is_one_route() -> None:
+    sparse = straight_route(SEATTLE, MIAMI, distance_miles=3556)
+    dense = replace(with_denser_vertices(sparse, 500), distance_m=sparse.distance_m + 1)
+
+    assert drop_near_duplicates([sparse, dense]) == (sparse,)
+    assert drop_near_duplicates([dense, sparse]) == (dense,)
+
+
+def test_section5_a_bent_route_stays_distinct_from_the_straight_line_at_any_density() -> None:
+    straight = straight_route(SEATTLE, MIAMI, distance_miles=3556)
+    bent = straight_route(SEATTLE, MIAMI, distance_miles=3600, bend_lat=3.0)
+    bent_densely = with_denser_vertices(bent, 500)
+
+    assert drop_near_duplicates([straight, bent_densely]) == (straight, bent_densely)
+
+
+def test_section5_routes_that_merely_cross_each_other_stay_distinct() -> None:
+    across = straight_route(SEATTLE, MIAMI, distance_miles=3556)
+    down = straight_route(GeoPoint(44.9, -93.3), GeoPoint(29.8, -95.4), distance_miles=1200)
+
+    assert drop_near_duplicates([across, down]) == (across, down)
+
+
+def test_section5_routes_sharing_only_their_start_and_end_stay_distinct() -> None:
+    direct = straight_route(SEATTLE, MIAMI, distance_miles=3556)
+    around = straight_route(SEATTLE, MIAMI, distance_miles=3700, bend_lat=4.0)
+
+    assert drop_near_duplicates([direct, around]) == (direct, around)
+
+
+def test_section5_six_cross_country_routes_of_six_thousand_points_are_sorted_out_quickly() -> None:
+    bends = (0.0, 1.0, 2.0, 3.0, 4.0, 5.0)
+    routes = [
+        with_denser_vertices(straight_route(SEATTLE, MIAMI, 3500 + 10 * i, bend), 600)
+        for i, bend in enumerate(bends)
+    ]
+    book = ShapeBook()
+
+    started = perf_counter()
+    distinct = drop_near_duplicates(routes, book)
+    chosen = choose_variety(distinct, limit=3, book=book)
+    elapsed = perf_counter() - started
+
+    assert len(chosen) == 3
+    assert elapsed < GENEROUS_SECONDS
+
+
+def test_section5_variety_on_long_dense_routes_still_starts_fast_and_adds_the_most_separate() -> (
+    None
+):
+    fast = with_denser_vertices(straight_route(SEATTLE, MIAMI, 3500), 300)
+    near_fast = with_denser_vertices(straight_route(SEATTLE, MIAMI, 3510, bend_lat=0.5), 300)
+    far_away = with_denser_vertices(straight_route(SEATTLE, MIAMI, 3700, bend_lat=6.0), 300)
+
+    assert choose_variety([near_fast, far_away, fast], limit=2) == (fast, far_away)
