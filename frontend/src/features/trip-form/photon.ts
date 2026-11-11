@@ -6,25 +6,11 @@ import {
   SUGGESTION_LIMIT,
 } from '../../shared/constants'
 import type { Place } from '../../shared/types'
-
-interface PhotonProperties {
-  name?: string
-  street?: string
-  city?: string
-  state?: string
-  countrycode?: string
-}
+import { placeLabel, type PhotonProperties } from './placeLabel'
 
 interface PhotonFeature {
   geometry: { coordinates: [number, number] }
   properties: PhotonProperties
-}
-
-const MAX_LABEL_LENGTH = 200
-
-export function placeLabel({ name, street, city, state }: PhotonProperties): string {
-  const parts = [name ?? street, city, state].filter((part) => part !== undefined)
-  return [...new Set(parts)].join(', ').slice(0, MAX_LABEL_LENGTH)
 }
 
 function toPlace({ geometry, properties }: PhotonFeature): Place {
@@ -33,7 +19,9 @@ function toPlace({ geometry, properties }: PhotonFeature): Place {
 }
 
 function withoutRepeats(places: Place[]): Place[] {
-  return [...new Map(places.map((place) => [place.label, place])).values()]
+  return places.filter(
+    (place, index) => places.findIndex((other) => other.label === place.label) === index,
+  )
 }
 
 function buildSearchUrl(query: string): URL {
@@ -60,5 +48,5 @@ export async function searchPlaces(query: string, signal: AbortSignal): Promise<
   const inCountry = features.filter(
     (feature) => feature.properties.countrycode === PHOTON_COUNTRY_CODE,
   )
-  return withoutRepeats(inCountry.map(toPlace))
+  return withoutRepeats(inCountry.map(toPlace).filter((place) => place.label !== ''))
 }
