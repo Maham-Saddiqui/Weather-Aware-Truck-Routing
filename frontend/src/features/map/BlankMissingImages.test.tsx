@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { BlankMissingImages, addBlankImageIfMissing } from './BlankMissingImages'
 
 const stub = vi.hoisted(() => ({
-  listeners: new Map<string, (event: { id: string }) => void>(),
+  resolver: null as ((id: string) => void) | null,
   images: new Set<string>(),
   addImage:
     vi.fn<(id: string, image: { width: number; height: number; data: Uint8Array }) => void>(),
@@ -15,11 +15,8 @@ const mapStub = {
     stub.images.add(id)
     stub.addImage(id, image)
   },
-  on: (name: string, listener: (event: { id: string }) => void) => {
-    stub.listeners.set(name, listener)
-  },
-  off: (name: string) => {
-    stub.listeners.delete(name)
+  setMissingStyleImageResolver: (resolver: ((id: string) => void) | null) => {
+    stub.resolver = resolver
   },
 }
 
@@ -49,15 +46,15 @@ describe('a missing basemap icon is drawn as nothing instead of a console warnin
     expect(stub.addImage).not.toHaveBeenCalled()
   })
 
-  it('listens for the map reporting a missing image and stops listening when removed', () => {
+  it('supplies the blank image when the map asks for a missing one, and stops when removed', () => {
     stub.images.clear()
     stub.addImage.mockClear()
     const { unmount } = render(<BlankMissingImages />)
 
-    stub.listeners.get('styleimagemissing')?.({ id: 'circle-11' })
+    stub.resolver?.('circle-11')
     expect(stub.addImage).toHaveBeenCalledTimes(1)
 
     unmount()
-    expect(stub.listeners.has('styleimagemissing')).toBe(false)
+    expect(stub.resolver).toBeNull()
   })
 })

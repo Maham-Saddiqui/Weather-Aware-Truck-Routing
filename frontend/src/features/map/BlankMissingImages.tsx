@@ -14,20 +14,20 @@ export function addBlankImageIfMissing(map: ImageHolder, id: string) {
   }
 }
 
-// The free basemap style names an icon its sprite does not contain; drawing nothing for it
-// keeps the browser console free of a repeated warning.
+// The free basemap style names an icon its sprite does not contain; drawing nothing for it keeps the
+// browser console free of a repeated warning. This MapLibre version only lets a resolver, not the
+// styleimagemissing event, supply the image in time.
 export function BlankMissingImages() {
   const { current: map } = useMap()
   useEffect(() => {
     if (!map) {
       return undefined
     }
-    const fillIn = (event: { id: string }) => {
-      addBlankImageIfMissing(map, event.id)
-    }
-    map.on('styleimagemissing', fillIn)
+    map.setMissingStyleImageResolver((id) => {
+      addBlankImageIfMissing(map, id)
+    })
     return () => {
-      map.off('styleimagemissing', fillIn)
+      map.setMissingStyleImageResolver(null)
     }
   }, [map])
   return null
