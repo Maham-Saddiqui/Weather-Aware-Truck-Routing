@@ -14,6 +14,7 @@ class TripNotes:
     routing_provider: str = ""
     backup_reason: str = ""
     alternatives_unavailable: bool = False
+    alternatives_tier: str = ""
     long_trip: bool = False
     straight_line_miles: int = 0
     alternatives_read_timeout_s: float | None = None

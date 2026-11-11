@@ -6,6 +6,7 @@ from domain.units import WHOLE_NUMBER, round_half_up
 from services.trip_request import TripRequest
 
 MAX_ROUTES_SHOWN = 3
+ALTERNATIVES_ASKED = MAX_ROUTES_SHOWN - 1
 
 # TomTom's compute time grows with route length and with options. On the live server about 920
 # straight-line miles answered with alternatives in about 6 s; about 1,375 timed out at 8 s.
@@ -13,19 +14,46 @@ LONG_TRIP_STRAIGHT_LINE_MILES = Decimal(1000)
 
 MILES_LOGGED_IN_STEPS_OF = 10
 
+TIER_TWO = "two"
+TIER_ONE = "one"
+TIER_NONE = "none"
+
+NORMAL_ALTERNATIVES_READ_TIMEOUT_S = 12.0
+LONG_ALTERNATIVES_READ_TIMEOUT_S = 22.0
+ONE_ALTERNATIVE_READ_TIMEOUT_S = 8.0
+SINGLE_ROUTE_READ_TIMEOUT_S = 6.0
+LONG_TRIP_DEADLINE_S = 40.0
+WEATHER_AND_RATING_RESERVE_S = 4.0
+
+
+@dataclass(frozen=True, slots=True)
+class FallbackTier:
+    """A smaller TomTom question, asked once when the bigger one timed out.
+
+    A read timeout of None is the client's own (8 s).
+    """
+
+    name: str
+    alternatives: int
+    read_timeout_s: float | None
+
 
 @dataclass(frozen=True, slots=True)
 class TripClass:
-    """How much routing work a trip gets: long trips ask for less work and may wait longer.
+    """How much routing work a trip gets: long trips wait longer and step down in tiers.
 
-    A deadline of None means the trip runner's normal deadline.
+    A deadline of None means the trip runner's normal deadline. The eco call is a bonus beside
+    the fastest call; on long trips it asks for no alternatives and waits the client's normal
+    time (read timeout None), so it finishes long before the fastest call gives up.
     """
 
     long_trip: bool
     straight_line_miles: int
     alternatives: int
     alternatives_read_timeout_s: float
-    asks_for_eco_routes: bool
+    eco_alternatives: int
+    eco_read_timeout_s: float | None
+    fallback_tiers: tuple[FallbackTier, ...]
     deadline_s: float | None
 
 
@@ -33,22 +61,30 @@ class TripClass:
 NORMAL_TRIP = TripClass(
     long_trip=False,
     straight_line_miles=0,
-    alternatives=MAX_ROUTES_SHOWN - 1,
-    alternatives_read_timeout_s=12.0,
-    asks_for_eco_routes=True,
+    alternatives=ALTERNATIVES_ASKED,
+    alternatives_read_timeout_s=NORMAL_ALTERNATIVES_READ_TIMEOUT_S,
+    eco_alternatives=ALTERNATIVES_ASKED,
+    eco_read_timeout_s=NORMAL_ALTERNATIVES_READ_TIMEOUT_S,
+    fallback_tiers=(FallbackTier(TIER_NONE, 0, None),),
     deadline_s=None,
 )
 
-# Long trips ask for less work and wait longer. TomTom cancels a request at about 30 s itself, so
-# the wait plus the connect time stays under 25 s. The whole trip (routing, the 8 s single-route
-# fallback, weather and rating) must fit in the deadline.
+# Long trips ask for the same alternatives and wait longer. TomTom cancels a request at about 30 s
+# itself, so the wait plus the connect time stays under 25 s. If two alternatives time out, one
+# alternative (the shape verified live) is asked once, then a single route. All the waits plus
+# the reserve for weather and rating must fit in the deadline.
 LONG_TRIP = TripClass(
     long_trip=True,
     straight_line_miles=0,
-    alternatives=1,
-    alternatives_read_timeout_s=22.0,
-    asks_for_eco_routes=False,
-    deadline_s=40.0,
+    alternatives=ALTERNATIVES_ASKED,
+    alternatives_read_timeout_s=LONG_ALTERNATIVES_READ_TIMEOUT_S,
+    eco_alternatives=0,
+    eco_read_timeout_s=None,
+    fallback_tiers=(
+        FallbackTier(TIER_ONE, 1, ONE_ALTERNATIVE_READ_TIMEOUT_S),
+        FallbackTier(TIER_NONE, 0, SINGLE_ROUTE_READ_TIMEOUT_S),
+    ),
+    deadline_s=LONG_TRIP_DEADLINE_S,
 )
 
 

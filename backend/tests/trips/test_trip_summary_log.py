@@ -12,7 +12,7 @@ from providers.routing.port import NoRouteFound, RoutePreference, RoutingUnavail
 from providers.weather.port import WeatherUnavailable
 from tests.fakes.bundle import FIRST_WEATHER_HOUR, FakeCallGuard, default_fakes
 from tests.fakes.logs import assert_nothing_sensitive_was_logged, capture_events, events
-from tests.fakes.routing import FakeRouting
+from tests.fakes.routing import FakeRouting, Outcome, ScriptedRouting
 from tests.fakes.trips import route_bent, tomtom_answering, trip_body, trip_environment
 from tests.fakes.weather import FakeWeather, calm_weather
 
@@ -73,6 +73,7 @@ def test_a_compare_trip_writes_its_own_summary_with_the_route_count(
     summary = only_summary(caplog)
     assert (summary["endpoint"], summary["outcome"], summary["routes"]) == ("compare", "ok", 2)
     assert summary["alternatives_unavailable"] is False
+    assert summary["alternatives_tier"] == "two"
 
 
 def timing_out_on_alternatives() -> FakeRouting:
@@ -95,6 +96,7 @@ def test_a_compare_trip_that_got_one_route_after_a_timeout_is_degraded_but_not_a
     assert (summary["outcome"], summary["routes"]) == ("degraded", 1)
     assert (summary["routing_provider"], summary["backup_used"]) == ("tomtom", False)
     assert summary["alternatives_unavailable"] is True
+    assert summary["alternatives_tier"] == "none"
 
 
 def test_the_one_route_fallback_logs_no_sensitive_values(
@@ -267,3 +269,74 @@ def test_a_primary_trip_logs_its_class_but_no_alternatives_wait(
     summary = only_summary(caplog)
     assert summary["long_trip"] is True
     assert (summary["alternatives_read_timeout_s"], summary["alternatives_ms"]) == (None, None)
+
+
+def long_trip_summary(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture, routing: ScriptedRouting
+) -> dict[str, Any]:
+    capture_events(caplog)
+    use_fakes(bundle(routing=routing))
+    assert post(client, "compare", trip_body(origin=SEATTLE, destination=MIAMI)) == 200
+    return only_summary(caplog)
+
+
+def long_trip_tomtom(two: Outcome, one: Outcome, single: Outcome) -> ScriptedRouting:
+    return ScriptedRouting(
+        {
+            (RoutePreference.FASTEST, 2): two,
+            (RoutePreference.ECO, 0): (route_bent(1.2),),
+            (RoutePreference.FASTEST, 1): one,
+            (RoutePreference.FASTEST, 0): single,
+        }
+    )
+
+
+def test_a_long_trip_that_got_two_alternatives_logs_tier_two_and_three_routes(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12, REQ-03"""
+    tomtom = long_trip_tomtom((route_bent(0.0), route_bent(0.6)), (), ())
+
+    summary = long_trip_summary(client, use_fakes, caplog, tomtom)
+
+    assert (summary["alternatives_tier"], summary["routes"]) == ("two", 3)
+    assert summary["outcome"] == "ok"
+
+
+def test_a_long_trip_that_fell_back_to_one_alternative_logs_tier_one(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    tomtom = long_trip_tomtom(
+        RoutingUnavailable("timed out"), (route_bent(0.0), route_bent(0.6)), ()
+    )
+
+    summary = long_trip_summary(client, use_fakes, caplog, tomtom)
+
+    assert (summary["alternatives_tier"], summary["routes"]) == ("one", 2)
+    assert (summary["routing_provider"], summary["backup_used"]) == ("tomtom", False)
+    assert isinstance(summary["alternatives_ms"], int)
+
+
+def test_a_long_trip_that_fell_back_to_a_single_route_logs_tier_none_and_is_degraded(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    tomtom = long_trip_tomtom(RoutingUnavailable("x"), RoutingUnavailable("y"), (route_bent(0.0),))
+
+    summary = long_trip_summary(client, use_fakes, caplog, tomtom)
+
+    assert (summary["alternatives_tier"], summary["routes"]) == ("none", 1)
+    assert (summary["outcome"], summary["alternatives_unavailable"]) == ("degraded", True)
+
+
+def test_a_trip_answered_by_the_backup_logs_no_alternatives_tier(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle(call_guard=FakeCallGuard(allowed=False)))
+
+    assert post(client, "compare") == 200
+
+    assert only_summary(caplog)["alternatives_tier"] is None
