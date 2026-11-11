@@ -1,5 +1,7 @@
 import json
 import logging
+import resource
+import sys
 import time
 import uuid
 from collections.abc import Callable
@@ -10,6 +12,13 @@ from django.http import HttpRequest, HttpResponse
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 
 logger = logging.getLogger("trips.requests")
+
+PEAK_MEMORY_UNITS_PER_MB = 1024 * 1024 if sys.platform == "darwin" else 1024
+
+
+def peak_memory_mb() -> int:
+    """The free host shows no memory graph, so the log carries the process's peak (PERF-05)."""
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // PEAK_MEMORY_UNITS_PER_MB
 
 
 class RequestIdFilter(logging.Filter):
@@ -47,8 +56,21 @@ class RequestIdMiddleware:
         try:
             response = self._get_response(request)
             duration_ms = round((time.monotonic() - started) * 1000)
+            meta = request.META
+            logger.warning(
+                "DIAGNOSTIC-HEADERS xff=%s cf=%s tci=%s remote=%s",
+                meta.get("HTTP_X_FORWARDED_FOR"),
+                meta.get("HTTP_CF_CONNECTING_IP"),
+                meta.get("HTTP_TRUE_CLIENT_IP"),
+                meta.get("REMOTE_ADDR"),
+            )
             logger.info(
-                "%s %s %s %d ms", request.method, request.path, response.status_code, duration_ms
+                "%s %s %s %d ms, peak memory %d MB",
+                request.method,
+                request.path,
+                response.status_code,
+                duration_ms,
+                peak_memory_mb(),
             )
         finally:
             request_id_var.reset(token)
