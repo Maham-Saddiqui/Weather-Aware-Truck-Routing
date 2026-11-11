@@ -1,3 +1,4 @@
+import math
 from collections.abc import Mapping
 
 from domain.types import GeoPoint, ProgressEntry, ProviderRoute, RouteGeometry
@@ -14,22 +15,26 @@ type Outcome = tuple[ProviderRoute, ...] | RoutingError
 POLYLINE_PRECISION = 5
 METRES_PER_MILE = 1609.344
 POINT_COUNT = 11
+SECONDS_PER_MILE = 60
 
 
 def straight_route(
     start: GeoPoint,
     end: GeoPoint,
     distance_miles: int = 100,
-    seconds_per_mile: int = 60,
+    bend_lat: float = 0.0,
 ) -> ProviderRoute:
-    """A synthetic route along a straight line, with an evenly spaced progress table."""
+    """A synthetic route along a line, bent north by `bend_lat` degrees at most."""
     fractions = [step / (POINT_COUNT - 1) for step in range(POINT_COUNT)]
     path = tuple(
-        GeoPoint(start.lat + (end.lat - start.lat) * f, start.lon + (end.lon - start.lon) * f)
+        GeoPoint(
+            start.lat + (end.lat - start.lat) * f + bend_lat * math.sin(math.pi * f),
+            start.lon + (end.lon - start.lon) * f,
+        )
         for f in fractions
     )
     distance_m = round(distance_miles * METRES_PER_MILE)
-    travel_time_s = distance_miles * seconds_per_mile
+    travel_time_s = distance_miles * SECONDS_PER_MILE
     progress = tuple(
         ProgressEntry(index, round(distance_m * f), round(travel_time_s * f))
         for index, f in enumerate(fractions)
