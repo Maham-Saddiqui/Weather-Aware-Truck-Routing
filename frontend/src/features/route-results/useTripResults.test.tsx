@@ -3,6 +3,7 @@ import { delay, http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Providers } from '../../app/Providers'
+import { HEALTH_FRESH_MS } from '../../shared/constants'
 import { useHealth } from '../../shared/api/useHealth'
 import { problemResponse } from '../../shared/testing/handlers'
 import { makeCompareResponse, makePrimaryResponse } from '../../shared/testing/fixtures'
@@ -156,5 +157,63 @@ describe('the server is waking up (REQ-12)', () => {
     const result = await loadingFor(2, false)
 
     expect(result.current.isServerWaking).toBe(false)
+  })
+
+  it('says so again when the server slept after an old health answer and the ping is slow (REQ-12)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    let pings = 0
+    server.use(
+      http.get('*/api/v1/health', async () => {
+        pings += 1
+        if (pings > 1) await delay('infinite')
+        return HttpResponse.json({ status: 'ok' })
+      }),
+      http.post('*/api/v1/trips/primary', () => delay('infinite')),
+      http.post('*/api/v1/trips/compare', () => delay('infinite')),
+    )
+    const { result, rerender } = renderHook(
+      ({ run }: { run: TripRun | null }) => {
+        useHealth()
+        return useTripResults(run)
+      },
+      { wrapper, initialProps: { run: null as TripRun | null } },
+    )
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(HEALTH_FRESH_MS)
+    })
+
+    rerender({ run: RUN })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000)
+    })
+
+    expect(pings).toBe(2)
+    expect(result.current.isServerWaking).toBe(true)
+  })
+
+  it('pings only once when planning starts while the first answer is still fresh (REQ-12)', async () => {
+    let pings = 0
+    server.use(
+      http.get('*/api/v1/health', () => {
+        pings += 1
+        return HttpResponse.json({ status: 'ok' })
+      }),
+    )
+    const { result } = renderHook(
+      () => {
+        useHealth()
+        return useTripResults(RUN)
+      },
+      { wrapper },
+    )
+
+    await waitFor(() => {
+      expect(result.current.phase).toBe('complete')
+    })
+
+    expect(pings).toBe(1)
   })
 })

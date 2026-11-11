@@ -8,6 +8,7 @@ export const LOWER_48_BOUNDING_BOX = '-124.85,24.4,-66.9,49.4'
 export const PHOTON_COUNTRY_CODE = 'US'
 
 export const SERVER_WAKING_DELAY_MS = 3000
+export const HEALTH_FRESH_MS = 5 * 60 * 1000
 
 export const MAX_LOAD_LB = 80_000
 export const TYPICAL_LEGAL_LOAD_LB = 45_000
