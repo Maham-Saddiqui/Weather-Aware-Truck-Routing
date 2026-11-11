@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './test'
 
 test.describe('first screen (REQ-11, REQ-13, NFR-03)', () => {
   test('shows the product, the tagline and the four example trips', async ({ page }) => {
