@@ -15,6 +15,7 @@ interface CheckpointSectionProps {
   onSelectCheckpoint: (routeId: string, checkpointIndex: number) => void
 }
 
+// The section is positioned so the hidden announcement stays inside it and cannot stretch the page.
 // Closed on a phone, where fifty rows would push everything else off the page; open on a wide screen.
 export function CheckpointSection({
   route,
@@ -32,7 +33,7 @@ export function CheckpointSection({
       component="section"
       ref={section}
       aria-labelledby={CHECKPOINTS_TITLE_ID}
-      sx={{ scrollMarginTop: (theme) => theme.spacing(1) }}
+      sx={{ position: 'relative', scrollMarginTop: (theme) => theme.spacing(1) }}
     >
       <CheckpointsToggle
         routeNumber={routeNumber}
