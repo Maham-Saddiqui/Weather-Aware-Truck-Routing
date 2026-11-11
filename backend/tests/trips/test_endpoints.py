@@ -136,6 +136,20 @@ def test_a_browser_from_an_allowed_origin_can_read_retry_after_on_a_throttled_an
     assert "Retry-After" in blocked["Access-Control-Expose-Headers"]
 
 
+def test_a_browser_from_an_allowed_origin_can_read_the_request_id_of_any_answer(
+    client: Client, use_fakes: UseFakes
+) -> None:
+    """BE-12"""
+    origin = "https://app.example.test"
+
+    with override_settings(CORS_ALLOWED_ORIGINS=[origin]):
+        answer = client.get("/api/v1/health", HTTP_ORIGIN=origin)
+
+    exposed = [name.strip() for name in answer["Access-Control-Expose-Headers"].split(",")]
+    assert "X-Request-ID" in exposed
+    assert answer["X-Request-ID"]
+
+
 def test_the_health_check_is_never_throttled(
     client: Client, use_fakes: UseFakes, monkeypatch: pytest.MonkeyPatch
 ) -> None:
