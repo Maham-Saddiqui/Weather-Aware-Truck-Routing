@@ -19,7 +19,7 @@ services:
       - key: DJANGO_ALLOWED_HOSTS
         value: .onrender.com
       - key: ALLOWED_ORIGINS
-        value: https://weather-aware-truck-routing-ten-iota.vercel.app
+        value: https://maham-spotter.vercel.app,https://weather-aware-truck-routing-ten-iota.vercel.app
       - key: NUM_PROXIES
         value: "1"
       - key: VALHALLA_BASE_URL

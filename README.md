@@ -78,7 +78,7 @@ Server configuration (environment variables): `DJANGO_SECRET_KEY`, `DJANGO_DEBUG
 
 ## Deployment
 
-The server runs on Render (gunicorn with exactly one worker process and eight threads) and the front end on Vercel; both deploy from this repository's `main` branch. No address is hard-coded: the front end reads the server address and the server reads the allowed front-end addresses from settings.
+The server runs on Render (gunicorn with exactly one worker process and eight threads) and the front end on Vercel; both deploy from this repository's `main` branch. No address is hard-coded in code: the front end reads the server address (`VITE_API_BASE_URL`) and the server reads the allowed front-end addresses (`ALLOWED_ORIGINS`) from settings. The one place an address is written down is the `connect-src` entry of the Content-Security-Policy in `frontend/vercel.json`, which names the API host on purpose instead of allowing every `onrender.com` host; change it together with `VITE_API_BASE_URL` if the server's address ever changes.
 
 ## Trade-offs and limits
 
