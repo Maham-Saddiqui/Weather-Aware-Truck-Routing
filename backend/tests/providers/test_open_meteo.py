@@ -360,6 +360,14 @@ def test_an_answer_of_the_wrong_shape_means_unavailable_and_nothing_is_cached(te
     assert len(service.requests) == 2
 
 
+def test_a_body_that_cannot_be_decoded_means_unavailable() -> None:
+    def broken(request: httpx.Request) -> httpx.Response:
+        raise httpx.DecodingError("synthetic broken gzip", request=request)
+
+    with pytest.raises(WeatherUnavailable):
+        Service(broken).weather.forecast([POINT])
+
+
 def test_a_network_error_is_retried_once_then_reported_as_unavailable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

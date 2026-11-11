@@ -187,6 +187,14 @@ def test_two_network_errors_trigger_the_backup_and_leak_nothing_about_the_key(
     assert raised.value.__suppress_context__
 
 
+def test_a_body_that_cannot_be_decoded_is_unavailable_and_never_a_crash() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.DecodingError("synthetic broken gzip", request=request)
+
+    with pytest.raises(RoutingUnavailable):
+        routing_with(httpx.MockTransport(handler)).routes(QUERY)
+
+
 def test_an_error_status_is_not_retried() -> None:
     calls: list[int] = []
 

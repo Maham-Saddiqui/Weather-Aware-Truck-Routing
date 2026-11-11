@@ -72,7 +72,7 @@ class _TomTomHttp:
             response = get_with_one_retry(
                 self._client, self._base_url + path, {**params, "key": self._api_key}
             )
-        except httpx.TransportError:
+        except httpx.RequestError:
             raise RoutingUnavailable("TomTom could not be reached") from None
         _raise_for_failure(response)
         try:

@@ -8,6 +8,7 @@ from rest_framework.exceptions import APIException, Throttled, ValidationError
 from rest_framework.response import Response
 
 from providers.routing.port import NoRouteFound, RoutingUnavailable
+from providers.timezone.offline import TimeZoneNotFound
 from services.trip_runner import TripsBusy
 from trips.responses import no_store
 
@@ -51,6 +52,12 @@ ROUTING_UNAVAILABLE = Problem(
     "Routing is unavailable",
     "We could not get a route right now. Please try again in a minute.",
 )
+NO_TIME_ZONE = Problem(
+    HTTP_UNPROCESSABLE,
+    "validation_error",
+    "A place has no time zone",
+    "No time zone covers a place on this route, so its times cannot be shown. Try other places.",
+)
 PAYLOAD_TOO_LARGE = Problem(
     HTTP_PAYLOAD_TOO_LARGE,
     "validation_error",
@@ -93,6 +100,8 @@ def _problem_of(exc: Exception) -> Problem:
         return NO_ROUTE
     if isinstance(exc, RoutingUnavailable):
         return ROUTING_UNAVAILABLE
+    if isinstance(exc, TimeZoneNotFound):
+        return NO_TIME_ZONE
     logger.exception("Unhandled error")
     return INTERNAL
 

@@ -30,3 +30,11 @@ def log_worker_count() -> None:
         "limits assume exactly 1 and will silently misbehave",
         workers,
     )
+
+
+def warn_if_routing_key_is_missing(api_key: str) -> None:
+    if not api_key:
+        logger.warning(
+            "TOMTOM_API_KEY is not set; every trip will use the backup routing provider "
+            "and the credit text will be unavailable"
+        )

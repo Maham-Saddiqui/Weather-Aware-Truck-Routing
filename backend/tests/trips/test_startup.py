@@ -5,7 +5,11 @@ import sys
 import pytest
 
 from config import container
-from config.startup import configured_worker_count, log_worker_count
+from config.startup import (
+    configured_worker_count,
+    log_worker_count,
+    warn_if_routing_key_is_missing,
+)
 
 
 def test_the_provider_bundle_is_built_at_start_up_before_any_request(
@@ -65,3 +69,23 @@ def test_more_than_one_worker_is_logged_as_a_warning(
 
     assert caplog.records[0].levelno == logging.WARNING
     assert "2 worker processes" in caplog.records[0].getMessage()
+
+
+def test_a_missing_routing_key_is_a_start_up_warning_that_names_no_value(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger="trips.startup")
+
+    warn_if_routing_key_is_missing("")
+
+    assert [(r.levelno, "TOMTOM_API_KEY" in r.getMessage()) for r in caplog.records] == [
+        (logging.WARNING, True)
+    ]
+
+
+def test_a_present_routing_key_is_not_mentioned_at_all(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO, logger="trips.startup")
+
+    warn_if_routing_key_is_missing("fake-key-for-tests")
+
+    assert caplog.records == []

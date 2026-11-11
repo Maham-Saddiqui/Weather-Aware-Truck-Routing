@@ -95,7 +95,7 @@ class OpenMeteoWeather:
             response = get_with_one_retry(
                 self._client, self._base_url + "/v1/forecast", self._params(cells)
             )
-        except httpx.TransportError:
+        except httpx.RequestError:
             raise WeatherUnavailable("The weather service could not be reached") from None
         if response.status_code == HTTP_TOO_MANY_REQUESTS:
             raise WeatherBusy("The weather service is busy")
