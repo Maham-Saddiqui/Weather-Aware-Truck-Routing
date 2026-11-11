@@ -1,6 +1,7 @@
 import { instantAfterHours } from '../../shared/time'
 import type { Heatmap, Route } from '../../shared/types'
 import { CheckpointMarkers } from './CheckpointMarkers'
+import { TruckFollower } from './TruckFollower'
 import { TruckMarker } from './TruckMarker'
 
 interface RouteMarkersProps {
@@ -23,6 +24,7 @@ export function RouteMarkers({ routes, heatmap, hourOffset, ...checkpoints }: Ro
   return (
     <>
       {heatmap && <TruckMarker route={route} heatmap={heatmap} hourOffset={hourOffset} />}
+      {heatmap && <TruckFollower route={route} heatmap={heatmap} hourOffset={hourOffset} />}
       <CheckpointMarkers route={route} forecastMs={forecastMs} {...checkpoints} />
     </>
   )

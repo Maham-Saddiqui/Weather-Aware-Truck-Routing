@@ -6,6 +6,7 @@ import { NORTH_ROUTE, TWO_ROUTES, heatmapFromCheckpoints } from './routeFixtures
 
 vi.mock('@vis.gl/react-maplibre', () => ({
   Marker: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  useMap: () => ({ current: undefined }),
 }))
 
 const HEATMAP = heatmapFromCheckpoints(TWO_ROUTES)
