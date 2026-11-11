@@ -67,10 +67,22 @@ An independent audit checked every rule against the code (139 rows). Where the c
 | NFR-06 (no hard-coded addresses) | The API host appears in the `connect-src` of `frontend/vercel.json` and as the default of the keep-warm workflow. | A Content-Security-Policy header cannot read environment variables; naming one host is safer than allowing every `onrender.com` host. The keep-warm default can be overridden by the repository variable `API_HEALTH_URL`. Documented in the README. | accepted |
 | SEC-04 (only the production front-end address) | `render.yaml` allows two origins: the short and the long Vercel address of the same project. | They are two aliases of the one production deployment. | accepted |
 | FE-08, PERF-07 (no React re-render per slider tick) | The forecast hour is held in React state (`app/MapWithSlider.tsx`), so the map pane, status line and slider re-render per tick; the heatmap colour itself changes through the map API, the form and results are isolated from the tick (tested), and the routes are not redrawn. | Measured on the live site by an independent assessor on 2026-11-11: Play ran at about 60 frames per second with a 99th-percentile frame gap of 19 ms and no gap over 34 ms; dragging the slider, panning and zooming were equally smooth. The re-render per tick is real but costs less than one frame, so the budget holds. | measured, accepted; the slider hour is still held in React state by design |
-| FE-13, FE-07, NFR-03 (end-to-end tests, automated accessibility scan) | Not present; accessibility and the map are checked by Vitest component tests, two independent reviews and manual live checks. | They need new developer dependencies (Playwright, axe), which the owner must approve and install. | pending owner approval |
-| GEN-15 (coverage floors) | Enforced for the server since 2026-11-11 (85 percent overall, 100 percent branch on the risk rules; measured 99 and 100). Front-end coverage is not measured. | The front-end coverage tool is a new dependency. | server done; front end pending owner approval |
+| FE-13, FE-07, NFR-03 (end-to-end tests, automated accessibility scan) | Done: Playwright browser tests run against the built app and the rehearsal server (synthetic data, no network) with an axe accessibility scan on the first screen and the results; `make e2e` locally and a separate `e2e` job in CI so a browser flake cannot hide the main check. | The owner approved the three developer-only packages on 2026-11-11 and installed them. | done |
+| GEN-15 (coverage floors) | Enforced on both sides since 2026-11-11. Server: 85 percent overall, 100 percent branch on the risk rules (measured 99 and 100). Front end: floors of 90 percent statements, lines and functions and 85 percent branches, enforced by `npm run check` (measured 97, 97, 97 and 91); the standard's 80 percent is the minimum, these are stricter. | The front-end coverage tool is a developer-only package the owner approved. | done |
 | PERF-09 (bundle-size check in the check command) | Added: `scripts/check_bundle_size.py` builds the front end and fails past 200 KB (first load) or 350 KB (map chunk), gzip. | Closes the audit finding. | done |
 | GEN-03 (rules duplicated in the browser) | The "How risk works" dialog repeats the band edges and limits by hand. | It is explanatory text; a test cites RR-03 to RR-08 and RR-22 to RR-24 against its numbers. A test tying it to the server constants is still to be written. | to do |
+
+## Developer-only packages added (owner approved and installed, 2026-11-11)
+
+None of these reaches visitors; they run in the check, in CI or on a developer's machine.
+
+| Package | Reason | Licence |
+|---|---|---|
+| `@vitest/coverage-v8` | Measures front-end coverage so the floors in GEN-15 are enforced. | MIT |
+| `@playwright/test` | Drives a real browser through the built app for the end-to-end tests (FE-13). | Apache-2.0 |
+| `@axe-core/playwright` | Automated accessibility scan inside those tests (NFR-03, FE-07). | MPL-2.0 (unmodified, dev only) |
+
+`npm audit --omit=dev` reports 0 vulnerabilities in what ships. `npm audit` for the whole tree reports 7 moderate findings, all in the developer-only lint chain (`minimatch` inside `typescript-eslint`), none in shipped code.
 
 ## Standards audit follow-ups done (2026-11-11)
 

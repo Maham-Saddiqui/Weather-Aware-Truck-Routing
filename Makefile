@@ -1,4 +1,4 @@
-.PHONY: rehearsal-server rehearsal-frontend check backend-check frontend-check bundle-size merge-check secret-scan contract-sync rule-coverage
+.PHONY: rehearsal-server rehearsal-frontend check e2e backend-check frontend-check bundle-size merge-check secret-scan contract-sync rule-coverage
 
 # Use the project's Node (see .nvmrc) even when the shell starts on another version.
 NODE26 := $(lastword $(sort $(wildcard $(HOME)/.nvm/versions/node/v26.*)))
@@ -17,6 +17,11 @@ backend-check:
 
 frontend-check:
 	cd frontend && npm run check
+
+# Browser tests against the built app and the rehearsal server (synthetic data, no network). Not part of `check`: needs a browser.
+e2e:
+	cd backend && uv sync --frozen
+	cd frontend && npm run e2e
 
 secret-scan:
 	python3 -I scripts/secret_scan.py

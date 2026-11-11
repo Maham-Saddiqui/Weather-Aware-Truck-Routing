@@ -2,3 +2,6 @@ dist
 node_modules
 src/shared/api/generated
 package-lock.json
+coverage
+playwright-report
+test-results
