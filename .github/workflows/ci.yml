@@ -24,3 +24,18 @@ jobs:
       - run: cd backend && uv sync --frozen
       - run: cd frontend && npm ci
       - run: make check
+      - name: Django deployment checks
+        run: |
+          export DJANGO_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))')"
+          export DJANGO_DEBUG=false DJANGO_ALLOWED_HOSTS=example.com ALLOWED_ORIGINS=https://example.com
+          cd backend && uv run python manage.py check --deploy --fail-level WARNING
+      - name: Dependency audit, report only
+        continue-on-error: true
+        run: |
+          cd backend && uv export --frozen --no-dev --no-hashes -o "$RUNNER_TEMP/requirements.txt" && uvx pip-audit -r "$RUNNER_TEMP/requirements.txt"
+          cd ../frontend && npm audit --omit=dev
+      - name: Secret scan with gitleaks, report only
+        continue-on-error: true
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
