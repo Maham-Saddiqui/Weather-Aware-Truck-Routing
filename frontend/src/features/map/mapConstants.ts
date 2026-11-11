@@ -3,6 +3,8 @@ export const BASEMAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark'
 export const INITIAL_VIEW = { longitude: -98, latitude: 39, zoom: 3 } as const
 
 export const FIT_PADDING_PX = 56
+// The forecast panel floating over the bottom of the map on wide screens is about 100 px tall.
+export const FIT_BOTTOM_CLEARANCE_PX = 100
 export const FIT_DURATION_MS = 700
 
 export const ROUTE_LINE_LAYER_ID = 'route-line'
