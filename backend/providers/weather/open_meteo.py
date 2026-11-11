@@ -10,6 +10,7 @@ import httpx
 from domain.heatmap import cell_of
 from domain.types import GeoPoint, HourlyWeather
 from providers.http import QueryParams, get_with_one_retry
+from providers.trip_notes import current_notes
 from providers.weather.budget import WeatherBudget
 from providers.weather.cache import CellKey, WindowCache
 from providers.weather.port import WeatherBusy, WeatherUnavailable
@@ -51,6 +52,7 @@ class OpenMeteoWeather:
         cell_of_point = {point: _cell(point) for point in points}
         cells = set(cell_of_point.values())
         windows = self._cached(cells)
+        current_notes().weather_cache_hits = len(windows)
         if len(windows) < len(cells):
             windows = self._fetch_missing(cells, deadline)
         return {

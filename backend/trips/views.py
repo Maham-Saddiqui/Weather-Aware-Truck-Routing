@@ -15,6 +15,7 @@ from trips.limits import ATTRIBUTION_THROTTLE_SCOPE, TRIP_THROTTLE_SCOPE
 from trips.presenters import present_compare, present_primary
 from trips.responses import no_store
 from trips.serializers import TimeZoneQuerySerializer, parse_trip_request
+from trips.trip_summary import summarized
 
 NO_TIME_ZONE = "No time zone covers this place. Choose a place on land."
 
@@ -58,6 +59,9 @@ class PrimaryTripView(APIView):
     throttle_scope = TRIP_THROTTLE_SCOPE
 
     def post(self, request: Request) -> Response:
+        return summarized("primary", lambda: self._answer(request))
+
+    def _answer(self, request: Request) -> Response:
         providers = container.providers()
         trip = parse_trip_request(request.data, providers.clock())
         answer = providers.trip_runner.run(
@@ -72,6 +76,9 @@ class CompareTripView(APIView):
     throttle_scope = TRIP_THROTTLE_SCOPE
 
     def post(self, request: Request) -> Response:
+        return summarized("compare", lambda: self._answer(request))
+
+    def _answer(self, request: Request) -> Response:
         providers = container.providers()
         trip = parse_trip_request(request.data, providers.clock())
         answer = providers.trip_runner.run(
