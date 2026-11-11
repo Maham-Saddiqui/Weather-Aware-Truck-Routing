@@ -12,6 +12,7 @@ from providers.routing.port import RoutingUnavailable
 from providers.timezone.offline import TimeZoneNotFound
 from services.compare_trip import plan_compare_trip
 from services.primary_trip import plan_primary_trip
+from services.trip_class import classify
 from trips.limits import ATTRIBUTION_THROTTLE_SCOPE, TRIP_THROTTLE_SCOPE
 from trips.presenters import present_compare, present_primary
 from trips.responses import no_store
@@ -84,6 +85,7 @@ class CompareTripView(APIView):
         providers = container.providers()
         trip = parse_trip_request(request.data, providers.clock())
         answer = providers.trip_runner.run(
-            lambda: present_compare(plan_compare_trip(providers.trips, trip))
+            lambda: present_compare(plan_compare_trip(providers.trips, trip)),
+            classify(trip).deadline_s,
         )
         return no_store(Response(answer))

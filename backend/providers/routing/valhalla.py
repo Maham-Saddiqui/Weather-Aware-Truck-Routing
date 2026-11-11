@@ -4,11 +4,11 @@ import time
 from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 from itertools import pairwise
-from math import asin, cos, radians, sin, sqrt
 from typing import Any
 
 import httpx
 
+from domain.distance import great_circle_m
 from domain.types import GeoPoint, ProgressEntry, ProviderRoute, RouteGeometry
 from domain.units import WHOLE_NUMBER, round_half_up
 from providers.http import send_with_one_retry
@@ -26,7 +26,6 @@ MIN_SECONDS_BETWEEN_REQUESTS = 1.0
 READ_TIMEOUT_S = 15.0
 KILOGRAMS_PER_TONNE = 1000
 METRES_PER_KILOMETRE = Decimal(1000)
-EARTH_RADIUS_M = 6_371_000.0
 PROGRESS_POINT_STRIDE = 10
 NO_ROUTE_ERROR_CODES = frozenset({171, 442})
 
@@ -171,14 +170,5 @@ def _cumulative_metres(path: tuple[GeoPoint, ...]) -> list[Decimal]:
     """Segment lengths come from float coordinates (RR-30) and are summed and divided exactly."""
     along = [Decimal(0)]
     for before, after in pairwise(path):
-        along.append(along[-1] + Decimal(_great_circle_m(before, after)))
+        along.append(along[-1] + Decimal(great_circle_m(before, after)))
     return along
-
-
-def _great_circle_m(start: GeoPoint, end: GeoPoint) -> float:
-    d_lat = radians(end.lat - start.lat)
-    d_lon = radians(end.lon - start.lon)
-    haversine = (
-        sin(d_lat / 2) ** 2 + cos(radians(start.lat)) * cos(radians(end.lat)) * sin(d_lon / 2) ** 2
-    )
-    return 2 * EARTH_RADIUS_M * asin(sqrt(haversine))

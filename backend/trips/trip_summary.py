@@ -28,7 +28,7 @@ def summarized[T](endpoint: str, work: Callable[[], T]) -> T:
 def _outcome(notes: TripNotes) -> str:
     if notes.error:
         return FAILED
-    if notes.backup_reason or notes.weather_status != "ok":
+    if notes.backup_reason or notes.alternatives_unavailable or notes.weather_status != "ok":
         return DEGRADED
     return OK
 
@@ -45,6 +45,11 @@ def _log_summary(endpoint: str, notes: TripNotes) -> None:
         routing_provider=notes.routing_provider or None,
         backup_used=bool(notes.backup_reason),
         backup_reason=notes.backup_reason or None,
+        alternatives_unavailable=notes.alternatives_unavailable,
+        long_trip=notes.long_trip,
+        straight_line_miles=notes.straight_line_miles,
+        alternatives_read_timeout_s=notes.alternatives_read_timeout_s,
+        alternatives_ms=notes.alternatives_ms,
         routes=notes.routes,
         weather_status=notes.weather_status or None,
         checkpoints=notes.checkpoints,

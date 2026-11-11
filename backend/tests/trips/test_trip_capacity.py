@@ -92,3 +92,35 @@ def test_a_trip_that_runs_past_the_deadline_gets_the_plain_unavailable_answer(
     assert response.status_code == 503
     assert response.json()["code"] == "routing_unavailable"
     release.set()
+
+
+class BrieflySlowRouting(SlowRouting):
+    def routes(self, query: RouteQuery) -> tuple[ProviderRoute, ...]:
+        threading.Event().wait(SHORT_WAIT_S * 4)
+        return (route_bent(0.0),)
+
+
+SEATTLE = {"lat": 47.6062, "lon": -122.3321, "label": "Seattle, WA"}
+MIAMI = {"lat": 25.7617, "lon": -80.1918, "label": "Miami, FL"}
+
+
+def test_a_long_trip_gets_the_longer_deadline_where_a_normal_trip_would_time_out(
+    client: Client, use_fakes: UseFakes
+) -> None:
+    """REQ-03, PERF-05"""
+    runner = TripRunner(limit=1, queue_wait_s=LONG_WAIT_S, deadline_s=SHORT_WAIT_S)
+    use_fakes(
+        replace(
+            with_trips(default_fakes(), routing=BrieflySlowRouting(threading.Event())),
+            trip_runner=runner,
+        )
+    )
+    compare = "/api/v1/trips/compare"
+
+    normal = client.post(compare, trip_body(), content_type="application/json")
+    long = client.post(
+        compare, trip_body(origin=SEATTLE, destination=MIAMI), content_type="application/json"
+    )
+
+    assert normal.status_code == 503
+    assert long.status_code == 200

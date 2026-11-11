@@ -44,20 +44,27 @@ def straight_route(
 
 
 class FakeRouting:
-    """Answers per route preference with routes or a scripted failure, and records every call."""
+    """Answers per route preference with routes or a scripted failure, and records every call.
+
+    `without_alternatives`, when given, answers the calls that ask for no alternatives.
+    """
 
     def __init__(
         self,
         outcomes: Mapping[RoutePreference, Outcome],
         name: RoutingProviderName = RoutingProviderName.TOMTOM,
+        without_alternatives: Outcome | None = None,
     ) -> None:
         self.name = name
         self.outcomes = dict(outcomes)
+        self.without_alternatives = without_alternatives
         self.calls: list[RouteQuery] = []
 
     def routes(self, query: RouteQuery) -> tuple[ProviderRoute, ...]:
         self.calls.append(query)
         outcome = self.outcomes[query.preference]
+        if query.max_alternatives == 0 and self.without_alternatives is not None:
+            outcome = self.without_alternatives
         if isinstance(outcome, RoutingError):
             raise outcome
         return outcome

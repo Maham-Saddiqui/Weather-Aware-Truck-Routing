@@ -93,6 +93,10 @@ ONLY_ELIGIBLE_REASON = (
     "it is the only route without No Travel conditions and with enough weather data"
 )
 
+ONLY_ROUTE_REASON = (
+    "it is the only route found, and it has no No Travel conditions and enough weather data"
+)
+
 NO_ROUTE_SENTENCES = {
     frozenset({IneligibleReason.NO_TRAVEL}): (
         "No route is recommended: every route has at least one No Travel checkpoint."
@@ -147,15 +151,17 @@ def _least_bad_key(candidate: Candidate) -> tuple[Decimal, ComparisonValues]:
 
 def _recommend(eligible: list[Candidate], candidates: Sequence[Candidate]) -> Recommendation:
     winner = eligible[0]
-    criterion, reason = _why_it_won(eligible)
+    criterion, reason = _why_it_won(eligible, len(candidates))
     sentence = f"Recommended because {reason}.{_data_coverage_note(winner, candidates)}"
     return Recommendation(
         RecommendationStatus.RECOMMENDED, winner.route_id, None, criterion, sentence
     )
 
 
-def _why_it_won(eligible: list[Candidate]) -> tuple[DecidingCriterion, str]:
+def _why_it_won(eligible: list[Candidate], route_count: int) -> tuple[DecidingCriterion, str]:
     """RR-26: the first criterion on which the winner differs from the runner-up."""
+    if route_count == 1:
+        return DecidingCriterion.ONLY_ELIGIBLE, ONLY_ROUTE_REASON
     if len(eligible) == 1:
         return DecidingCriterion.ONLY_ELIGIBLE, ONLY_ELIGIBLE_REASON
     ahead = _comparison_values(eligible[0].summary)

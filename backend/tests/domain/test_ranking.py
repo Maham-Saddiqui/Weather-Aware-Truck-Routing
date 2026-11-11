@@ -141,6 +141,26 @@ def test_rr26_a_single_eligible_route_is_recommended_because_it_is_the_only_one(
     assert ranking.recommendation.least_bad_route_id is None
 
 
+def test_rr26_a_trip_with_one_route_is_not_told_it_beat_other_routes() -> None:
+    """RR-26."""
+    ranking = rank_routes([candidate("a", ["100"], [LOW])])
+
+    sentence = ranking.recommendation.sentence
+    assert ranking.recommendation.deciding_criterion is DecidingCriterion.ONLY_ELIGIBLE
+    assert sentence.startswith("Recommended because it is the only route found")
+    assert "without" not in sentence
+
+
+def test_rr26_an_only_eligible_route_next_to_blocked_ones_keeps_its_sentence() -> None:
+    """RR-26."""
+    blocked = candidate("a", ["50", "50"], [LOW, NO_TRAVEL])
+    open_road = candidate("b", ["100"], [MODERATE])
+
+    sentence = rank_routes([blocked, open_road]).recommendation.sentence
+
+    assert "the only route without No Travel conditions" in sentence
+
+
 def test_rr23_ranked_routes_come_first_then_ineligible_routes_least_bad_first() -> None:
     """RR-23."""
     worse_blocked = candidate("a", ["50", "50"], [LOW, NO_TRAVEL])

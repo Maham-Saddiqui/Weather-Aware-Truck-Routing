@@ -72,6 +72,41 @@ def test_a_compare_trip_writes_its_own_summary_with_the_route_count(
 
     summary = only_summary(caplog)
     assert (summary["endpoint"], summary["outcome"], summary["routes"]) == ("compare", "ok", 2)
+    assert summary["alternatives_unavailable"] is False
+
+
+def timing_out_on_alternatives() -> FakeRouting:
+    return FakeRouting(
+        {RoutePreference.FASTEST: RoutingUnavailable("timed out"), RoutePreference.ECO: ()},
+        without_alternatives=(route_bent(0.0),),
+    )
+
+
+def test_a_compare_trip_that_got_one_route_after_a_timeout_is_degraded_but_not_a_backup(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """REQ-12, BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle(routing=timing_out_on_alternatives()))
+
+    assert post(client, "compare") == 200
+
+    summary = only_summary(caplog)
+    assert (summary["outcome"], summary["routes"]) == ("degraded", 1)
+    assert (summary["routing_provider"], summary["backup_used"]) == ("tomtom", False)
+    assert summary["alternatives_unavailable"] is True
+
+
+def test_the_one_route_fallback_logs_no_sensitive_values(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """SEC-11"""
+    caplog.set_level(logging.DEBUG)
+    use_fakes(bundle(routing=timing_out_on_alternatives()))
+
+    post(client, "compare")
+
+    assert_nothing_sensitive_was_logged(caplog)
 
 
 def test_a_spent_daily_guard_is_a_degraded_trip_that_says_the_backup_answered(
@@ -185,3 +220,50 @@ def test_the_failure_path_logs_no_sensitive_values_either(
     post(client, "primary")
 
     assert_nothing_sensitive_was_logged(caplog)
+
+
+SEATTLE = {"lat": 47.6062, "lon": -122.3321, "label": "Seattle, WA"}
+MIAMI = {"lat": 25.7617, "lon": -80.1918, "label": "Miami, FL"}
+
+
+def test_a_long_compare_trip_logs_its_class_the_wait_it_allowed_and_how_long_tomtom_took(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle())
+
+    assert post(client, "compare", trip_body(origin=SEATTLE, destination=MIAMI)) == 200
+
+    summary = only_summary(caplog)
+    assert (summary["long_trip"], summary["straight_line_miles"]) == (True, 2730)
+    assert summary["alternatives_read_timeout_s"] == 22.0
+    assert isinstance(summary["alternatives_ms"], int)
+
+
+def test_a_normal_compare_trip_logs_that_it_is_not_long_and_the_normal_wait(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle())
+
+    assert post(client, "compare") == 200
+
+    summary = only_summary(caplog)
+    assert (summary["long_trip"], summary["straight_line_miles"]) == (False, 920)
+    assert summary["alternatives_read_timeout_s"] == 12.0
+
+
+def test_a_primary_trip_logs_its_class_but_no_alternatives_wait(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle())
+
+    assert post(client, "primary", trip_body(origin=SEATTLE, destination=MIAMI)) == 200
+
+    summary = only_summary(caplog)
+    assert summary["long_trip"] is True
+    assert (summary["alternatives_read_timeout_s"], summary["alternatives_ms"]) == (None, None)
