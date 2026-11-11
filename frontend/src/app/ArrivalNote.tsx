@@ -2,6 +2,7 @@ import Typography from '@mui/material/Typography'
 import { arrivalEtaUtc, arrivalTimeZone } from '../shared/arrival'
 import { formatClockTime, hoursBetween } from '../shared/time'
 import type { Heatmap, Route } from '../shared/types'
+import { playUntilHour } from './playUntilHour'
 
 interface ArrivalNoteProps {
   route: Route
@@ -10,22 +11,32 @@ interface ArrivalNoteProps {
   timeZone: string
 }
 
-function arrivalText(arrival: string, route: Route, sliderZone: string): string {
+function whatToDoNext(isAtArrivalHour: boolean, lastHour: number): string {
+  return isAtArrivalHour
+    ? `Drag the slider or press Play to keep watching the forecast until +${String(lastHour)} h.`
+    : 'Showing the corridor forecast after arrival.'
+}
+
+function arrivalText(arrival: string, route: Route, sliderZone: string, next: string): string {
   const atDestination = formatClockTime(arrival, arrivalTimeZone(route) ?? sliderZone)
   const onSlider = formatClockTime(arrival, sliderZone)
   const sliderClock = onSlider === atDestination ? '' : ` (${onSlider} on the slider)`
-  return `Arrived ${atDestination}${sliderClock}. Showing the corridor forecast after arrival.`
+  return `Arrived ${atDestination}${sliderClock}. ${next}`
 }
 
 // Beyond arrival the truck stays parked at the destination, so say so instead of leaving it silently there.
 // The arrival is in the destination's clock like the route card; when the slider's clock (the origin's) shows a
-// different time, that is said once here. The region stays mounted and its words change only at arrival (FE-07).
+// different time, that is said once here. Where Play stops, at the arrival hour, it also says the forecast goes on, unless
+// the arrival is already at the end of the slider. The region stays mounted and its words change only at arrival (FE-07).
 export function ArrivalNote({ route, heatmap, hourOffset, timeZone }: ArrivalNoteProps) {
   const arrival = arrivalEtaUtc(route)
   const hasArrived = arrival !== null && hoursBetween(heatmap.start_utc, arrival) <= hourOffset
+  const lastHour = heatmap.hours - 1
+  const arrivalHour = playUntilHour(route, heatmap)
+  const next = whatToDoNext(hourOffset === arrivalHour && arrivalHour < lastHour, lastHour)
   return (
     <Typography role="status" variant="body2" color="text.secondary">
-      {hasArrived && arrivalText(arrival, route, timeZone)}
+      {hasArrived && arrivalText(arrival, route, timeZone, next)}
     </Typography>
   )
 }
