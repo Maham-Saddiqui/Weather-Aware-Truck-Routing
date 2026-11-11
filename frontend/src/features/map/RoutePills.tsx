@@ -2,14 +2,11 @@ import Box from '@mui/material/Box'
 import { Marker } from '@vis.gl/react-maplibre'
 import { useMemo } from 'react'
 import type { Route } from '../../shared/types'
-import { placePills } from './pillPlacement'
+import { placePills, sideOffset } from './pillPlacement'
 import type { RouteLines } from './routeGeoJson'
 
 // Below this map width the other routes' names are left off the map: the cards name them and there is no room.
 const NAMES_HIDDEN_BELOW_MAP_WIDTH_PX = 420
-// The selected route's name floats above its line so it never covers a checkpoint dot.
-const LIFT_ABOVE_LINE: [number, number] = [0, -30]
-const ABOVE_OTHER_PILLS = { zIndex: 1 } as const
 
 interface RoutePillsProps {
   routes: readonly Route[]
@@ -55,7 +52,8 @@ export function RoutePills({ routes, lines, selectedRouteId, onSelectRoute }: Ro
   const spots = useMemo(() => placePills(lines, selectedRouteId), [lines, selectedRouteId])
   return routes.map((route, index) => {
     const spot = spots.get(route.id)
-    if (!spot) {
+    const feature = lines.features[index]
+    if (!spot || !feature) {
       return null
     }
     const isSelected = route.id === selectedRouteId
@@ -66,8 +64,7 @@ export function RoutePills({ routes, lines, selectedRouteId, onSelectRoute }: Ro
         longitude={spot[0]}
         latitude={spot[1]}
         anchor="center"
-        offset={isSelected ? LIFT_ABOVE_LINE : undefined}
-        style={isSelected ? ABOVE_OTHER_PILLS : undefined}
+        offset={isSelected ? sideOffset(feature.geometry.coordinates, spot) : undefined}
         onClick={() => {
           onSelectRoute(route.id)
         }}

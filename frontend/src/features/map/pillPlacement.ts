@@ -54,3 +54,38 @@ export function placePills(lines: RouteLines, selectedRouteId: string | null): M
   }
   return placed
 }
+
+const PILL_HALF_WIDTH_PX = 30
+const PILL_HALF_HEIGHT_PX = 12
+// A checkpoint dot is about 24 px across and the selected one 34 px.
+const DOT_CLEARANCE_PX = 20
+
+function nearestIndex(points: readonly (readonly number[])[], spot: LonLat): number {
+  let nearest = 0
+  points.forEach((point, index) => {
+    if (distanceBetween(point, spot) < distanceBetween(points[nearest] ?? point, spot)) {
+      nearest = index
+    }
+  })
+  return nearest
+}
+
+// Where to shift a pill sideways so it sits beside its line, not on the checkpoint dots: up when the line runs across
+// the screen, to the right when it runs up and down. Display geometry only (north is up, so latitude stretches by 1 / cos).
+export function sideOffset(points: readonly (readonly number[])[], spot: LonLat): [number, number] {
+  const middle = nearestIndex(points, spot)
+  const [fromLon = 0, fromLat = 0] = points[Math.max(0, middle - 1)] ?? []
+  const [toLon = 0, toLat = 0] = points[Math.min(points.length - 1, middle + 1)] ?? []
+  const across = (toLon - fromLon) * Math.cos((spot[1] * Math.PI) / 180)
+  const up = toLat - fromLat
+  const length = Math.hypot(across, up) || 1
+  const sideways = up / length
+  const vertical = across / length
+  const pointsDown = vertical > 0 || (vertical === 0 && sideways < 0)
+  const flip = pointsDown ? -1 : 1
+  const distance =
+    Math.abs(sideways) * PILL_HALF_WIDTH_PX +
+    Math.abs(vertical) * PILL_HALF_HEIGHT_PX +
+    DOT_CLEARANCE_PX
+  return [flip * sideways * distance, flip * vertical * distance]
+}

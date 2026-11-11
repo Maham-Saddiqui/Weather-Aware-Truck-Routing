@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { distanceBetween } from './pointAlong'
-import { placePills } from './pillPlacement'
+import { placePills, sideOffset } from './pillPlacement'
 import type { LonLat } from './polyline'
 import type { RouteLines } from './routeGeoJson'
 
@@ -38,5 +38,35 @@ describe('place route name pills away from other routes and from each other (REQ
 
   it('places a name for every route that has a line', () => {
     expect([...placePills(lines, null).keys()]).toEqual(['a', 'b'])
+  })
+})
+
+describe('shift the selected name beside its line, off the checkpoint dots (REQ-08)', () => {
+  it('lifts it above a line that runs across the screen', () => {
+    const [sideways = 1, up = 1] = sideOffset(
+      [
+        [0, 40],
+        [1, 40],
+        [2, 40],
+      ],
+      [1, 40],
+    )
+
+    expect(sideways).toBeCloseTo(0)
+    expect(up).toBeLessThan(-20)
+  })
+
+  it('moves it to the right of a line that runs up and down', () => {
+    const [sideways = 0, up = 1] = sideOffset(
+      [
+        [0, 40],
+        [0, 41],
+        [0, 42],
+      ],
+      [0, 41],
+    )
+
+    expect(sideways).toBeGreaterThan(40)
+    expect(up).toBeCloseTo(0)
   })
 })
