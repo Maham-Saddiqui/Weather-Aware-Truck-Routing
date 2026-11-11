@@ -9,7 +9,7 @@ import { boundsOfLines } from './routeGeoJson'
 import type { RouteLines } from './routeGeoJson'
 import { isRouteInsidePadding } from './routeVisibility'
 import { ShowWholeTripControl } from './ShowWholeTripControl'
-import { useRefitAfterResize } from './useRefitAfterResize'
+import { useFramingByFit, useRefitAfterResize } from './useRefitAfterResize'
 
 interface FitToRoutesProps {
   lines: RouteLines
@@ -20,6 +20,7 @@ export function FitToRoutes({ lines }: FitToRoutesProps) {
   const bounds = useMemo(() => boundsOfLines(lines), [lines])
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const isPanelOverMap = useMediaQuery(useTheme().breakpoints.up('md'))
+  const { fitAndFrame, isFramedByFit } = useFramingByFit(map)
   const fit = useCallback(
     (eventData?: object) => {
       if (map && bounds) {
@@ -27,10 +28,12 @@ export function FitToRoutes({ lines }: FitToRoutesProps) {
           padding: fitPadding(isPanelOverMap),
           duration: prefersReducedMotion ? 0 : FIT_DURATION_MS,
         }
-        map.fitBounds(bounds, options, eventData)
+        fitAndFrame(() => {
+          map.fitBounds(bounds, options, eventData)
+        })
       }
     },
-    [map, bounds, prefersReducedMotion, isPanelOverMap],
+    [map, bounds, prefersReducedMotion, isPanelOverMap, fitAndFrame],
   )
   // Carrying the click as the original event makes the truck follow treat it like a hand move.
   const fitByHand = useCallback(
@@ -45,6 +48,6 @@ export function FitToRoutes({ lines }: FitToRoutesProps) {
     [bounds, isPanelOverMap],
   )
   useEffect(fit, [fit])
-  useRefitAfterResize(map, isRouteVisible, fit)
+  useRefitAfterResize(map, isRouteVisible, isFramedByFit, fit)
   return bounds && <ShowWholeTripControl onPress={fitByHand} />
 }

@@ -85,7 +85,9 @@ export function PlannerLayout({ form, results, map, arrival }: PlannerLayoutProp
           {!isPhone && resultsSlot}
         </PanelBody>
       </Panel>
-      {!isPhone && <PanelToggle isCollapsed={isHidden} panelId={panelId} onToggle={panel.toggle} />}
+      {panel.hasTrip && !isPhone && (
+        <PanelToggle isCollapsed={isHidden} panelId={panelId} onToggle={panel.toggle} />
+      )}
       {map}
       {isPhone && resultsSlot}
     </Workspace>
