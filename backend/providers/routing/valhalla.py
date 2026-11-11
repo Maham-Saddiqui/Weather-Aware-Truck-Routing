@@ -150,17 +150,18 @@ def _progress_by_distance(
     indexes = [*range(0, len(path) - 1, PROGRESS_POINT_STRIDE), len(path) - 1]
     entries = []
     for index in indexes:
-        share = along[index] / along[-1] if along[-1] else 0.0
+        share = along[index] / along[-1] if along[-1] else Decimal(0)
         entries.append(
-            ProgressEntry(index, round(share * distance_m), round(share * travel_time_s))
+            ProgressEntry(index, _whole(share * distance_m), _whole(share * travel_time_s))
         )
     return tuple(entries)
 
 
-def _cumulative_metres(path: tuple[GeoPoint, ...]) -> list[float]:
-    along = [0.0]
+def _cumulative_metres(path: tuple[GeoPoint, ...]) -> list[Decimal]:
+    """Segment lengths come from float coordinates (RR-30) and are summed and divided exactly."""
+    along = [Decimal(0)]
     for before, after in pairwise(path):
-        along.append(along[-1] + _great_circle_m(before, after))
+        along.append(along[-1] + Decimal(_great_circle_m(before, after)))
     return along
 
 

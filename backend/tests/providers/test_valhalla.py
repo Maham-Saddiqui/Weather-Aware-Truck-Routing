@@ -2,6 +2,7 @@ import json
 import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import httpx
 import pytest
@@ -145,6 +146,20 @@ def test_rr14_rr15_the_progress_table_spreads_distance_and_time_in_proportion() 
     assert middle.distance_m == pytest.approx(12_345 * 10 / 24, abs=2)
     assert middle.elapsed_s == pytest.approx(900 * 10 / 24, abs=1)
     assert (last.distance_m, last.elapsed_s) == (12_345, 900)
+
+
+def test_rr02_rr30_progress_rounds_halves_up_in_exact_decimals(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RR-02, RR-30: the midpoint of 12,345 m and 901 s is 6,172.5 m and 450.5 s."""
+    equal_steps = [Decimal(step) for step in range(21)]
+    monkeypatch.setattr("providers.routing.valhalla._cumulative_metres", lambda path: equal_steps)
+    body = f'{{"trip": {trip_json(point_count=21, time_s="901.0")}}}'
+
+    (route,) = adapter(answering(200, body)).routes(QUERY)
+
+    middle = route.progress[1]
+    assert (middle.point_index, middle.distance_m, middle.elapsed_s) == (10, 6_173, 451)
 
 
 def test_a_route_of_a_single_point_has_a_one_entry_progress_table() -> None:
