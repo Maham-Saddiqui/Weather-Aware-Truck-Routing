@@ -1,47 +1,16 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Providers } from '../../app/Providers'
 import { PHOTON_SEARCH_URL, SUGGESTION_PAUSE_MS } from '../../shared/constants'
 import { server } from '../../shared/testing/server'
-import { TripForm } from './TripForm'
-
-function photonFeature(
-  properties: { name: string; state: string; countrycode: string },
-  lon: number,
-  lat: number,
-) {
-  return { geometry: { coordinates: [lon, lat] }, properties }
-}
-
-function answerWithPlaces(onRequest?: (url: URL) => void) {
-  server.use(
-    http.get(PHOTON_SEARCH_URL, ({ request }) => {
-      onRequest?.(new URL(request.url))
-      return HttpResponse.json({
-        features: [
-          photonFeature({ name: 'Chicago', state: 'Illinois', countrycode: 'US' }, -87.63, 41.88),
-          photonFeature({ name: 'Chicoutimi', state: 'Quebec', countrycode: 'CA' }, -71.06, 48.43),
-        ],
-      })
-    }),
-  )
-}
-
-function renderForm(onSubmit = vi.fn()) {
-  render(
-    <Providers>
-      <TripForm initialTrip={null} needsReview={false} isBusy={false} onSubmit={onSubmit} />
-    </Providers>,
-  )
-  return onSubmit
-}
-
-async function chooseFirstSuggestion(field: string, text: string) {
-  await userEvent.type(screen.getByLabelText(field), text)
-  await userEvent.click(await screen.findByRole('option', { name: /Chicago/ }))
-}
+import {
+  answerWithPlaces,
+  chooseFirstSuggestion,
+  chooseOriginAndDestination,
+  photonFeature,
+  renderForm,
+} from './tripFormTestKit'
 
 // Testing Library only advances fake timers for you when it finds a `jest` global.
 function useFakeClock() {
@@ -155,23 +124,6 @@ describe('address suggestions (REQ-02, FE-10)', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })
-
-async function chooseOriginAndDestination() {
-  answerWithPlaces()
-  await chooseFirstSuggestion('Origin', 'Chicago')
-  server.use(
-    http.get(PHOTON_SEARCH_URL, () =>
-      HttpResponse.json({
-        features: [
-          photonFeature({ name: 'Denver', state: 'Colorado', countrycode: 'US' }, -104.99, 39.74),
-        ],
-      }),
-    ),
-  )
-  await userEvent.type(screen.getByLabelText('Destination'), 'Denver')
-  await userEvent.click(await screen.findByRole('option', { name: /Denver/ }))
-  await userEvent.type(screen.getByLabelText('Cargo weight (lb)'), '42000')
-}
 
 describe('departure time zone (RR-18, RR-29)', () => {
   afterEach(() => {

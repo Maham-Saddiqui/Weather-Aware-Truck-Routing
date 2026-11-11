@@ -27,7 +27,6 @@ export function TripSummary({ values, onEdit }: TripSummaryProps) {
       </Box>
       <Button
         startIcon={<EditIcon />}
-        aria-expanded={false}
         onClick={onEdit}
         sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
       >

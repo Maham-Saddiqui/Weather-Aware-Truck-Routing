@@ -25,6 +25,14 @@ function valuesFromTrip(trip: TripRequest): TripFormValues {
   }
 }
 
+function shownErrors(
+  check: ReturnType<typeof checkTripForm>,
+  zoneBlock: string | undefined,
+): TripFormErrors {
+  const checkErrors: TripFormErrors = check.isValid ? {} : check.errors
+  return { ...checkErrors, ...(zoneBlock && { departure: zoneBlock }) }
+}
+
 export function useTripForm(
   initialTrip: TripRequest | null,
   needsReview: boolean,
@@ -34,19 +42,18 @@ export function useTripForm(
     initialTrip ? valuesFromTrip(initialTrip) : defaultValues(),
   )
   const [hasAttempted, setHasAttempted] = useState(needsReview)
+  const [rejectedSubmits, setRejectedSubmits] = useState(0)
   const originZone = useOriginTimeZone(values.origin)
 
   const check = checkTripForm(values, dayjs())
   const zoneBlock = zoneBlockMessage(originZone.state)
-  const checkErrors: TripFormErrors = check.isValid ? {} : check.errors
-  const errors: TripFormErrors = hasAttempted
-    ? { ...checkErrors, ...(zoneBlock && { departure: zoneBlock }) }
-    : {}
+  const errors = hasAttempted ? shownErrors(check, zoneBlock) : {}
 
   return {
     values,
     errors,
     originZone,
+    rejectedSubmits,
     change: (changes: Partial<TripFormValues>) => {
       setValues((previous) => ({ ...previous, ...changes }))
     },
@@ -60,6 +67,7 @@ export function useTripForm(
     submit: () => {
       setHasAttempted(true)
       if (check.isValid && !zoneBlock) onSubmit(check.trip)
+      else setRejectedSubmits((count) => count + 1)
     },
     submitTrip: (trip: TripRequest) => {
       setValues(valuesFromTrip(trip))

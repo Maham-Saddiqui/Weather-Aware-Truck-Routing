@@ -1,6 +1,6 @@
 import { useMediaQuery, useTheme } from '@mui/material'
 import Stack from '@mui/material/Stack'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { TripRequest } from '../../shared/types'
 import { ExampleTrips } from './ExampleTrips'
 import { TripFormFields } from './TripFormFields'
@@ -17,25 +17,40 @@ interface TripFormProps {
 export function TripForm({ initialTrip, needsReview, isBusy, onSubmit }: TripFormProps) {
   const isPhone = useMediaQuery(useTheme().breakpoints.down('md'))
   const [isCollapsed, setIsCollapsed] = useState(initialTrip !== null && !needsReview)
+  const showsSummary = isPhone && isCollapsed
+  const root = useRef<HTMLDivElement>(null)
+  const mustMoveFocus = useRef(false)
+  const collapse = (shouldCollapse: boolean) => {
+    mustMoveFocus.current = true
+    setIsCollapsed(shouldCollapse)
+  }
   const form = useTripForm(initialTrip, needsReview, (trip) => {
-    setIsCollapsed(true)
+    collapse(true)
     onSubmit(trip)
   })
 
-  if (isPhone && isCollapsed) {
-    return (
-      <TripSummary
-        values={form.values}
-        onEdit={() => {
-          setIsCollapsed(false)
-        }}
-      />
-    )
-  }
+  // The button or field the driver just used disappears, so focus moves to what replaced it.
+  useEffect(() => {
+    if (!mustMoveFocus.current) return
+    mustMoveFocus.current = false
+    root.current?.querySelector<HTMLElement>(showsSummary ? 'button' : 'input')?.focus()
+  }, [showsSummary])
+
   return (
-    <Stack spacing={3}>
-      <ExampleTrips isBusy={isBusy} onChoose={form.submitTrip} />
-      <TripFormFields form={form} isBusy={isBusy} />
-    </Stack>
+    <div ref={root}>
+      {showsSummary ? (
+        <TripSummary
+          values={form.values}
+          onEdit={() => {
+            collapse(false)
+          }}
+        />
+      ) : (
+        <Stack spacing={3}>
+          <ExampleTrips isBusy={isBusy} onChoose={form.submitTrip} />
+          <TripFormFields form={form} isBusy={isBusy} />
+        </Stack>
+      )}
+    </div>
   )
 }
