@@ -75,19 +75,18 @@ describe('ArrivalNote says plainly that the truck has arrived (REQ-09, RR-19, FE
 })
 
 describe('ArrivalNote tells the user the forecast goes on where Play stops (REQ-09, RR-28, FE-07)', () => {
-  it('says to drag the slider or press Play when the slider rests at the arrival hour', () => {
+  it('says it is paused at arrival, on purpose, and that Play goes on when the slider rests at the arrival hour', () => {
     render(noteAt(2))
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Arrived Thu 10:00 CT. Drag the slider or press Play to keep watching the forecast until +48 h.',
+      'Arrived Thu 10:00 CT. Paused at arrival: Play goes on to +48 h.',
     )
   })
 
-  it('keeps the hint short and free of jargon', () => {
-    render(noteAt(2))
+  it('keeps the whole arrival text short enough for one line on a wide screen and two on a phone', () => {
+    render(noteAt(2, ROUTE_ACROSS_ZONES))
 
-    const hint = /Drag.*h\./.exec(screen.getByRole('status').textContent)?.[0] ?? ''
-    expect(hint.length).toBeLessThan(90)
+    expect(screen.getByRole('status').textContent.length).toBeLessThan(100)
   })
 
   it('goes back to the plain after-arrival wording one hour later', () => {
@@ -96,7 +95,7 @@ describe('ArrivalNote tells the user the forecast goes on where Play stops (REQ-
     expect(screen.getByRole('status')).toHaveTextContent(
       'Arrived Thu 10:00 CT. Showing the corridor forecast after arrival.',
     )
-    expect(screen.getByRole('status')).not.toHaveTextContent('Drag the slider')
+    expect(screen.getByRole('status')).not.toHaveTextContent('Paused at arrival')
   })
 
   it('shows no hint while the truck is still driving', () => {
@@ -108,7 +107,20 @@ describe('ArrivalNote tells the user the forecast goes on where Play stops (REQ-
   it('shows no hint when the trip arrives at the end of the slider', () => {
     render(noteAt(48, tripArrivingAtHour(48)))
 
-    expect(screen.getByRole('status')).not.toHaveTextContent('Drag the slider')
+    expect(screen.getByRole('status')).not.toHaveTextContent('Paused at arrival')
+  })
+
+  it('keeps the same reserved row before, at and after the hint, so the panel never changes height', () => {
+    const { rerender } = render(noteAt(1))
+    const reservedRow = screen.getByRole('status')
+    const rowStyleBefore = getComputedStyle(reservedRow).minHeight
+    expect(rowStyleBefore).not.toBe('')
+
+    for (const hour of [2, 3]) {
+      rerender(noteAt(hour))
+      expect(screen.getByRole('status')).toBe(reservedRow)
+      expect(getComputedStyle(reservedRow).minHeight).toBe(rowStyleBefore)
+    }
   })
 
   it('is one live region that stays in place, so the hint is announced once', () => {
