@@ -41,7 +41,8 @@ class TripRunner:
         self._queue_wait_s = queue_wait_s
         self._deadline_s = deadline_s
 
-    def run[T](self, work: Callable[[], T]) -> T:
+    def run[T](self, work: Callable[[], T], deadline_s: float | None = None) -> T:
+        """A long trip brings its own, longer deadline; the slot accounting is the same."""
         queued_at = time.monotonic()
         if not self._slots.acquire(timeout=self._queue_wait_s):
             log_event(
@@ -53,13 +54,14 @@ class TripRunner:
             raise TripsBusy("All trip slots are taken")
         trip: Future[T] = self._pool.submit(copy_context().run, work)
         trip.add_done_callback(lambda _: self._slots.release())
-        done, _ = wait([trip], timeout=self._deadline_s)
+        limit_s = deadline_s or self._deadline_s
+        done, _ = wait([trip], timeout=limit_s)
         if not done:
             log_event(
                 logging.WARNING,
                 "trip_deadline_exceeded",
                 stage=current_notes().running_stage or "between_stages",
-                deadline_s=self._deadline_s,
+                deadline_s=limit_s,
             )
             raise TripTookTooLong("The trip took too long")
         return trip.result()

@@ -220,3 +220,50 @@ def test_the_failure_path_logs_no_sensitive_values_either(
     post(client, "primary")
 
     assert_nothing_sensitive_was_logged(caplog)
+
+
+SEATTLE = {"lat": 47.6062, "lon": -122.3321, "label": "Seattle, WA"}
+MIAMI = {"lat": 25.7617, "lon": -80.1918, "label": "Miami, FL"}
+
+
+def test_a_long_compare_trip_logs_its_class_the_wait_it_allowed_and_how_long_tomtom_took(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle())
+
+    assert post(client, "compare", trip_body(origin=SEATTLE, destination=MIAMI)) == 200
+
+    summary = only_summary(caplog)
+    assert (summary["long_trip"], summary["straight_line_miles"]) == (True, 2730)
+    assert summary["alternatives_read_timeout_s"] == 22.0
+    assert isinstance(summary["alternatives_ms"], int)
+
+
+def test_a_normal_compare_trip_logs_that_it_is_not_long_and_the_normal_wait(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle())
+
+    assert post(client, "compare") == 200
+
+    summary = only_summary(caplog)
+    assert (summary["long_trip"], summary["straight_line_miles"]) == (False, 920)
+    assert summary["alternatives_read_timeout_s"] == 12.0
+
+
+def test_a_primary_trip_logs_its_class_but_no_alternatives_wait(
+    client: Client, use_fakes: UseFakes, caplog: pytest.LogCaptureFixture
+) -> None:
+    """BE-12"""
+    capture_events(caplog)
+    use_fakes(bundle())
+
+    assert post(client, "primary", trip_body(origin=SEATTLE, destination=MIAMI)) == 200
+
+    summary = only_summary(caplog)
+    assert summary["long_trip"] is True
+    assert (summary["alternatives_read_timeout_s"], summary["alternatives_ms"]) == (None, None)

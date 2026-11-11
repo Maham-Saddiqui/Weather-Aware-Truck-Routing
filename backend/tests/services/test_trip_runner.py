@@ -100,3 +100,34 @@ def test_the_request_context_follows_the_trip_into_its_thread() -> None:
     request_id.set("abc")
 
     assert TripRunner().run(request_id.get) == "abc"
+
+
+def test_a_trip_that_brings_a_longer_deadline_may_outlast_the_normal_one() -> None:
+    """REQ-03: a long trip gets longer than the normal deadline"""
+    runner = TripRunner(limit=1, deadline_s=SHORT_WAIT_S)
+
+    def a_little_slow() -> str:
+        threading.Event().wait(SHORT_WAIT_S * 3)
+        return "late but in time"
+
+    assert runner.run(a_little_slow, deadline_s=LONG_WAIT_S) == "late but in time"
+
+
+def test_a_trip_past_its_own_longer_deadline_still_keeps_its_slot_until_it_really_ends() -> None:
+    """PERF-05"""
+    runner = TripRunner(limit=1, queue_wait_s=SHORT_WAIT_S)
+    release = threading.Event()
+    ended = threading.Event()
+
+    def slow_trip() -> None:
+        release.wait(LONG_WAIT_S)
+        ended.set()
+
+    with pytest.raises(TripTookTooLong):
+        runner.run(slow_trip, deadline_s=SHORT_WAIT_S)
+    with pytest.raises(TripsBusy):
+        runner.run(lambda: "while the slow trip still runs")
+
+    release.set()
+    assert ended.wait(LONG_WAIT_S)
+    assert runner.run(lambda: "after") == "after"

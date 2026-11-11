@@ -1,18 +1,11 @@
 import json
-from dataclasses import dataclass, field, replace
 from datetime import UTC
 from typing import Any
 
 import httpx
 
 from domain.types import GeoPoint, ProgressEntry, ProviderRoute, RouteGeometry
-from providers.http import (
-    CONNECT_TIMEOUT_S,
-    QueryParams,
-    get_with_one_retry,
-    send_with_one_retry,
-    without_retry_after_read_timeout,
-)
+from providers.http import QueryParams, get_with_one_retry
 from providers.provider_call import (
     ATTRIBUTION,
     NO_ROUTE_FOUND,
@@ -30,7 +23,6 @@ from providers.routing.port import (
 
 TOMTOM_BASE_URL = "https://api.tomtom.com"
 TOMTOM_READ_TIMEOUT_S = 8.0
-ALTERNATIVES_READ_TIMEOUT_S = 12.0
 HTTP_OK = 200
 HTTP_BAD_REQUEST = 400
 NO_ROUTE_MARKERS = ("NO_ROUTE_FOUND", "MAP_MATCHING_FAILURE")
@@ -43,17 +35,11 @@ class TomTomRouting:
 
     def __init__(self, api_key: str, client: httpx.Client, base_url: str = TOMTOM_BASE_URL) -> None:
         self._http = _TomTomHttp(api_key, client, base_url)
-        self._alternatives_http = replace(
-            self._http,
-            read_timeout=httpx.Timeout(ALTERNATIVES_READ_TIMEOUT_S, connect=CONNECT_TIMEOUT_S),
-        )
 
     def routes(self, query: RouteQuery) -> tuple[ProviderRoute, ...]:
-        """Alternatives take TomTom longer on long trips: more time, and one attempt only."""
-        http = self._alternatives_http if query.max_alternatives else self._http
         waypoints = f"{_waypoint(query.origin)}:{_waypoint(query.destination)}"
         call = ProviderCall(TOMTOM)
-        body = http.get_json(
+        body = self._http.get_json(
             f"/routing/1/calculateRoute/{waypoints}/json", _route_params(query), call
         )
         try:
@@ -83,23 +69,21 @@ class TomTomAttribution:
         return caption
 
 
-@dataclass(frozen=True, slots=True)
 class _TomTomHttp:
-    """The key is in the query string, so URLs and transport errors are never logged or chained.
+    """The key is in the query string, so URLs and transport errors are never logged or chained."""
 
-    With a read_timeout, a call waits that long and is not repeated after a read timeout.
-    """
-
-    api_key: str = field(repr=False)
-    client: httpx.Client
-    base_url: str
-    read_timeout: httpx.Timeout | None = None
+    def __init__(self, api_key: str, client: httpx.Client, base_url: str) -> None:
+        self._api_key = api_key
+        self._client = client
+        self._base_url = base_url
 
     def get_json(self, path: str, params: QueryParams, call: ProviderCall) -> JsonObject:
-        if not self.api_key:
+        if not self._api_key:
             raise RoutingUnavailable("No TomTom key is configured")
         try:
-            response = self._get(self.base_url + path, {**params, "key": self.api_key}, call)
+            response = get_with_one_retry(
+                self._client, self._base_url + path, {**params, "key": self._api_key}, call
+            )
         except httpx.RequestError:
             raise RoutingUnavailable("TomTom could not be reached") from None
         _raise_for_failure(response, call)
@@ -112,14 +96,6 @@ class _TomTomHttp:
             call.failed(UNREADABLE_ANSWER)
             raise RoutingUnavailable("TomTom sent an answer that is not a JSON object")
         return body
-
-    def _get(self, url: str, params: QueryParams, call: ProviderCall) -> httpx.Response:
-        if self.read_timeout is None:
-            return get_with_one_retry(self.client, url, params, call)
-        with without_retry_after_read_timeout():
-            return send_with_one_retry(
-                lambda: self.client.get(url, params=params, timeout=self.read_timeout), call
-            )
 
 
 def _waypoint(point: GeoPoint) -> str:

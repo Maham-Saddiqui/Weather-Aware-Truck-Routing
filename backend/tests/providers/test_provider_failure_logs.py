@@ -8,14 +8,14 @@ import httpx
 import pytest
 
 from domain.types import GeoPoint
-from providers.http import make_client
+from providers.http import make_client, one_attempt
 from providers.routing.port import (
     NoRouteFound,
     RoutePreference,
     RouteQuery,
     RoutingUnavailable,
 )
-from providers.routing.tomtom import ALTERNATIVES_READ_TIMEOUT_S, TomTomAttribution, TomTomRouting
+from providers.routing.tomtom import TomTomAttribution, TomTomRouting
 from providers.routing.valhalla import READ_TIMEOUT_S, RequestLimiter, ValhallaRouting
 from providers.weather.cache import WindowCache
 from providers.weather.open_meteo import OpenMeteoWeather
@@ -161,23 +161,23 @@ def test_a_connection_error_then_an_error_status_shows_both_attempts(
     assert_nothing_sensitive_was_logged(caplog, FAKE_API_KEY, ECHOED_TEXT, "https://")
 
 
-def test_a_read_timeout_on_the_alternatives_call_is_one_attempt_with_no_retry(
+def test_a_read_timeout_in_a_one_attempt_call_is_not_retried(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """BE-08: TomTom needs longer for alternatives on long trips; waiting twice only doubles it."""
+    """BE-08: waiting twice for a slow TomTom answer only doubles the wait"""
     adapter = tomtom(failing_with(httpx.ReadTimeout))
 
-    with pytest.raises(RoutingUnavailable):
+    with one_attempt(), pytest.raises(RoutingUnavailable):
         adapter.routes(WITH_ALTERNATIVES)
 
     assert [(f["failure"], f["attempt"]) for f in failures(caplog)] == [("timeout", 1)]
 
 
-def test_a_connection_error_on_the_alternatives_call_is_still_retried_once(
+def test_a_connection_error_in_a_one_attempt_call_is_still_retried_once(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """BE-08"""
-    with pytest.raises(RoutingUnavailable):
+    with one_attempt(), pytest.raises(RoutingUnavailable):
         tomtom(failing_with(httpx.ConnectError)).routes(WITH_ALTERNATIVES)
 
     assert [(f["failure"], f["attempt"]) for f in failures(caplog)] == [
@@ -186,22 +186,22 @@ def test_a_connection_error_on_the_alternatives_call_is_still_retried_once(
     ]
 
 
-def test_the_alternatives_call_waits_twelve_seconds_but_a_single_route_call_does_not() -> None:
+def test_a_one_attempt_call_waits_as_long_as_it_is_given_else_the_client_default() -> None:
     """BE-08"""
-    read_timeouts: list[tuple[int, float | None]] = []
+    waits: list[float | None] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        wait = request.extensions["timeout"]["read"]
-        read_timeouts.append((int(request.url.params["maxAlternatives"]), wait))
+        waits.append(request.extensions["timeout"]["read"])
         return httpx.Response(500)
 
     adapter = tomtom(handler)
-    run(routes_of(adapter))
-    with pytest.raises(RoutingUnavailable):
+    with one_attempt(22.0), pytest.raises(RoutingUnavailable):
         adapter.routes(WITH_ALTERNATIVES)
+    with one_attempt(), pytest.raises(RoutingUnavailable):
+        adapter.routes(WITH_ALTERNATIVES)
+    run(routes_of(adapter))
 
-    assert read_timeouts[0] == (0, 1.0)
-    assert read_timeouts[-1] == (2, ALTERNATIVES_READ_TIMEOUT_S) == (2, 12.0)
+    assert waits == [22.0, 1.0, 1.0]
 
 
 @pytest.mark.parametrize("provider", ["tomtom", "valhalla", "open_meteo", "attribution"])
