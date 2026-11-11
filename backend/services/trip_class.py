@@ -14,10 +14,33 @@ LONG_TRIP_STRAIGHT_LINE_MILES = Decimal(1000)
 
 MILES_LOGGED_IN_STEPS_OF = 10
 
+TIER_TWO = "two"
+TIER_ONE = "one"
+TIER_NONE = "none"
+
+NORMAL_ALTERNATIVES_READ_TIMEOUT_S = 12.0
+LONG_ALTERNATIVES_READ_TIMEOUT_S = 22.0
+ONE_ALTERNATIVE_READ_TIMEOUT_S = 8.0
+SINGLE_ROUTE_READ_TIMEOUT_S = 6.0
+LONG_TRIP_DEADLINE_S = 40.0
+WEATHER_AND_RATING_RESERVE_S = 4.0
+
+
+@dataclass(frozen=True, slots=True)
+class FallbackTier:
+    """A smaller TomTom question, asked once when the bigger one timed out.
+
+    A read timeout of None is the client's own (8 s).
+    """
+
+    name: str
+    alternatives: int
+    read_timeout_s: float | None
+
 
 @dataclass(frozen=True, slots=True)
 class TripClass:
-    """How much routing work a trip gets: long trips ask for less work and may wait longer.
+    """How much routing work a trip gets: long trips wait longer and step down in tiers.
 
     A deadline of None means the trip runner's normal deadline. The eco call is a bonus beside
     the fastest call; on long trips it asks for no alternatives and waits the client's normal
@@ -30,6 +53,7 @@ class TripClass:
     alternatives_read_timeout_s: float
     eco_alternatives: int
     eco_read_timeout_s: float | None
+    fallback_tiers: tuple[FallbackTier, ...]
     deadline_s: float | None
 
 
@@ -38,23 +62,29 @@ NORMAL_TRIP = TripClass(
     long_trip=False,
     straight_line_miles=0,
     alternatives=ALTERNATIVES_ASKED,
-    alternatives_read_timeout_s=12.0,
+    alternatives_read_timeout_s=NORMAL_ALTERNATIVES_READ_TIMEOUT_S,
     eco_alternatives=ALTERNATIVES_ASKED,
-    eco_read_timeout_s=12.0,
+    eco_read_timeout_s=NORMAL_ALTERNATIVES_READ_TIMEOUT_S,
+    fallback_tiers=(FallbackTier(TIER_NONE, 0, None),),
     deadline_s=None,
 )
 
 # Long trips ask for the same alternatives and wait longer. TomTom cancels a request at about 30 s
-# itself, so the wait plus the connect time stays under 25 s. The whole trip (routing, the
-# fallbacks, weather and rating) must fit in the deadline.
+# itself, so the wait plus the connect time stays under 25 s. If two alternatives time out, one
+# alternative (the shape verified live) is asked once, then a single route. All the waits plus
+# the reserve for weather and rating must fit in the deadline.
 LONG_TRIP = TripClass(
     long_trip=True,
     straight_line_miles=0,
     alternatives=ALTERNATIVES_ASKED,
-    alternatives_read_timeout_s=22.0,
+    alternatives_read_timeout_s=LONG_ALTERNATIVES_READ_TIMEOUT_S,
     eco_alternatives=0,
     eco_read_timeout_s=None,
-    deadline_s=40.0,
+    fallback_tiers=(
+        FallbackTier(TIER_ONE, 1, ONE_ALTERNATIVE_READ_TIMEOUT_S),
+        FallbackTier(TIER_NONE, 0, SINGLE_ROUTE_READ_TIMEOUT_S),
+    ),
+    deadline_s=LONG_TRIP_DEADLINE_S,
 )
 
 
