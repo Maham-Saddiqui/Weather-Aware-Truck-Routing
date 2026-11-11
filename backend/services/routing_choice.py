@@ -28,7 +28,7 @@ class RoutedRoutes:
 
 def route_primary(env: TripEnvironment, request: TripRequest) -> RoutedRoutes:
     """One fastest call without alternatives; any outage or a spent daily budget uses the backup."""
-    query = _query(request, RoutePreference.FASTEST, max_alternatives=0)
+    query = _query(env, request, RoutePreference.FASTEST, max_alternatives=0)
     if env.call_guard.try_acquire():
         try:
             return RoutedRoutes(env.routing.name, env.routing.routes(query))
@@ -39,7 +39,7 @@ def route_primary(env: TripEnvironment, request: TripRequest) -> RoutedRoutes:
 
 def route_compare(env: TripEnvironment, request: TripRequest) -> RoutedRoutes:
     """Fastest and eco run side by side; eco is awaited only if fastest lacks variety."""
-    fastest = _query(request, RoutePreference.FASTEST, ALTERNATIVES_REQUESTED)
+    fastest = _query(env, request, RoutePreference.FASTEST, ALTERNATIVES_REQUESTED)
     if not env.call_guard.try_acquire():
         return _from_backup(env.backup_routing, fastest)
     fastest_call = env.executor.submit(env.routing.routes, fastest)
@@ -71,11 +71,14 @@ def _from_backup(backup: RoutingProvider, query: RouteQuery) -> RoutedRoutes:
     return RoutedRoutes(backup.name, choose_variety(routes, MAX_ROUTES_SHOWN))
 
 
-def _query(request: TripRequest, preference: RoutePreference, max_alternatives: int) -> RouteQuery:
+def _query(
+    env: TripEnvironment, request: TripRequest, preference: RoutePreference, max_alternatives: int
+) -> RouteQuery:
+    """The current hour is a valid departure (RR-29) but may be minutes ago; providers get now."""
     return RouteQuery(
         origin=request.origin,
         destination=request.destination,
-        depart_at=request.departure_utc,
+        depart_at=max(request.departure_utc, env.clock()),
         vehicle_weight_kg=vehicle_weight_kg(request.load_lb),
         preference=preference,
         max_alternatives=max_alternatives,
