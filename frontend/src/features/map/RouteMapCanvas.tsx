@@ -8,7 +8,12 @@ import type { RouteMapProps } from '../../shared/types'
 import { BlankMissingImages } from './BlankMissingImages'
 import type { EndpointLabels } from './EndpointMarkers'
 import { HeatmapLayer } from './HeatmapLayer'
-import { BASEMAP_STYLE_URL, INITIAL_VIEW, ROUTE_HIT_LAYER_ID } from './mapConstants'
+import {
+  BASEMAP_STYLE_URL,
+  INITIAL_VIEW,
+  ROUTE_HIT_LAYER_ID,
+  UNSELECTED_DOT_LAYER_IDS,
+} from './mapConstants'
 import { mapLib } from './mapLib'
 import { MapLegend } from './MapLegend'
 import { MapUnavailable } from './MapUnavailable'
@@ -26,7 +31,7 @@ const FRAME_STYLE = {
   containerType: 'inline-size',
 } as const
 
-const INTERACTIVE_LAYER_IDS = [ROUTE_HIT_LAYER_ID]
+const INTERACTIVE_LAYER_IDS = [ROUTE_HIT_LAYER_ID, ...UNSELECTED_DOT_LAYER_IDS]
 
 function isClickOnMarker(event: MapLayerMouseEvent): boolean {
   const target = event.originalEvent.target
