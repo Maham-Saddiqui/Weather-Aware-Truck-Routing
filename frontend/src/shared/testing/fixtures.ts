@@ -41,6 +41,7 @@ export function makeRoute(id: string, overrides: Partial<Route> = {}): Route {
       distance_miles: '60.0',
       travel_time_s: 4200,
       travel_time_text: '1 h 10 min',
+      travel_time_difference_text: null,
       arrival_utc: '2026-11-12T15:10:00Z',
       miles_by_level: { ...ZERO_MILES, low: '42.5', moderate: '17.5' },
       average_risk: '0.29',
