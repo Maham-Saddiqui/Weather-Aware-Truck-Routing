@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: truck-weather-api
+    runtime: python
+    plan: free
+    region: ohio
+    rootDir: backend
+    autoDeploy: true
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    startCommand: uv run --no-sync gunicorn config.wsgi:application --workers 1 --threads 8 --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://weather-aware-truck-routing-ten-iota.vercel.app
+      - key: NUM_PROXIES
+        value: "1"
+      - key: VALHALLA_BASE_URL
+        value: https://valhalla1.openstreetmap.de
+      - key: OPEN_METEO_BASE_URL
+        value: https://api.open-meteo.com
+      - key: TOMTOM_API_KEY
+        sync: false
