@@ -1,4 +1,5 @@
 import EditIcon from '@mui/icons-material/EditOutlined'
+import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
@@ -16,15 +17,20 @@ export function TripSummary({ values, onEdit }: TripSummaryProps) {
       spacing={1}
       sx={{ alignItems: 'center', justifyContent: 'space-between' }}
     >
-      <div>
-        <Typography variant="h3" component="h2">
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="h3" component="h2" sx={{ overflowWrap: 'anywhere' }}>
           {values.origin?.label} to {values.destination?.label}
         </Typography>
         <Typography variant="caption" color="text.secondary">
           {values.loadLb} lb, checkpoint every {values.spacingMiles} miles
         </Typography>
-      </div>
-      <Button startIcon={<EditIcon />} aria-expanded={false} onClick={onEdit}>
+      </Box>
+      <Button
+        startIcon={<EditIcon />}
+        aria-expanded={false}
+        onClick={onEdit}
+        sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+      >
         Edit trip
       </Button>
     </Stack>
