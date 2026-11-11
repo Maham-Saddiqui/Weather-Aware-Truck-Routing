@@ -14,7 +14,7 @@ const ROUND_LINES = { 'line-cap': 'round', 'line-join': 'round' } as const
 function whenSelected(
   selectedRouteId: string | null,
   selected: number | string,
-  other: number | string,
+  other: number | string | ExpressionSpecification,
 ) {
   const isSelected: ExpressionSpecification = ['==', ['get', 'routeId'], selectedRouteId ?? '']
   return ['case', isSelected, selected, other] as ExpressionSpecification
@@ -37,7 +37,7 @@ export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
         type="line"
         layout={{ ...ROUND_LINES, 'line-sort-key': whenSelected(selectedRouteId, 1, 0) }}
         paint={{
-          'line-color': whenSelected(selectedRouteId, ROUTE_COLOURS.selected, ROUTE_COLOURS.muted),
+          'line-color': whenSelected(selectedRouteId, ROUTE_COLOURS.selected, ['get', 'colour']),
           'line-width': whenSelected(selectedRouteId, 6, 4),
         }}
       />

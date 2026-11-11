@@ -1,14 +1,17 @@
-import { FIT_BOTTOM_CLEARANCE_PX, FIT_PADDING_PX } from './mapConstants'
+import {
+  FIT_BOTTOM_CLEARANCE_PX,
+  FIT_PADDING_PX,
+  FIT_RIGHT_CLEARANCE_PX,
+  FIT_TOP_CLEARANCE_PX,
+} from './mapConstants'
 
-// On wide screens the forecast panel floats over the bottom of the map, so the route is fitted
-// above it; on phones the panel sits below the map and every side gets the same margin.
+// The legend and a truck pin cover the top and the zoom buttons the right edge, so the route is fitted
+// clear of them. On wide screens the forecast panel also floats over the bottom; on phones it sits below the map.
 export function fitPadding(isPanelOverMap: boolean) {
-  return isPanelOverMap
-    ? {
-        top: FIT_PADDING_PX,
-        left: FIT_PADDING_PX,
-        right: FIT_PADDING_PX,
-        bottom: FIT_PADDING_PX + FIT_BOTTOM_CLEARANCE_PX,
-      }
-    : FIT_PADDING_PX
+  return {
+    top: FIT_TOP_CLEARANCE_PX,
+    left: FIT_PADDING_PX,
+    right: FIT_RIGHT_CLEARANCE_PX,
+    bottom: isPanelOverMap ? FIT_PADDING_PX + FIT_BOTTOM_CLEARANCE_PX : FIT_PADDING_PX,
+  }
 }

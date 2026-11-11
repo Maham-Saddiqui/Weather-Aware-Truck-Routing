@@ -6,12 +6,14 @@ import { useState } from 'react'
 import { MAP_MIN_HEIGHT_PX } from '../../shared/constants'
 import type { RouteMapProps } from '../../shared/types'
 import { BlankMissingImages } from './BlankMissingImages'
+import type { EndpointLabels } from './EndpointMarkers'
 import { HeatmapLayer } from './HeatmapLayer'
 import { BASEMAP_STYLE_URL, INITIAL_VIEW, ROUTE_HIT_LAYER_ID } from './mapConstants'
 import { mapLib } from './mapLib'
 import { MapLegend } from './MapLegend'
 import { MapUnavailable } from './MapUnavailable'
 import { useMapFailure } from './useMapFailure'
+import { ReadableLabels } from './ReadableLabels'
 import { RouteMarkers } from './RouteMarkers'
 import { RouteScene } from './RouteScene'
 
@@ -30,9 +32,38 @@ function clickedRouteId(event: MapLayerMouseEvent): string | null {
   return typeof routeId === 'string' ? routeId : null
 }
 
-export function RouteMapCanvas({ heatmap, hourOffset, onSelectRoute, ...scene }: RouteMapProps) {
-  const failure = useMapFailure()
+interface RouteMapCanvasProps extends RouteMapProps {
+  endpointLabels?: EndpointLabels
+}
+
+function useRouteClicks(onSelectRoute: (routeId: string) => void) {
   const [isOverRoute, setIsOverRoute] = useState(false)
+  return {
+    cursor: isOverRoute ? 'pointer' : undefined,
+    onMouseEnter: () => {
+      setIsOverRoute(true)
+    },
+    onMouseLeave: () => {
+      setIsOverRoute(false)
+    },
+    onClick: (event: MapLayerMouseEvent) => {
+      const routeId = clickedRouteId(event)
+      if (routeId !== null) {
+        onSelectRoute(routeId)
+      }
+    },
+  }
+}
+
+export function RouteMapCanvas({
+  heatmap,
+  hourOffset,
+  onSelectRoute,
+  endpointLabels,
+  ...scene
+}: RouteMapCanvasProps) {
+  const failure = useMapFailure()
+  const routeClicks = useRouteClicks(onSelectRoute)
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: MAP_MIN_HEIGHT_PX }}>
       <Map
@@ -41,28 +72,22 @@ export function RouteMapCanvas({ heatmap, hourOffset, onSelectRoute, ...scene }:
         initialViewState={INITIAL_VIEW}
         attributionControl={false}
         interactiveLayerIds={INTERACTIVE_LAYER_IDS}
-        cursor={isOverRoute ? 'pointer' : undefined}
-        onMouseEnter={() => {
-          setIsOverRoute(true)
-        }}
-        onMouseLeave={() => {
-          setIsOverRoute(false)
-        }}
-        onClick={(event) => {
-          const routeId = clickedRouteId(event)
-          if (routeId !== null) {
-            onSelectRoute(routeId)
-          }
-        }}
+        {...routeClicks}
         onLoad={failure.markLoaded}
         onError={failure.report}
       >
         <AttributionControl position="bottom-right" compact={false} />
         <NavigationControl position="top-right" showCompass={false} />
         <BlankMissingImages />
+        <ReadableLabels />
         {heatmap && <HeatmapLayer heatmap={heatmap} hourOffset={hourOffset} />}
-        <RouteScene {...scene} />
-        <RouteMarkers {...scene} heatmap={heatmap} hourOffset={hourOffset} />
+        <RouteScene {...scene} onSelectRoute={onSelectRoute} />
+        <RouteMarkers
+          {...scene}
+          heatmap={heatmap}
+          hourOffset={hourOffset}
+          endpointLabels={endpointLabels}
+        />
       </Map>
       <MapLegend />
       {failure.hasFailed && <MapUnavailable />}

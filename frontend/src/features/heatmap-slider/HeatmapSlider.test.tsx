@@ -100,6 +100,7 @@ describe('HeatmapSlider keyboard (NFR-03: keyboard operable)', () => {
     await userEvent.tab()
     await userEvent.tab()
     await userEvent.tab()
+    await userEvent.tab()
     expect(screen.getByRole('slider')).toHaveFocus()
     await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowLeft}')
 

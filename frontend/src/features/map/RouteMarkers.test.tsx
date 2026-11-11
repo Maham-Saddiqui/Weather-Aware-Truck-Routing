@@ -48,6 +48,14 @@ describe('RouteMarkers tell one story with the slider (REQ-09, RR-28, FE-08)', (
     expect(mutedDotCount()).toBeGreaterThan(mutedAtDeparture)
   })
 
+  it('marks the start and the destination of the selected route, apart from the truck and the dots', () => {
+    render(markersAt(0))
+
+    expect(screen.getByRole('img', { name: 'Start' })).toBeVisible()
+    expect(screen.getByRole('img', { name: 'Destination' })).toBeVisible()
+    expect(screen.getByRole('img', { name: /^Truck at / })).toBeVisible()
+  })
+
   it('shows nothing when no route is selected', () => {
     render(markersAt(0, null))
 
