@@ -6,7 +6,7 @@ import { FOLLOW_PANEL_CLEARANCE_PX } from './mapConstants'
 const Floating = styled(Button)(({ theme }) => ({
   position: 'absolute',
   left: theme.spacing(1),
-  bottom: theme.spacing(1),
+  bottom: theme.spacing(4.5),
   minHeight: theme.spacing(5.5),
   borderRadius: theme.spacing(3),
   boxShadow: theme.shadows[6],
@@ -20,7 +20,7 @@ interface ShowTruckButtonProps {
   onClick: () => void
 }
 
-// Sits bottom left: clear of the legend, the zoom buttons, the credits and, on wide screens, the forecast panel.
+// Sits bottom left: clear of the legend, the zoom buttons, the credits (which run wide on a phone) and, on wide screens, the forecast panel.
 export function ShowTruckButton({ onClick }: ShowTruckButtonProps) {
   return (
     <Floating variant="outlined" startIcon={<LocalShippingIcon />} onClick={onClick}>
