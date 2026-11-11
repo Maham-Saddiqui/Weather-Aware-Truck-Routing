@@ -1,5 +1,7 @@
 import math
 from collections.abc import Mapping
+from dataclasses import replace
+from itertools import pairwise
 
 from domain.types import GeoPoint, ProgressEntry, ProviderRoute, RouteGeometry
 from providers.routing.port import (
@@ -41,6 +43,23 @@ def straight_route(
     )
     geometry = RouteGeometry(encode_polyline(path, POLYLINE_PRECISION), POLYLINE_PRECISION)
     return ProviderRoute(geometry, path, distance_m, travel_time_s, progress)
+
+
+def with_denser_vertices(route: ProviderRoute, pieces_per_segment: int) -> ProviderRoute:
+    """The same road as another provider call would draw it: more vertices on the same lines."""
+    path = (
+        tuple(
+            GeoPoint(
+                start.lat + (end.lat - start.lat) * piece / pieces_per_segment,
+                start.lon + (end.lon - start.lon) * piece / pieces_per_segment,
+            )
+            for start, end in pairwise(route.path)
+            for piece in range(pieces_per_segment)
+        )
+        + route.path[-1:]
+    )
+    geometry = RouteGeometry(encode_polyline(path, POLYLINE_PRECISION), POLYLINE_PRECISION)
+    return replace(route, geometry=geometry, path=path, progress=())
 
 
 class ScriptedRouting:

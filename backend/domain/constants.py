@@ -22,4 +22,6 @@ WEATHER_CELLS_PER_DEGREE = 20
 
 # 0.01 degree cells (about 1 km) used to compare route shapes (architecture section 5).
 OVERLAP_CELLS_PER_DEGREE = 100
+# A route's cells are sampled this many times per cell along each segment, so no cell is skipped.
+OVERLAP_SAMPLES_PER_CELL = 3
 NEAR_DUPLICATE_OVERLAP_PERCENT = 90

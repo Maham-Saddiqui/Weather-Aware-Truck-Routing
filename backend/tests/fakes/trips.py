@@ -13,6 +13,7 @@ from tests.fakes.weather import calm_weather
 ORIGIN = GeoPoint(40.0, -100.0)
 DESTINATION = GeoPoint(40.0, -90.0)
 STORM_LATITUDE = 40.5
+METRES_PER_BEND_DEGREE = 10
 
 
 def trip_request(
@@ -22,8 +23,13 @@ def trip_request(
 
 
 def route_bent(bend_lat: float, distance_miles: int = 100) -> ProviderRoute:
-    """Routes with different bends follow different roads; bend 0 is the straight line."""
-    return straight_route(ORIGIN, DESTINATION, distance_miles, bend_lat)
+    """Routes with different bends follow different roads; bend 0 is the straight line.
+
+    A different road is a different length, so each bend adds 10 metres per degree: routes with
+    the same distance and time count as one route (architecture section 5).
+    """
+    route = straight_route(ORIGIN, DESTINATION, distance_miles, bend_lat)
+    return replace(route, distance_m=route.distance_m + round(bend_lat * METRES_PER_BEND_DEGREE))
 
 
 def storm_north_of_the_straight_route(point: GeoPoint) -> HourlyWeather:

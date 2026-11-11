@@ -1,11 +1,16 @@
 import hashlib
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from fractions import Fraction
 from functools import cached_property
-from math import floor
+from itertools import pairwise
+from math import ceil, floor
 
-from domain.constants import NEAR_DUPLICATE_OVERLAP_PERCENT, OVERLAP_CELLS_PER_DEGREE
-from domain.types import ProviderRoute, RouteGeometry
+from domain.constants import (
+    NEAR_DUPLICATE_OVERLAP_PERCENT,
+    OVERLAP_CELLS_PER_DEGREE,
+    OVERLAP_SAMPLES_PER_CELL,
+)
+from domain.types import GeoPoint, ProviderRoute, RouteGeometry
 
 ROUTE_ID_LENGTH = 16
 NEAR_DUPLICATE_OVERLAP = Fraction(NEAR_DUPLICATE_OVERLAP_PERCENT, 100)
@@ -19,18 +24,29 @@ def route_id(geometry: RouteGeometry) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:ROUTE_ID_LENGTH]
 
 
+def _cells_along(start: GeoPoint, end: GeoPoint) -> Iterator[Cell]:
+    """Cells under evenly spaced samples of one segment, at most a third of a cell apart on each
+    axis; the neighbouring-cell tolerance of the overlap covers a corner clipped between samples."""
+    start_row, start_column = (
+        start.lat * OVERLAP_CELLS_PER_DEGREE,
+        start.lon * OVERLAP_CELLS_PER_DEGREE,
+    )
+    row_span = end.lat * OVERLAP_CELLS_PER_DEGREE - start_row
+    column_span = end.lon * OVERLAP_CELLS_PER_DEGREE - start_column
+    steps = max(1, ceil(max(abs(row_span), abs(column_span)) * OVERLAP_SAMPLES_PER_CELL))
+    for step in range(steps + 1):
+        share = step / steps
+        yield floor(start_row + row_span * share), floor(start_column + column_span * share)
+
+
 class Shape:
-    """The 0.01 degree cells a route passes through; coordinates are the only floats allowed, so
-    cells make shapes comparable with integers."""
+    """The 0.01 degree cells a route passes through, found by sampling along every segment, not
+    only at its vertices: two calls to a provider give the same road different vertex spacing.
+    Coordinates are the only floats allowed, so cells make shapes comparable with integers."""
 
     def __init__(self, route: ProviderRoute) -> None:
-        self.cells = frozenset(
-            (
-                floor(point.lat * OVERLAP_CELLS_PER_DEGREE),
-                floor(point.lon * OVERLAP_CELLS_PER_DEGREE),
-            )
-            for point in route.path
-        )
+        segments = pairwise(route.path + route.path[-1:])
+        self.cells = frozenset(cell for start, end in segments for cell in _cells_along(start, end))
 
     @cached_property
     def halo(self) -> frozenset[Cell]:
@@ -61,6 +77,16 @@ def overlap(shape: Shape, other: Shape) -> Fraction:
     return Fraction(shared, len(shape.cells) + len(other.cells))
 
 
+def _same_route(route: ProviderRoute, other: ProviderRoute, book: ShapeBook) -> bool:
+    """The provider's own distance and time to the second only match for the very same road, even
+    when two calls drew it with different vertices; otherwise the shapes decide."""
+    same_measures = (route.distance_m, route.travel_time_s) == (
+        other.distance_m,
+        other.travel_time_s,
+    )
+    return same_measures or overlap(book.of(route), book.of(other)) >= NEAR_DUPLICATE_OVERLAP
+
+
 def drop_near_duplicates(
     routes: Sequence[ProviderRoute], book: ShapeBook | None = None
 ) -> tuple[ProviderRoute, ...]:
@@ -68,8 +94,7 @@ def drop_near_duplicates(
     book = book or ShapeBook()
     kept: list[ProviderRoute] = []
     for route in routes:
-        shape = book.of(route)
-        if all(overlap(shape, book.of(other)) < NEAR_DUPLICATE_OVERLAP for other in kept):
+        if not any(_same_route(route, other, book) for other in kept):
             kept.append(route)
     return tuple(kept)
 
