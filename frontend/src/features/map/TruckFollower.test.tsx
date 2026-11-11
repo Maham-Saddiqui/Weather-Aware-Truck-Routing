@@ -31,8 +31,15 @@ const stub = vi.hoisted(() => {
 
 vi.mock('@vis.gl/react-maplibre', () => ({ useMap: () => ({ current: stub.map }) }))
 
-function followerAt(hourOffset: number) {
-  return <TruckFollower route={NORTH_ROUTE} heatmap={HEATMAP} hourOffset={hourOffset} />
+function followerAt(hourOffset: number, showTruckRequest = 0) {
+  return (
+    <TruckFollower
+      route={NORTH_ROUTE}
+      heatmap={HEATMAP}
+      hourOffset={hourOffset}
+      showTruckRequest={showTruckRequest}
+    />
+  )
 }
 
 function panByHand() {
@@ -113,6 +120,25 @@ describe('Show truck button (REQ-08, REQ-09, FE-07, NFR-03, NFR-04)', () => {
     rerender(followerAt(1))
 
     await userEvent.click(screen.getByRole('button', { name: 'Show truck' }))
+
+    expect(stub.easeTo).toHaveBeenCalledTimes(1)
+    stub.point = { x: 500, y: 250 }
+    act(() => {
+      stub.handlers.get('move')?.forEach((handler) => {
+        handler({})
+      })
+    })
+    expect(screen.queryByRole('button', { name: 'Show truck' })).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+  })
+
+  it('goes away and brings the truck back into view when Play is pressed', () => {
+    const { rerender } = render(followerAt(0))
+    panByHand()
+    stub.point = { x: 990, y: 250 }
+    rerender(followerAt(1))
+
+    rerender(followerAt(1, 1))
 
     expect(stub.easeTo).toHaveBeenCalledTimes(1)
     stub.point = { x: 500, y: 250 }

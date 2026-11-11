@@ -9,6 +9,9 @@ const TRUCK_B = { lat: 41, lon: -91 }
 const ROUTE: object = {}
 const ANOTHER_ROUTE: object = {}
 
+let playPresses = 0
+let hoursPlayed = 0
+
 interface EaseOptions {
   center: [number, number]
   duration: number
@@ -59,9 +62,14 @@ function mockScreen({ isWide, isReducedMotion }: { isWide: boolean; isReducedMot
 
 function renderFollowing(point = MIDDLE) {
   stub.point = point
-  return renderHook(({ truck, route }) => useFollowTruck(truck, route), {
-    initialProps: { truck: TRUCK_A, route: ROUTE },
-  })
+  return renderHook(
+    ({ truck, route, showTruckRequest }) => useFollowTruck(truck, route, showTruckRequest),
+    { initialProps: { truck: TRUCK_A, route: ROUTE, showTruckRequest: 0 } },
+  )
+}
+
+function truckAfterHours() {
+  return { lat: TRUCK_B.lat, lon: TRUCK_B.lon - hoursPlayed + 1 }
 }
 
 function moveTruckTo(
@@ -70,10 +78,18 @@ function moveTruckTo(
   route: object = ROUTE,
 ) {
   stub.point = point
-  hook.rerender({ truck: TRUCK_B, route })
+  hoursPlayed += 1
+  hook.rerender({ truck: truckAfterHours(), route, showTruckRequest: playPresses })
+}
+
+function pressPlay(hook: ReturnType<typeof renderFollowing>) {
+  playPresses += 1
+  hook.rerender({ truck: truckAfterHours(), route: ROUTE, showTruckRequest: playPresses })
 }
 
 beforeEach(() => {
+  playPresses = 0
+  hoursPlayed = 0
   mockScreen({ isWide: true, isReducedMotion: false })
   stub.handlers.clear()
   stub.easeTo.mockClear()
@@ -199,6 +215,50 @@ describe('useFollowTruck stops when the driver moves the map by hand (REQ-09, NF
 
     expect(stub.easeTo).toHaveBeenCalledTimes(1)
     expect(hook.result.current.isTruckHidden).toBe(false)
+  })
+
+  it('stays paused on every later hour of playback, however far the truck gets', () => {
+    const hook = renderFollowing()
+    emit('movestart', { originalEvent: new Event('mousedown') })
+
+    moveTruckTo(hook, FAR_RIGHT)
+    moveTruckTo(hook, { x: 20, y: 250 })
+    moveTruckTo(hook, FAR_RIGHT)
+
+    expect(stub.easeTo).not.toHaveBeenCalled()
+    expect(hook.result.current.isTruckHidden).toBe(true)
+  })
+
+  it('resumes following and eases to the truck when Play is pressed', () => {
+    const hook = renderFollowing()
+    emit('movestart', { originalEvent: new Event('mousedown') })
+    moveTruckTo(hook, FAR_RIGHT)
+
+    pressPlay(hook)
+
+    expect(stub.easeTo).toHaveBeenCalledTimes(1)
+    expect(stub.easeTo.mock.calls[0]?.[0]).toMatchObject({ center: [TRUCK_B.lon, TRUCK_B.lat] })
+    expect(hook.result.current.isTruckHidden).toBe(false)
+  })
+
+  it('pauses again when the driver moves the map by hand after pressing Play', () => {
+    const hook = renderFollowing()
+    emit('movestart', { originalEvent: new Event('mousedown') })
+    pressPlay(hook)
+
+    emit('movestart', { originalEvent: new Event('wheel') })
+    moveTruckTo(hook, FAR_RIGHT)
+
+    expect(stub.easeTo).not.toHaveBeenCalled()
+    expect(hook.result.current.isTruckHidden).toBe(true)
+  })
+
+  it('does nothing when Play is pressed while the map already follows and the truck is in view', () => {
+    const hook = renderFollowing()
+
+    pressPlay(hook)
+
+    expect(stub.easeTo).not.toHaveBeenCalled()
   })
 
   it('follows again after the route changes', () => {

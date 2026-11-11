@@ -12,6 +12,7 @@ export interface RouteMapProps {
   selectedCheckpointIndex: number | null
   heatmap: Heatmap | null
   hourOffset: number
+  showTruckRequest?: number
   onSelectRoute: (routeId: string) => void
   onSelectCheckpoint: (routeId: string, checkpointIndex: number) => void
 }
@@ -23,6 +24,7 @@ export interface HeatmapSliderProps {
   hourOffset: number
   playUntilHour: number
   onChangeHourOffset: (hourOffset: number) => void
+  onPlay?: () => void
   status?: ReactNode
 }
 

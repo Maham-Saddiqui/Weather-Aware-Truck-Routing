@@ -17,9 +17,10 @@ export function SliderRow({
   hourOffset,
   playUntilHour,
   onChangeHourOffset,
+  onPlay,
 }: Omit<HeatmapSliderProps, 'status'>) {
   const lastHour = hours - 1
-  const playback = usePlayback({ hourOffset, playUntilHour, onChangeHourOffset })
+  const playback = usePlayback({ hourOffset, playUntilHour, onChangeHourOffset, onPlay })
   const labelFor = (hour: number) => formatHourLabel(startUtc, hour, timeZone)
   return (
     <Stack direction="row" useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 2 }}>

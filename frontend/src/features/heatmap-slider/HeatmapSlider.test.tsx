@@ -13,9 +13,15 @@ interface SliderWithStateProps {
   initialHour?: number
   playUntilHour?: number
   onChange?: (hour: number) => void
+  onPlay?: () => void
 }
 
-function SliderWithState({ initialHour = 0, playUntilHour = 48, onChange }: SliderWithStateProps) {
+function SliderWithState({
+  initialHour = 0,
+  playUntilHour = 48,
+  onChange,
+  onPlay,
+}: SliderWithStateProps) {
   const [hourOffset, setHourOffset] = useState(initialHour)
   return (
     <HeatmapSlider
@@ -28,6 +34,7 @@ function SliderWithState({ initialHour = 0, playUntilHour = 48, onChange }: Slid
         setHourOffset(hour)
         onChange?.(hour)
       }}
+      onPlay={onPlay}
     />
   )
 }
@@ -168,6 +175,21 @@ describe('HeatmapSlider play button (FE-07: reduced motion respected, no autopla
 
     expect(onChange).toHaveBeenCalledWith(0)
     expect(screen.getByRole('button', { name: 'Pause' })).toBeVisible()
+  })
+
+  it('tells the page each time playing starts, resumes or restarts, but not when it pauses', () => {
+    const onPlay = vi.fn()
+    render(<SliderWithState initialHour={46} playUntilHour={47} onPlay={onPlay} />)
+
+    pressButton(PLAY)
+    expect(onPlay).toHaveBeenCalledTimes(1)
+    pressButton('Pause')
+    expect(onPlay).toHaveBeenCalledTimes(1)
+    pressButton(PLAY)
+    expect(onPlay).toHaveBeenCalledTimes(2)
+    advanceTime(5 * PLAYBACK_STEP_MS)
+    pressButton(REPLAY)
+    expect(onPlay).toHaveBeenCalledTimes(3)
   })
 
   it('stops playing when the user takes the slider', async () => {

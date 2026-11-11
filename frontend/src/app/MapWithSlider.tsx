@@ -54,16 +54,19 @@ const SliderDock = styled('div')(({ theme }) => ({
 export function MapWithSlider({ planner }: { planner: TripPlannerState }) {
   const runId = planner.run?.runId
   const [hourOffset, setHourOffset] = useState(0)
+  const [showTruckRequest, setShowTruckRequest] = useState(0)
   const [shownRunId, setShownRunId] = useState(runId)
   if (shownRunId !== runId) {
     setShownRunId(runId)
     setHourOffset(0)
   }
-  const slider = heatmapSliderFor(planner, hourOffset, setHourOffset)
+  const slider = heatmapSliderFor(planner, hourOffset, setHourOffset, () => {
+    setShowTruckRequest((count) => count + 1)
+  })
   return (
     <MapArea>
       <MapFrame>
-        <MapPane planner={planner} hourOffset={hourOffset} />
+        <MapPane planner={planner} hourOffset={hourOffset} showTruckRequest={showTruckRequest} />
         {planner.results.phase === 'idle' && <EmptyMapCard />}
       </MapFrame>
       {slider !== null && (
