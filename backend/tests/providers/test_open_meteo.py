@@ -156,6 +156,52 @@ def test_identical_concurrent_requests_share_one_provider_call() -> None:
     assert len(service.requests) == 1
 
 
+class SlowFetch:
+    """A service whose fetch for OTHER_POINT hangs until `release` is set."""
+
+    def __init__(self) -> None:
+        self.started = threading.Event()
+        self.release = threading.Event()
+        self.service = Service(self._respond)
+
+    def _respond(self, request: httpx.Request) -> httpx.Response:
+        if request.url.params["latitude"] == "42.0":
+            self.started.set()
+            self.release.wait(timeout=5)
+        return one_location_per_point(request)
+
+    def begin(self) -> None:
+        self.service.weather.forecast([POINT])
+        threading.Thread(target=self.service.weather.forecast, args=([OTHER_POINT],)).start()
+        assert self.started.wait(timeout=5)
+
+
+def test_a_fully_cached_request_does_not_wait_behind_a_slow_fetch() -> None:
+    """PERF-04"""
+    slow = SlowFetch()
+    slow.begin()
+
+    result = slow.service.weather.forecast([POINT])
+
+    assert not slow.release.is_set()
+    assert set(result) == {POINT}
+    slow.release.set()
+
+
+def test_a_request_that_needs_a_fetch_gives_up_when_a_slow_fetch_holds_the_line(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PERF-05"""
+    slow = SlowFetch()
+    slow.begin()
+    monkeypatch.setattr("providers.weather.open_meteo.WEATHER_TOTAL_TIMEOUT_S", 0.2)
+
+    with pytest.raises(WeatherUnavailable):
+        slow.service.weather.forecast([GeoPoint(43.0, -89.0)])
+
+    slow.release.set()
+
+
 def test_very_large_requests_are_split_to_keep_the_address_short() -> None:
     points = [GeoPoint(30 + index / 10, -90.0) for index in range(POINTS_PER_REQUEST + 1)]
     service = Service(

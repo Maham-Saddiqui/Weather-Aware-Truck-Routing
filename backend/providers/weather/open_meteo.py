@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -13,7 +14,8 @@ from providers.weather.cache import CellKey, WindowCache
 from providers.weather.port import WeatherBusy, WeatherUnavailable
 
 OPEN_METEO_BASE_URL = "https://api.open-meteo.com"
-OPEN_METEO_READ_TIMEOUT_S = 10.0
+OPEN_METEO_READ_TIMEOUT_S = 5.0
+WEATHER_TOTAL_TIMEOUT_S = 12.0
 WINDOW_HOURS = 240
 POINTS_PER_REQUEST = 200
 CELL_DECIMALS = 2
@@ -41,23 +43,38 @@ class OpenMeteoWeather:
         self._fetch_lock = threading.Lock()
 
     def forecast(self, points: Sequence[GeoPoint]) -> Mapping[GeoPoint, HourlyWeather]:
+        deadline = time.monotonic() + WEATHER_TOTAL_TIMEOUT_S
         cell_of_point = {point: _cell(point) for point in points}
-        with self._fetch_lock:
-            windows = self._windows_for(set(cell_of_point.values()))
+        cells = set(cell_of_point.values())
+        windows = self._cached(cells)
+        if len(windows) < len(cells):
+            windows = self._fetch_missing(cells, deadline)
         return {
             point: _expand(windows[cell])
             for point, cell in cell_of_point.items()
             if cell in windows
         }
 
-    def _windows_for(self, cells: set[CellKey]) -> dict[CellKey, str]:
-        windows = {cell: text for cell in cells if (text := self._cache.get(cell)) is not None}
-        missing = sorted(cells - windows.keys())
-        for chunk in _chunks(missing, POINTS_PER_REQUEST):
-            for cell, text in self._fetch(chunk).items():
-                self._cache.put(cell, text)
-                windows[cell] = text
-        return windows
+    def _cached(self, cells: set[CellKey]) -> dict[CellKey, str]:
+        return {cell: text for cell in cells if (text := self._cache.get(cell)) is not None}
+
+    def _fetch_missing(self, cells: set[CellKey], deadline: float) -> dict[CellKey, str]:
+        """Only one fetch at a time, and the cache is read again inside the lock, so identical
+        concurrent requests share one provider call while fully cached ones never wait."""
+        if not self._fetch_lock.acquire(timeout=max(deadline - time.monotonic(), 0)):
+            raise WeatherUnavailable("The weather service is too slow")
+        try:
+            windows = self._cached(cells)
+            missing = sorted(cells - windows.keys())
+            if missing and deadline - time.monotonic() < OPEN_METEO_READ_TIMEOUT_S:
+                raise WeatherUnavailable("The weather service is too slow")
+            for chunk in _chunks(missing, POINTS_PER_REQUEST):
+                for cell, text in self._fetch(chunk).items():
+                    self._cache.put(cell, text)
+                    windows[cell] = text
+            return windows
+        finally:
+            self._fetch_lock.release()
 
     def _fetch(self, cells: Sequence[CellKey]) -> dict[CellKey, str]:
         try:
