@@ -5,7 +5,7 @@ from contextvars import copy_context
 
 from providers.routing.port import RoutingUnavailable
 
-MAX_TRIPS_IN_FLIGHT = 2
+MAX_TRIPS_IN_FLIGHT = 4
 QUEUE_WAIT_S = 1.0
 TRIP_DEADLINE_S = 25.0
 
