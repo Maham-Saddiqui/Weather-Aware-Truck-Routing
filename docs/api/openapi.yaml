@@ -337,7 +337,7 @@ components:
           $ref: "#/components/schemas/DecimalString"
     RouteSummary:
       type: object
-      required: [distance_miles, travel_time_s, travel_time_text, arrival_utc, miles_by_level, average_risk, worst_level, eligible, ineligible_reason]
+      required: [distance_miles, travel_time_s, travel_time_text, travel_time_difference_text, arrival_utc, miles_by_level, average_risk, worst_level, eligible, ineligible_reason]
       properties:
         distance_miles:
           $ref: "#/components/schemas/DecimalString"
@@ -346,6 +346,9 @@ components:
         travel_time_text:
           type: string
           description: Travel time ready to display, for example "14 h 4 min" or "52 min", rounded to whole minutes half up on the server (RR-25). The screen shows it unchanged and never converts seconds itself (GEN-03).
+        travel_time_difference_text:
+          type: [string, "null"]
+          description: How this route's travel time compares with the first route in the list, for example "3 h 1 min quicker than Route 1", "2 h 31 min slower than Route 1" or "Same travel time as Route 1". It is the difference of the two whole-minute travel times that the cards show (RR-25), made on the server. Null for the first route. The screen shows it unchanged and never subtracts times itself (GEN-03).
         arrival_utc:
           type: string
           format: date-time

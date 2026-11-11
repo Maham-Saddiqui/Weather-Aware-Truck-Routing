@@ -80,6 +80,12 @@ An independent audit checked every rule against the code (139 rows). Where the c
 | 2026-11-11 | risk-rules RR-26 (wording only) | The recommendation sentence names the routes and uses hours and minutes, for example "Route 1 is quicker: 14 h 4 min against 16 h 32 min for Route 2", instead of "844 against 992 minutes". The rule is unchanged: one plain sentence naming the first criterion that separated the winner. | A UX review found the sentence in minutes above route cards in hours; the reader had to convert. | `backend/domain/ranking.py` |
 | 2026-11-11 | frontend FE-09 (wording) | Low risk is drawn as a very faint green (about 12 percent) instead of nothing, so the corridor is visible on an all-clear trip; the legend says so. Still "near-transparent so only risky stretches glow". | On a calm day every test trip looked like a plain dark map and the heatmap, the headline feature, seemed absent. | `frontend/src/features/map/heatmapPaint.ts` |
 
+## Applied after the owner's second round of decisions (2026-11-11)
+
+| Date | Section | What changed | Why | Code |
+|---|---|---|---|---|
+| 2026-11-11 | openapi `RouteSummary` | New required nullable string `travel_time_difference_text` ("3 h 1 min quicker than Route 1", "2 h 31 min slower than Route 1", "Same travel time as Route 1"; null for the first route). Made on the server from the two whole-minute travel times (RR-25). | A live Seattle to Salt Lake City trip showed Route 3 (12 h 5 min) faster than the recommended Route 1 (15 h 6 min) with no explanation on the cards; the UX re-review also listed the missing "x slower" line. The owner approved it on 2026-11-11. | `backend/domain/units.py`, `backend/trips/presenters.py`, `frontend/src/features/route-results/RouteStats.tsx` |
+
 ## Applied after the first batch
 
 | Date | Section | What changed | Why | Code |
