@@ -8,7 +8,7 @@ import { PlaceField } from './PlaceField'
 // Sits in the gap between the two fields, on the helper-text line, so both fields keep the full width.
 const SwapButton = styled(IconButton)(({ theme }) => ({
   position: 'absolute',
-  right: theme.spacing(8),
+  right: theme.spacing(1),
   top: '50%',
   transform: 'translateY(-50%)',
   zIndex: 1,
