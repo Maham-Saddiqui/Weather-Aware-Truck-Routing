@@ -93,7 +93,7 @@ def _route_params(query: RouteQuery) -> QueryParams:
         "travelMode": "truck",
         "vehicleCommercial": "true",
         "vehicleWeight": query.vehicle_weight_kg,
-        "departAt": query.depart_at.astimezone(UTC).isoformat(),
+        "departAt": query.depart_at.astimezone(UTC).replace(microsecond=0).isoformat(),
         "routeType": query.preference.value,
         "maxAlternatives": query.max_alternatives,
         "routeRepresentation": "encodedPolyline",

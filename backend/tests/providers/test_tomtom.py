@@ -1,5 +1,6 @@
 import json
-from datetime import UTC, datetime
+from dataclasses import replace
+from datetime import UTC, datetime, timedelta, timezone
 
 import httpx
 import pytest
@@ -90,6 +91,19 @@ def test_the_request_asks_for_a_truck_route_with_weight_departure_and_progress_t
     assert request.url.params["routeRepresentation"] == "encodedPolyline"
     assert request.url.params.get_list("extendedRouteRepresentation") == ["distance", "travelTime"]
     assert request.headers["User-Agent"] == "weather-aware-truck-routing/1.0"
+
+
+def test_the_departure_is_sent_as_a_whole_second_utc_instant() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"routes": [route_payload()]})
+
+    just_now = datetime(2026, 11, 11, 15, 40, 12, 345_678, tzinfo=timezone(timedelta(hours=5)))
+    routing_with(httpx.MockTransport(handler)).routes(replace(QUERY, depart_at=just_now))
+
+    assert seen[0].url.params["departAt"] == "2026-11-11T10:40:12+00:00"
 
 
 def test_an_empty_route_list_means_no_route_found() -> None:
