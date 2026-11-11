@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -115,7 +116,7 @@ def _rounded(value: Decimal | None, decimals: Decimal) -> Decimal | None:
     return None if value is None else round_half_up(value, decimals)
 
 
-def _reading(series: tuple[Decimal | None, ...], hour: int) -> Decimal | None:
+def _reading(series: Sequence[Decimal | None], hour: int) -> Decimal | None:
     return series[hour] if 0 <= hour < len(series) else None
 
 

@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from functools import cache
 
@@ -16,6 +16,7 @@ from providers.weather.cache import WindowCache
 from providers.weather.open_meteo import OPEN_METEO_READ_TIMEOUT_S, OpenMeteoWeather
 from services.daily_guard import DailyCallGuard
 from services.environment import TripEnvironment
+from services.trip_runner import TripRunner
 
 PARALLEL_CALL_THREADS = 8
 
@@ -27,6 +28,7 @@ class Providers:
     trips: TripEnvironment
     attribution: AttributionSource
     clock: Callable[[], datetime]
+    trip_runner: TripRunner = field(default_factory=TripRunner)
 
 
 def utc_now() -> datetime:

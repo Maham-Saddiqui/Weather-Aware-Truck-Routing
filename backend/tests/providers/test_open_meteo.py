@@ -68,7 +68,7 @@ def test_rain_and_showers_are_added_in_exact_decimals_and_nothing_becomes_a_floa
     weather = Service().weather.forecast([POINT])[POINT]
 
     assert weather.rain_in[0] == Decimal("0.3")
-    assert weather.wind_mph == (Decimal("10.5"), Decimal("11.5"), Decimal("12.5"))
+    assert tuple(weather.wind_mph) == (Decimal("10.5"), Decimal("11.5"), Decimal("12.5"))
     assert weather.gust_mph[0] == Decimal("20.5")
     assert weather.snow_in[1] == Decimal("0.01")
     assert weather.first_hour_utc == datetime(2026, 11, 11, 14, 0, tzinfo=UTC)
@@ -98,7 +98,7 @@ def test_a_reading_with_a_missing_part_stays_missing_instead_of_being_guessed() 
 
     weather = service.weather.forecast([POINT])[POINT]
 
-    assert weather.rain_in == (None, Decimal("0.0"), Decimal("0.0"))
+    assert tuple(weather.rain_in) == (None, Decimal("0.0"), Decimal("0.0"))
 
 
 def test_a_point_without_data_is_absent_from_the_result() -> None:
@@ -259,6 +259,27 @@ def test_a_network_error_is_retried_once_then_reported_as_unavailable(
         service.weather.forecast([POINT])
 
     assert len(service.requests) == 2
+
+
+def test_a_forecast_builds_no_decimals_until_a_reading_is_asked_for(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RR-02"""
+    built: list[str] = []
+
+    def counting_decimal(text: str) -> Decimal:
+        built.append(text)
+        return Decimal(text)
+
+    service = Service()
+    service.weather.forecast([POINT, OTHER_POINT])
+    monkeypatch.setattr("providers.weather.series.Decimal", counting_decimal)
+
+    windows = service.weather.forecast([POINT, OTHER_POINT])
+    assert built == []
+
+    assert windows[POINT].wind_mph[2] == Decimal("12.5")
+    assert built == ["12.5"]
 
 
 def test_an_answer_without_any_hourly_data_leaves_the_point_absent() -> None:

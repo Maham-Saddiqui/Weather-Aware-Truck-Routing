@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -57,7 +58,7 @@ class HourlyWeather:
     """
 
     first_hour_utc: datetime
-    wind_mph: tuple[Decimal | None, ...]
-    gust_mph: tuple[Decimal | None, ...]
-    rain_in: tuple[Decimal | None, ...]
-    snow_in: tuple[Decimal | None, ...]
+    wind_mph: Sequence[Decimal | None]
+    gust_mph: Sequence[Decimal | None]
+    rain_in: Sequence[Decimal | None]
+    snow_in: Sequence[Decimal | None]

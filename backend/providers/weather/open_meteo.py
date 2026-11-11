@@ -13,6 +13,7 @@ from domain.types import GeoPoint, HourlyWeather
 from providers.http import QueryParams, get_with_one_retry
 from providers.weather.cache import CellKey, WindowCache
 from providers.weather.port import WeatherBusy, WeatherUnavailable
+from providers.weather.series import CompactSeries
 
 OPEN_METEO_BASE_URL = "https://api.open-meteo.com"
 OPEN_METEO_READ_TIMEOUT_S = 5.0
@@ -154,9 +155,7 @@ def _add(first: Decimal | int | None, second: Decimal | int | None) -> Decimal |
 
 def _expand(window: str) -> HourlyWeather:
     first_hour, *rows = window.split("\n")
-    wind, gust, rain, snow = (
-        tuple(_decimal_or_none(cell) for cell in row.split(",")) for row in rows
-    )
+    wind, gust, rain, snow = (CompactSeries(row) for row in rows)
     return HourlyWeather(
         first_hour_utc=datetime.fromtimestamp(int(first_hour), UTC),
         wind_mph=wind,
@@ -164,7 +163,3 @@ def _expand(window: str) -> HourlyWeather:
         rain_in=rain,
         snow_in=snow,
     )
-
-
-def _decimal_or_none(text: str) -> Decimal | None:
-    return Decimal(text) if text else None

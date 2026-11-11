@@ -46,11 +46,17 @@ class PrimaryTripView(APIView):
     def post(self, request: Request) -> Response:
         providers = container.providers()
         trip = parse_trip_request(request.data, providers.clock())
-        return no_store(Response(present_primary(plan_primary_trip(providers.trips, trip))))
+        answer = providers.trip_runner.run(
+            lambda: present_primary(plan_primary_trip(providers.trips, trip))
+        )
+        return no_store(Response(answer))
 
 
 class CompareTripView(APIView):
     def post(self, request: Request) -> Response:
         providers = container.providers()
         trip = parse_trip_request(request.data, providers.clock())
-        return no_store(Response(present_compare(plan_compare_trip(providers.trips, trip))))
+        answer = providers.trip_runner.run(
+            lambda: present_compare(plan_compare_trip(providers.trips, trip))
+        )
+        return no_store(Response(answer))
