@@ -1,11 +1,18 @@
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from config import container
 from domain.types import GeoPoint
+from providers.timezone.offline import TimeZoneNotFound
+from services.compare_trip import plan_compare_trip
+from services.primary_trip import plan_primary_trip
+from trips.presenters import present_compare, present_primary
 from trips.responses import no_store
-from trips.serializers import TimeZoneQuerySerializer
+from trips.serializers import TimeZoneQuerySerializer, parse_trip_request
+
+NO_TIME_ZONE = "No time zone covers this place. Choose a place on land."
 
 
 class HealthView(APIView):
@@ -28,4 +35,22 @@ class TimeZoneView(APIView):
         query = TimeZoneQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
         point = GeoPoint(query.validated_data["lat"], query.validated_data["lon"])
-        return Response({"time_zone": container.providers().timezone.zone_name(point)})
+        try:
+            zone = container.providers().trips.timezone.zone_name(point)
+        except TimeZoneNotFound:
+            raise ValidationError({"lat": [NO_TIME_ZONE]}) from None
+        return Response({"time_zone": zone})
+
+
+class PrimaryTripView(APIView):
+    def post(self, request: Request) -> Response:
+        providers = container.providers()
+        trip = parse_trip_request(request.data, providers.clock())
+        return no_store(Response(present_primary(plan_primary_trip(providers.trips, trip))))
+
+
+class CompareTripView(APIView):
+    def post(self, request: Request) -> Response:
+        providers = container.providers()
+        trip = parse_trip_request(request.data, providers.clock())
+        return no_store(Response(present_compare(plan_compare_trip(providers.trips, trip))))

@@ -1,4 +1,4 @@
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from decimal import Decimal
 
@@ -20,21 +20,24 @@ def calm_weather(first_hour_utc: datetime, wind: str = "5", rain: str = "0") -> 
 
 
 class FakeWeather:
-    """Gives every requested point the same window, except the ones listed as missing."""
+    """Answers each requested point with `window_at(point)`; None leaves the point absent."""
 
     def __init__(
         self,
-        window: HourlyWeather,
+        window_at: Callable[[GeoPoint], HourlyWeather | None],
         failure: WeatherError | None = None,
-        missing: Collection[GeoPoint] = (),
     ) -> None:
-        self.window = window
+        self.window_at = window_at
         self.failure = failure
-        self.missing = set(missing)
         self.calls: list[Sequence[GeoPoint]] = []
+
+    @classmethod
+    def uniform(cls, window: HourlyWeather) -> "FakeWeather":
+        return cls(lambda point: window)
 
     def forecast(self, points: Sequence[GeoPoint]) -> Mapping[GeoPoint, HourlyWeather]:
         self.calls.append(tuple(points))
         if self.failure is not None:
             raise self.failure
-        return {point: self.window for point in points if point not in self.missing}
+        windows = {point: self.window_at(point) for point in points}
+        return {point: window for point, window in windows.items() if window is not None}

@@ -9,7 +9,7 @@ from rest_framework.throttling import AnonRateThrottle
 
 from config.container import Providers
 from providers.routing.port import NoRouteFound, RoutingUnavailable
-from tests.fakes.bundle import FakeAttribution, FakeTimeZone, default_fakes
+from tests.fakes.bundle import FakeAttribution, FakeTimeZone, default_fakes, with_trips
 from trips.problems import problem_response
 
 type UseFakes = Callable[[Providers], Providers]
@@ -44,7 +44,7 @@ def test_the_timezone_endpoint_names_the_zone_of_a_place(
     client: Client, use_fakes: UseFakes
 ) -> None:
     """RR-18"""
-    use_fakes(replace(default_fakes(), timezone=FakeTimeZone("America/Denver")))
+    use_fakes(with_trips(default_fakes(), timezone=FakeTimeZone("America/Denver")))
 
     response = client.get("/api/v1/timezone", {"lat": "39.7", "lon": "-104.9"})
 

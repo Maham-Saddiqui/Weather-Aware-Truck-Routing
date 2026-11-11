@@ -6,18 +6,11 @@ from rest_framework.exceptions import ValidationError
 
 from domain.types import GeoPoint
 from tests.fakes.bundle import CHICAGO, DENVER, NOW
+from tests.fakes.trips import trip_body
 from trips.problems import flatten_errors
 from trips.serializers import parse_trip_request
 
-
-def valid_body(**overrides: Any) -> dict[str, Any]:
-    body: dict[str, Any] = {
-        "origin": {"lat": CHICAGO.lat, "lon": CHICAGO.lon, "label": "Chicago, IL"},
-        "destination": {"lat": DENVER.lat, "lon": DENVER.lon, "label": "Denver, CO"},
-        "departure_utc": (NOW + timedelta(hours=3)).isoformat(),
-        "load_lb": 30_000,
-    }
-    return {**body, **overrides}
+valid_body = trip_body
 
 
 def errors_for(body: dict[str, Any]) -> dict[str, list[str]]:
