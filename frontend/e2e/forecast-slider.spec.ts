@@ -1,5 +1,5 @@
 import { collectPageErrors, planChicagoToDenver } from './planTrip'
-import { expect, test } from './test'
+import { expect, test } from '@playwright/test'
 
 test('moves the forecast clock by keyboard and plays and pauses it (REQ-08, NFR-03)', async ({
   page,

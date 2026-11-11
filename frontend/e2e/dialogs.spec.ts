@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { accessibilityViolations } from './accessibility'
-import { expect, test } from './test'
+import { expect, test } from '@playwright/test'
 
 async function expectFocusStaysInside(page: Page, dialogName: string) {
   const dialog = page.getByRole('dialog', { name: dialogName })

@@ -1,6 +1,6 @@
 import { accessibilityViolations } from './accessibility'
 import { planChicagoToDenver, recommendationBanner } from './planTrip'
-import { expect, test } from './test'
+import { expect, test } from '@playwright/test'
 
 test('plans an example trip and shows the recommendation, three routes and the map (REQ-11, REQ-06, NFR-03)', async ({
   page,

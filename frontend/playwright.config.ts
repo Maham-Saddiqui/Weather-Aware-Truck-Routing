@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test'
 const API_PORT = 8041
 const APP_PORT = 5177
 const API_URL = `http://127.0.0.1:${API_PORT}`
+const RELAXED_LIMITS =
+  'API_THROTTLE_RATE=1000/min TRIP_THROTTLE_RATE=1000/min ATTRIBUTION_THROTTLE_RATE=1000/min'
 const APP_URL = `http://localhost:${APP_PORT}`
 
 // The built app talks to the rehearsal server (synthetic routes and weather), never to a real provider.
@@ -16,7 +18,7 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command: `FAKE_SERVER_PORT=${API_PORT} uv run python ../scripts/run_fake_server.py`,
+      command: `${RELAXED_LIMITS} FAKE_SERVER_PORT=${API_PORT} uv run python ../scripts/run_fake_server.py`,
       cwd: '../backend',
       url: `${API_URL}/api/v1/health`,
       reuseExistingServer: !process.env.CI,

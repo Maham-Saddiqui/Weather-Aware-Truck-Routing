@@ -18,7 +18,16 @@ const sizeAndStyleRules = {
 const typedParser = { projectService: true, tsconfigRootDir: import.meta.dirname }
 
 export default tseslint.config(
-  { ignores: ['dist', 'src/shared/api/generated', '*.config.*'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      'src/shared/api/generated',
+      '*.config.*',
+    ],
+  },
   {
     files: ['src/**/*.{ts,tsx}'],
     extends: [

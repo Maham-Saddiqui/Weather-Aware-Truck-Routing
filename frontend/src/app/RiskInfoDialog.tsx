@@ -51,7 +51,7 @@ export function RiskInfoDialog({ open, onClose }: RiskInfoDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="risk-info-title">
       <DialogTitle id="risk-info-title">How risk is calculated</DialogTitle>
-      <DialogContent>
+      <DialogContent tabIndex={0} role="region" aria-label="Risk rules">
         <Table size="small" aria-label="Risk levels by weather reading">
           <TableHead>
             <TableRow>

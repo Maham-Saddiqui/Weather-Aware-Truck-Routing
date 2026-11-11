@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { planChicagoToDenver } from './planTrip'
-import { expect, test } from './test'
+import { expect, test } from '@playwright/test'
 
 async function pressShiftTabFromToggle(page: Page, toggleName: string) {
   await page.getByRole('button', { name: toggleName }).focus()

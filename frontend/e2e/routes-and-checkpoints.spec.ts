@@ -1,5 +1,5 @@
 import { planChicagoToDenver } from './planTrip'
-import { expect, test } from './test'
+import { expect, test } from '@playwright/test'
 
 test('selects another route and a checkpoint and shows its weather (REQ-06, REQ-07, REQ-08)', async ({
   page,

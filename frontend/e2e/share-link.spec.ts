@@ -1,5 +1,5 @@
 import { planChicagoToDenver, recommendationBanner } from './planTrip'
-import { expect, test } from './test'
+import { expect, test } from '@playwright/test'
 
 test('a shared link plans the same trip automatically in a new page (REQ-14, REQ-16)', async ({
   page,

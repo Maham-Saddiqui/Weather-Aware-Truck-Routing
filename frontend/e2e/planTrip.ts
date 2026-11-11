@@ -1,5 +1,4 @@
-import type { Page } from '@playwright/test'
-import { expect } from './test'
+import { expect, type Page } from '@playwright/test'
 
 export const recommendationBanner = (page: Page) =>
   page.getByRole('alert').filter({ hasText: 'Recommended: Route' })
