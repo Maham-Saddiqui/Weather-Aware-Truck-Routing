@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { DEFAULT_SPACING_MILES } from '../../shared/constants'
 import { browserTimeZone, dayjs, tomorrowMorning } from '../../shared/time'
 import type { TripRequest } from '../../shared/types'
@@ -33,17 +33,42 @@ function shownErrors(
   return { ...checkErrors, ...(zoneBlock && { departure: zoneBlock }) }
 }
 
+type SetValues = Dispatch<SetStateAction<TripFormValues>>
+
+function valueChanges(setValues: SetValues, markDepartureEntered: () => void) {
+  return {
+    change: (changes: Partial<TripFormValues>) => {
+      if ('departure' in changes) markDepartureEntered()
+      setValues((previous) => ({ ...previous, ...changes }))
+    },
+    swapPlaces: () => {
+      setValues((previous) => ({
+        ...previous,
+        origin: previous.destination,
+        destination: previous.origin,
+      }))
+    },
+  }
+}
+
 export function useTripForm(
   initialTrip: TripRequest | null,
   needsReview: boolean,
   onSubmit: (trip: TripRequest) => void,
 ) {
-  const [values, setValues] = useState(() =>
+  const [entered, setEntered] = useState(() =>
     initialTrip ? valuesFromTrip(initialTrip) : defaultValues(),
   )
+  const [isDepartureEntered, setIsDepartureEntered] = useState(initialTrip !== null)
   const [hasAttempted, setHasAttempted] = useState(needsReview)
   const [rejectedSubmits, setRejectedSubmits] = useState(0)
-  const originZone = useOriginTimeZone(values.origin)
+  const originZone = useOriginTimeZone(entered.origin)
+  // Until the driver sets a time, the default is 08:00 tomorrow on the clock they see, so it follows the origin's zone.
+  const defaultDeparture = useMemo(
+    () => tomorrowMorning(dayjs(), originZone.timeZone),
+    [originZone.timeZone],
+  )
+  const values = isDepartureEntered ? entered : { ...entered, departure: defaultDeparture }
 
   const check = checkTripForm(values, dayjs())
   const zoneBlock = zoneBlockMessage(originZone.state)
@@ -54,23 +79,17 @@ export function useTripForm(
     errors,
     originZone,
     rejectedSubmits,
-    change: (changes: Partial<TripFormValues>) => {
-      setValues((previous) => ({ ...previous, ...changes }))
-    },
-    swapPlaces: () => {
-      setValues((previous) => ({
-        ...previous,
-        origin: previous.destination,
-        destination: previous.origin,
-      }))
-    },
+    ...valueChanges(setEntered, () => {
+      setIsDepartureEntered(true)
+    }),
     submit: () => {
       setHasAttempted(true)
       if (check.isValid && !zoneBlock) onSubmit(check.trip)
       else setRejectedSubmits((count) => count + 1)
     },
     submitTrip: (trip: TripRequest) => {
-      setValues(valuesFromTrip(trip))
+      setEntered(valuesFromTrip(trip))
+      setIsDepartureEntered(true)
       onSubmit(trip)
     },
   }
