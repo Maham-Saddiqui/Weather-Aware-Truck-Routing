@@ -1,0 +1,24 @@
+import type { components } from './api/generated/schema'
+
+export type Route = components['schemas']['Route']
+export type Checkpoint = components['schemas']['Checkpoint']
+export type Heatmap = components['schemas']['Heatmap']
+export type RoutingProvider = components['schemas']['RoutingProvider']
+
+export interface RouteMapProps {
+  routes: readonly Route[]
+  selectedRouteId: string | null
+  selectedCheckpointIndex: number | null
+  heatmap: Heatmap | null
+  hourOffset: number
+  onSelectRoute: (routeId: string) => void
+  onSelectCheckpoint: (routeId: string, checkpointIndex: number) => void
+}
+
+export interface HeatmapSliderProps {
+  startUtc: string
+  timeZone: string
+  hours: number
+  hourOffset: number
+  onChangeHourOffset: (hourOffset: number) => void
+}
