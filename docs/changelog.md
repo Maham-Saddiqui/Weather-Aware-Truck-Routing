@@ -57,6 +57,21 @@ A later batch (the heatmap `worst_level_by_hour` field) is listed at the end.
 |---|---|---|---|---|
 | 2026-11-11 | trip endpoints, components | 413 and 415 problem responses and the `X-Request-ID` response header. | The server refuses bodies above 8 KB and non-JSON bodies, and returns a request id on every response so a visitor can quote it. | `trips/body_limit.py`, `config/request_logging.py` |
 
+## Deviations recorded after the standards audit (2026-11-11)
+
+An independent audit checked every rule against the code (139 rows). Where the code or tooling deliberately differs from a document, the reason is recorded here; items still to be done are marked.
+
+| Document / rule | What differs | Why it is accepted | Status |
+|---|---|---|---|
+| SEC-01 (gitleaks) | The check uses a small in-house scanner (`scripts/secret_scan.py`: key-like assignments in the tree and history, plus any value from a local `.env`); gitleaks also runs in CI as a report-only step. | No tool installation is allowed for the build agents, and the in-house scanner also checks the owner's local `.env` values, which gitleaks cannot know. | accepted |
+| NFR-06 (no hard-coded addresses) | The API host appears in the `connect-src` of `frontend/vercel.json` and as the default of the keep-warm workflow. | A Content-Security-Policy header cannot read environment variables; naming one host is safer than allowing every `onrender.com` host. The keep-warm default can be overridden by the repository variable `API_HEALTH_URL`. Documented in the README. | accepted |
+| SEC-04 (only the production front-end address) | `render.yaml` allows two origins: the short and the long Vercel address of the same project. | They are two aliases of the one production deployment. | accepted |
+| FE-08, PERF-07 (no React re-render per slider tick) | The forecast hour is held in React state (`app/MapWithSlider.tsx`), so the map pane, status line and slider re-render per tick; the heatmap colour itself changes through the map API, the form and results are isolated from the tick (tested), and the routes are not redrawn. | Not yet measured against one frame (16 ms). | to measure (React Profiler) and then fix or amend |
+| FE-13, FE-07, NFR-03 (end-to-end tests, automated accessibility scan) | Not present; accessibility and the map are checked by Vitest component tests, two independent reviews and manual live checks. | They need new developer dependencies (Playwright, axe), which the owner must approve and install. | pending owner approval |
+| GEN-15 (coverage floors) | Enforced for the server since 2026-11-11 (85 percent overall, 100 percent branch on the risk rules; measured 99 and 100). Front-end coverage is not measured. | The front-end coverage tool is a new dependency. | server done; front end pending owner approval |
+| PERF-09 (bundle-size check in the check command) | Added: `scripts/check_bundle_size.py` builds the front end and fails past 200 KB (first load) or 350 KB (map chunk), gzip. | Closes the audit finding. | done |
+| GEN-03 (rules duplicated in the browser) | The "How risk works" dialog repeats the band edges and limits by hand. | It is explanatory text; a test cites RR-03 to RR-08 and RR-22 to RR-24 against its numbers. A test tying it to the server constants is still to be written. | to do |
+
 ## Applied after the first batch (owner approved on 2026-11-11)
 
 | Date | Section | What changed | Why | Code |
