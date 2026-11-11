@@ -1,3 +1,4 @@
+import { ShareTrip } from '../features/share-trip'
 import { TripForm } from '../features/trip-form'
 import { ErrorBoundary } from './ErrorBoundary'
 import { MapWithSlider } from './MapWithSlider'
@@ -16,6 +17,7 @@ export function TripPlanner() {
             needsReview={planner.restored?.isPlannable === false}
             isBusy={planner.results.isPending}
             onSubmit={planner.submit}
+            summaryActions={<ShareTrip />}
           />
         </ErrorBoundary>
       }

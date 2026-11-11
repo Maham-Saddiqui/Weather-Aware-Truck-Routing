@@ -20,6 +20,14 @@ describe('start and destination markers (REQ-08)', () => {
     )
   })
 
+  it('writes the city next to each pin and keeps the full name for the pin itself', () => {
+    render(<EndpointMarkers route={NORTH_ROUTE} labels={LABELS} />)
+
+    expect(screen.getByText('Chicago')).toBeVisible()
+    expect(screen.getByText('Denver')).toBeVisible()
+    expect(screen.getByRole('img', { name: 'Start: Chicago, Illinois' })).toBeInTheDocument()
+  })
+
   it('still marks both ends when the place names are not known', () => {
     render(<EndpointMarkers route={NORTH_ROUTE} />)
 

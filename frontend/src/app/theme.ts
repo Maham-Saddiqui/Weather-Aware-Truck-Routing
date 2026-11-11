@@ -1,15 +1,17 @@
 import { createTheme } from '@mui/material/styles'
 import type {} from '@mui/x-date-pickers/themeAugmentation'
-import { ACCENT_TURQUOISE, RISK_COLOURS } from '../shared/colours'
+import { ACCENT_TURQUOISE, RISK_COLOURS, ROUTE_HUES } from '../shared/colours'
 import { MIN_TOUCH_TARGET_PX } from '../shared/constants'
 import type { CheckpointLevel } from '../shared/types'
 
 declare module '@mui/material/styles' {
   interface Palette {
     risk: Record<CheckpointLevel, string>
+    route: readonly string[]
   }
   interface PaletteOptions {
     risk?: Record<CheckpointLevel, string>
+    route?: readonly string[]
   }
 }
 
@@ -26,6 +28,8 @@ const ACCENT_DARK = '#14b8a6'
 const SURFACE_SHADOW = '0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18)'
 const TRANSITION = 'background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease'
 
+// Zoom buttons are finger-sized on touch screens and on phone-width windows (below the md breakpoint).
+const TOUCH_OR_PHONE = '@media (pointer: coarse), (max-width: 719.95px)'
 const MAP = '.maplibregl-map'
 const MAP_CONTROLS = {
   [`${MAP} .maplibregl-ctrl-group`]: {
@@ -42,7 +46,7 @@ const MAP_CONTROLS = {
     fontSize: '0.6875rem',
   },
   [`${MAP} .maplibregl-ctrl-attrib a`]: { color: TEXT_SECONDARY },
-  '@media (pointer: coarse)': {
+  [TOUCH_OR_PHONE]: {
     [`${MAP} .maplibregl-ctrl-group button`]: {
       width: MIN_TOUCH_TARGET_PX,
       height: MIN_TOUCH_TARGET_PX,
@@ -66,6 +70,7 @@ export const theme = createTheme({
     text: { primary: TEXT_PRIMARY, secondary: TEXT_SECONDARY },
     divider: BORDER,
     risk: RISK_COLOURS,
+    route: ROUTE_HUES,
   },
   focusVisible: true,
   shape: { borderRadius: 10 },

@@ -23,6 +23,7 @@ const EXPLANATIONS = [
   'Every checkpoint gets the worst of its wind, rain and snow ratings. Gusts are shown for information only.',
   'A heavy load makes wind worse. Wind of 35 to 44 mph with cargo over 40,000 lb is Severe. Wind of 45 to 54 mph with cargo over 30,000 lb is No Travel. Wind of 55 mph or more is No Travel for any load.',
   'A checkpoint with a missing reading shows "No data", unless the readings it has already reach No Travel.',
+  'Average risk is a score from 0 to 4. Each level counts as its number (Low 0, Moderate 1, High 2, Severe 3, No Travel 4), weighted by the miles at that level.',
   'A route with a No Travel checkpoint, or with more than 10% of its miles lacking weather data, is never recommended.',
   'Among the other routes the order is: fewest Severe miles, then fewest High miles, then lowest average risk, then shortest travel time.',
   DRIVING_TIME_NOTICE,

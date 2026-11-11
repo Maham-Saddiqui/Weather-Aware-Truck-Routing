@@ -3,6 +3,7 @@ import PlayArrow from '@mui/icons-material/PlayArrow'
 import Replay from '@mui/icons-material/Replay'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
+import { TOOLTIP_ABOVE_DOCK } from './tooltipAboveDock'
 import type { Playback } from './usePlayback'
 
 function playLabel({ isUnavailable, isPlaying, isFinished }: Playback): string {
@@ -30,7 +31,7 @@ interface PlayButtonProps {
 export function PlayButton({ playback }: PlayButtonProps) {
   const label = playLabel(playback)
   return (
-    <Tooltip title={label}>
+    <Tooltip title={label} {...TOOLTIP_ABOVE_DOCK}>
       <IconButton
         aria-label={label}
         aria-disabled={playback.isUnavailable}

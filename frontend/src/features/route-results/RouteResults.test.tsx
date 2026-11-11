@@ -64,8 +64,7 @@ describe('route cards (REQ-06, FE-19)', () => {
 
     expect(screen.getByText('Low 42.5 mi')).toBeInTheDocument()
     expect(screen.getByText('Moderate 17.5 mi')).toBeInTheDocument()
-    expect(screen.getByText('No data 0 mi')).toBeInTheDocument()
-    expect(screen.getByText('Average risk 0.29')).toBeInTheDocument()
+    expect(screen.getByText('Average risk 0.29 of 4')).toBeInTheDocument()
     expect(
       within(screen.getByRole('article', { name: 'Route 1' })).getByText('Moderate', {
         selector: '.MuiChip-label',
@@ -120,6 +119,8 @@ describe('route cards for keyboard and screen readers (FE-07, NFR-03)', () => {
 
     await userEvent.tab()
     expect(screen.getByRole('button', { name: 'Route 1' })).toHaveFocus()
+    await userEvent.tab()
+    expect(screen.getAllByRole('button', { name: 'All levels' })[0]).toHaveFocus()
     await userEvent.tab()
     await userEvent.keyboard(key)
 

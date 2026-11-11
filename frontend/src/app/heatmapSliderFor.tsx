@@ -33,7 +33,7 @@ export function heatmapSliderFor(
             useFlexGap
             sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 1.5 }}
           >
-            <HeatmapStatus heatmap={heatmap} hourOffset={hourOffset} />
+            <HeatmapStatus heatmap={heatmap} hourOffset={hourOffset} timeZone={timeZone} />
             <ArrivalNote
               route={selectedRoute}
               heatmap={heatmap}

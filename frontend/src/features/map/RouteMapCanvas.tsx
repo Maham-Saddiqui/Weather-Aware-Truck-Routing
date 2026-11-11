@@ -17,6 +17,15 @@ import { ReadableLabels } from './ReadableLabels'
 import { RouteMarkers } from './RouteMarkers'
 import { RouteScene } from './RouteScene'
 
+// The map's width is a container size, so children (the route name pills) can drop out when it is very small.
+const FRAME_STYLE = {
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+  minHeight: MAP_MIN_HEIGHT_PX,
+  containerType: 'inline-size',
+} as const
+
 const INTERACTIVE_LAYER_IDS = [ROUTE_HIT_LAYER_ID]
 
 function isClickOnMarker(event: MapLayerMouseEvent): boolean {
@@ -65,7 +74,8 @@ export function RouteMapCanvas({
   const failure = useMapFailure()
   const routeClicks = useRouteClicks(onSelectRoute)
   return (
-    <Box sx={{ position: 'relative', width: '100%', height: '100%', minHeight: MAP_MIN_HEIGHT_PX }}>
+    <Box sx={FRAME_STYLE}>
+      {' '}
       <Map
         mapLib={mapLib}
         mapStyle={BASEMAP_STYLE_URL}

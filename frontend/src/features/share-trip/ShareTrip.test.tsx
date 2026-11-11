@@ -17,10 +17,10 @@ async function press(name: string) {
   })
 }
 
-function renderShare(hasTrip = true) {
+function renderShare() {
   render(
     <Providers>
-      <ShareTrip hasTrip={hasTrip} />
+      <ShareTrip />
     </Providers>,
   )
 }
@@ -94,7 +94,34 @@ describe('sharing the trip link (REQ-14)', () => {
     expect(share).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ url: window.location.href }),
     )
-    expect(screen.queryByRole('button', { name: 'Copy link' })).not.toBeInTheDocument()
+  })
+
+  it('shows "Copy link" next to "Share trip" so the link can be copied where a share sheet exists (REQ-16)', () => {
+    stubBrowser('share', vi.fn())
+    renderShare()
+
+    expect(screen.getByRole('button', { name: 'Share trip' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Copy link' })).toBeVisible()
+  })
+
+  it('offers only "Copy link" when the device has no share sheet', () => {
+    renderShare()
+
+    expect(screen.queryByRole('button', { name: 'Share trip' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Copy link' })).toBeVisible()
+  })
+
+  it('copies without opening the share sheet when "Copy link" is pressed', async () => {
+    const share = vi.fn()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    stubBrowser('share', share)
+    stubBrowser('clipboard', { writeText })
+    renderShare()
+
+    await press('Copy link')
+
+    expect(share).not.toHaveBeenCalled()
+    expect(writeText).toHaveBeenCalledExactlyOnceWith(window.location.href)
   })
 
   it('stays quiet when the driver closes the share sheet', async () => {
@@ -117,13 +144,5 @@ describe('sharing the trip link (REQ-14)', () => {
 
     expect(writeText).toHaveBeenCalledExactlyOnceWith(window.location.href)
     expect(screen.getByRole('status')).toHaveTextContent('Link copied')
-  })
-})
-
-describe('without a trip (REQ-14)', () => {
-  it('disables the button', () => {
-    renderShare(false)
-
-    expect(screen.getByRole('button', { name: 'Copy link' })).toBeDisabled()
   })
 })

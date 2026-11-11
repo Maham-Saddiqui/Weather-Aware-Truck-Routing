@@ -15,17 +15,17 @@ function tripOf(hoursToArrive: number) {
   })
 }
 
-describe('playUntilHour ends Play one hour after the truck arrives (REQ-09, RR-19, RR-28)', () => {
-  it('is hour 3 for a trip of 2 hours', () => {
-    expect(playUntilHour(tripOf(2), HEATMAP)).toBe(3)
+describe('playUntilHour ends Play at the first whole hour at or after arrival (REQ-09, RR-19, RR-28)', () => {
+  it('is hour 2 for a trip of 2 hours', () => {
+    expect(playUntilHour(tripOf(2), HEATMAP)).toBe(2)
   })
 
-  it('rounds a part hour up before adding the extra hour', () => {
-    expect(playUntilHour(tripOf(20.2), HEATMAP)).toBe(22)
+  it('rounds a part hour up to the next whole hour', () => {
+    expect(playUntilHour(tripOf(20.2), HEATMAP)).toBe(21)
   })
 
-  it('is hour 21 for a trip of 20 hours', () => {
-    expect(playUntilHour(tripOf(20), HEATMAP)).toBe(21)
+  it('is hour 20 for a trip of 20 hours', () => {
+    expect(playUntilHour(tripOf(20), HEATMAP)).toBe(20)
   })
 
   it('stops at the slider last hour for a trip longer than the forecast', () => {

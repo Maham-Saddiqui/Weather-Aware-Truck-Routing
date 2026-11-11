@@ -1,4 +1,3 @@
-import { EmptyResults } from './EmptyResults'
 import { FailedResults } from './FailedResults'
 import { LoadingResults } from './LoadingResults'
 import { ReadyResults } from './ReadyResults'
@@ -18,7 +17,7 @@ function CurrentResults(props: RouteResultsProps) {
   const { results } = props
   switch (results.phase) {
     case 'idle':
-      return <EmptyResults />
+      return null
     case 'failed':
       return <FailedResults error={results.error} onRetry={props.onRetry} />
     case 'loading':

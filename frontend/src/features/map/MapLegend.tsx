@@ -8,6 +8,7 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import Typography from '@mui/material/Typography'
 import { useId, useState } from 'react'
 import { LEVEL_ORDER } from '../../shared/risk'
+import { VISUALLY_HIDDEN_STYLE } from '../../shared/visuallyHidden'
 import { LegendItem } from './LegendItem'
 
 const Panel = styled(Paper)(({ theme }) => ({
@@ -35,12 +36,7 @@ const Notes = styled('div', { shouldForwardProp: (name) => name !== 'isShown' })
   isShown
     ? {}
     : {
-        position: 'absolute',
-        width: 1,
-        height: 1,
-        overflow: 'hidden',
-        clipPath: 'inset(50%)',
-        whiteSpace: 'nowrap',
+        ...VISUALLY_HIDDEN_STYLE,
       },
 )
 

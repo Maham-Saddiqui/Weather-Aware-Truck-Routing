@@ -36,12 +36,19 @@ export function PlacePair({
 }: PlacePairProps) {
   return (
     <Stack useFlexGap spacing={2} sx={{ position: 'relative' }}>
-      <PlaceField label="Origin" value={origin} error={errors.origin} onChange={onChangeOrigin} />
+      <PlaceField
+        label="Origin"
+        letter="A"
+        value={origin}
+        error={errors.origin}
+        onChange={onChangeOrigin}
+      />
       <SwapButton aria-label="Swap origin and destination" onClick={onSwap}>
         <SwapVertIcon />
       </SwapButton>
       <PlaceField
         label="Destination"
+        letter="B"
         value={destination}
         error={errors.destination}
         onChange={onChangeDestination}

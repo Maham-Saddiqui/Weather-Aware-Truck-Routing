@@ -58,7 +58,7 @@ describe('playback speed next to Play (REQ-09, FE-07)', () => {
 
     const button = screen.getByRole('button', { name: /^Playback speed 1x/ })
 
-    expect(button).toHaveTextContent('1x')
+    expect(button).toHaveTextContent('1x speed')
     expect(button).toHaveAccessibleName('Playback speed 1x. Press to play at 2x.')
   })
 

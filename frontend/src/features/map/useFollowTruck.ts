@@ -78,7 +78,7 @@ export function useFollowTruck(truck: LatLon | null, route: object): FollowTruck
     if (!map || longitude === undefined || latitude === undefined) {
       return
     }
-    if (isNewRoute || isPaused || isVisible) {
+    if (isNewRoute || isPaused || isVisible || map.isZooming()) {
       return
     }
     map.easeTo({

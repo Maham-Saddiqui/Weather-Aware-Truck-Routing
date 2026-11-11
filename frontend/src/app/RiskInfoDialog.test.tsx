@@ -55,6 +55,16 @@ describe('"How risk works" repeats the rules exactly (RR-31)', () => {
     ).toBeInTheDocument()
   })
 
+  it('explains that average risk is a score from 0 to 4 weighted by miles (RR-21)', () => {
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Average risk is a score from 0 to 4. Each level counts as its number (Low 0, Moderate 1, High 2, Severe 3, No Travel 4), weighted by the miles at that level.',
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('lists the ranking criteria in the order of the rules (RR-24)', () => {
     renderDialog()
 

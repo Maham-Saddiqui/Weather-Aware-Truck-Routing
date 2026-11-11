@@ -1,4 +1,5 @@
 import Stack from '@mui/material/Stack'
+import { zoneAbbreviation } from '../../shared/time'
 import type { HeatmapSliderProps } from '../../shared/types'
 import { ForecastCaption } from './ForecastCaption'
 import { SliderRow } from './SliderRow'
@@ -16,7 +17,7 @@ export function HeatmapSlider({ status, ...slider }: HeatmapSliderProps) {
           justifyContent: 'space-between',
         }}
       >
-        <ForecastCaption />
+        <ForecastCaption zoneName={zoneAbbreviation(slider.startUtc, slider.timeZone)} />
         {status}
       </Stack>
       <SliderRow {...slider} />

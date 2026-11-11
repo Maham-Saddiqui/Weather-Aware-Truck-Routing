@@ -48,5 +48,9 @@ export function useShareTrip() {
     setStatus(await shareOrCopy(window.location.href, canShare))
   }
 
-  return { status, canShare, share }
+  const copy = async () => {
+    setStatus(await copyLink(window.location.href))
+  }
+
+  return { status, canShare, share, copy }
 }
