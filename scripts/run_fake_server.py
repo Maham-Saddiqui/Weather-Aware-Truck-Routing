@@ -17,7 +17,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 os.environ.setdefault("DJANGO_SECRET_KEY", "local-rehearsal-only")
 os.environ.setdefault("DJANGO_DEBUG", "true")
 os.environ.setdefault("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-os.environ.setdefault("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+os.environ.setdefault("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174")
 
 from concurrent.futures import ThreadPoolExecutor
 
