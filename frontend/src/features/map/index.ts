@@ -4,4 +4,5 @@ import { lazy } from 'react'
 export const RouteMap = lazy(() =>
   import('./RouteMapCanvas').then((module) => ({ default: module.RouteMapCanvas })),
 )
+export { HeatmapStatus } from './HeatmapStatus'
 export { MapUnavailable } from './MapUnavailable'

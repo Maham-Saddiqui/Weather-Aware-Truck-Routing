@@ -56,6 +56,13 @@ export function zoneAbbreviation(isoInstant: string, timeZone: string): string {
   return clockParts(isoInstant, timeZone).get('timeZoneName') ?? timeZone
 }
 
+const MS_PER_HOUR = MINUTES_PER_HOUR * SECONDS_PER_MINUTE * 1000
+
+// The moment the forecast slider points at: departure plus the chosen hours (RR-28).
+export function instantAfterHours(startUtc: string, hours: number): Date {
+  return new Date(Date.parse(startUtc) + hours * MS_PER_HOUR)
+}
+
 export function formatDuration(totalSeconds: number): string {
   const totalMinutes = Math.round(totalSeconds / SECONDS_PER_MINUTE)
   const hours = Math.floor(totalMinutes / MINUTES_PER_HOUR)

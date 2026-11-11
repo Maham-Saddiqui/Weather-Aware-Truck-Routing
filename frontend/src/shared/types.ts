@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { components } from './api/generated/schema'
 
 export type Route = components['schemas']['Route']
@@ -21,6 +22,7 @@ export interface HeatmapSliderProps {
   hours: number
   hourOffset: number
   onChangeHourOffset: (hourOffset: number) => void
+  status?: ReactNode
 }
 
 export type Place = components['schemas']['Place']

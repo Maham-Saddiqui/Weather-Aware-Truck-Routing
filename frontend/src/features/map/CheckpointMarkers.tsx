@@ -6,12 +6,14 @@ interface CheckpointMarkersProps {
   route: Route
   selectedCheckpointIndex: number | null
   onSelectCheckpoint: (routeId: string, checkpointIndex: number) => void
+  forecastMs: number | null
 }
 
 export function CheckpointMarkers({
   route,
   selectedCheckpointIndex,
   onSelectCheckpoint,
+  forecastMs,
 }: CheckpointMarkersProps) {
   const selectCheckpoint = useCallback(
     (checkpointIndex: number) => {
@@ -24,6 +26,7 @@ export function CheckpointMarkers({
       key={checkpoint.index}
       checkpoint={checkpoint}
       isSelected={checkpoint.index === selectedCheckpointIndex}
+      isPassed={forecastMs !== null && Date.parse(checkpoint.eta_utc) <= forecastMs}
       onSelect={selectCheckpoint}
     />
   ))

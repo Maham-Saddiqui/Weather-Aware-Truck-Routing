@@ -4,6 +4,7 @@ import {
   formatClockTime,
   formatDuration,
   formatLocalTime,
+  instantAfterHours,
   tomorrowMorning,
   zoneAbbreviation,
 } from './time'
@@ -60,6 +61,12 @@ describe('time formatting', () => {
 
     expect(tomorrowMorning(lateEveningUtc, 'America/Los_Angeles').toISOString()).toBe(
       '2026-11-12T16:00:00.000Z',
+    )
+  })
+
+  it('adds whole hours to the departure instant for the forecast slider (RR-28)', () => {
+    expect(instantAfterHours('2026-11-12T23:00:00Z', 6).toISOString()).toBe(
+      '2026-11-13T05:00:00.000Z',
     )
   })
 
