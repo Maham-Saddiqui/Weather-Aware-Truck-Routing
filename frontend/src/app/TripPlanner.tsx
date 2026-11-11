@@ -21,7 +21,7 @@ export function TripPlanner() {
       }
       results={<ResultsPane planner={planner} />}
       map={<MapPane planner={planner} />}
-      slider={heatmapSliderFor(planner.results, planner.hourOffset, planner.setHourOffset)}
+      slider={heatmapSliderFor(planner)}
     />
   )
 }

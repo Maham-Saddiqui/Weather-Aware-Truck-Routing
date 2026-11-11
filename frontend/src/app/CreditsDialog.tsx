@@ -7,18 +7,11 @@ import Link from '@mui/material/Link'
 import List from '@mui/material/List'
 import ListItem from '@mui/material/ListItem'
 import ListItemText from '@mui/material/ListItemText'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '../shared/api/client'
+import { useRoutingCopyright } from './useAttribution'
 
 interface CreditsDialogProps {
   open: boolean
   onClose: () => void
-}
-
-function useRoutingCopyright(): string {
-  const attribution = useQuery({ queryKey: ['attribution'], queryFn: api.getAttribution })
-  if (attribution.data) return attribution.data.routing_copyright
-  return attribution.isError ? 'Routing copyright text is unavailable right now.' : 'Loading…'
 }
 
 export function CreditsDialog({ open, onClose }: CreditsDialogProps) {

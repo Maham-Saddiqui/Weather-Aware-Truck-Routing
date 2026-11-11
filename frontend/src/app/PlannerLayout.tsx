@@ -2,6 +2,7 @@ import { styled } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { PHONE_MAP_HEIGHT_PX } from '../shared/constants'
 
+const MAP_MIN_HEIGHT_PX = 280
 const PANEL_WIDTH_TABLET_PX = 340
 const PANEL_WIDTH_DESKTOP_PX = 460
 
@@ -49,7 +50,7 @@ const ResultsSlot = styled('section')(({ theme }) => ({
 const MapArea = styled('div')(({ theme }) => ({
   order: 2,
   position: 'relative',
-  [theme.breakpoints.up('md')]: { order: 0, minHeight: 0 },
+  [theme.breakpoints.up('md')]: { order: 0, minHeight: MAP_MIN_HEIGHT_PX },
 }))
 
 const MapFrame = styled('div')(({ theme }) => ({

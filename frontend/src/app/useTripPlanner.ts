@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTripResults } from '../features/route-results'
 import type { TripRequest, TripRun } from '../shared/types'
 import { encodeTrip, parseTrip } from './tripUrl'
@@ -19,6 +19,13 @@ export function useTripPlanner() {
   const [hourOffset, setHourOffset] = useState(0)
   const results = useTripResults(run)
 
+  const selectRoute = useCallback((routeId: string) => {
+    setSelection({ routeId, checkpointIndex: null })
+  }, [])
+  const selectCheckpoint = useCallback((routeId: string, checkpointIndex: number) => {
+    setSelection({ routeId, checkpointIndex })
+  }, [])
+
   const hasSelectedRoute = results.routes.some((route) => route.id === selection.routeId)
   const selectedRouteId = hasSelectedRoute ? selection.routeId : (results.routes[0]?.id ?? null)
 
@@ -38,12 +45,8 @@ export function useTripPlanner() {
     retry: () => {
       setRun((previous) => (previous ? { ...previous, runId: previous.runId + 1 } : null))
     },
-    selectRoute: (routeId: string) => {
-      setSelection({ routeId, checkpointIndex: null })
-    },
-    selectCheckpoint: (routeId: string, checkpointIndex: number) => {
-      setSelection({ routeId, checkpointIndex })
-    },
+    selectRoute,
+    selectCheckpoint,
   }
 }
 
