@@ -1,10 +1,12 @@
+import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import type { Dayjs } from 'dayjs'
-import { zoneAbbreviation } from '../../shared/time'
+import { dayjs, zoneAbbreviation } from '../../shared/time'
 import type { OriginZone, OriginZoneState } from './useOriginTimeZone'
+import { DEPARTURE_WINDOW_HINT, departureWindow } from './validation'
 
 interface DepartureFieldProps {
   value: Dayjs | null
@@ -27,7 +29,21 @@ function zoneHint(value: Dayjs | null, { state, timeZone }: OriginZone): string 
   return hints[state]
 }
 
+function helperLines(value: Dayjs | null, zone: OriginZone) {
+  return (
+    <>
+      <Box component="span" sx={{ display: 'block' }}>
+        {zoneHint(value, zone)}
+      </Box>
+      <Box component="span" sx={{ display: 'block' }}>
+        {DEPARTURE_WINDOW_HINT}
+      </Box>
+    </>
+  )
+}
+
 export function DepartureField({ value, zone, error, onChange }: DepartureFieldProps) {
+  const { earliest, latest } = departureWindow(dayjs())
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <DateTimePicker
@@ -35,11 +51,13 @@ export function DepartureField({ value, zone, error, onChange }: DepartureFieldP
         value={value}
         timezone={zone.timeZone}
         ampm={false}
+        minDateTime={earliest.tz(zone.timeZone)}
+        maxDateTime={latest.tz(zone.timeZone)}
         onChange={onChange}
         slotProps={{
           textField: {
             error: error !== undefined,
-            helperText: error ?? zoneHint(value, zone),
+            helperText: error ?? helperLines(value, zone),
           },
         }}
       />

@@ -35,10 +35,18 @@ function destinationError(origin: Place | null, destination: Place | null): stri
   return isSamePlace ? 'Origin and destination must be different places.' : undefined
 }
 
+export const DEPARTURE_WINDOW_HINT = `Departures from now to ${String(MAX_DEPARTURE_DAYS_AHEAD)} days ahead`
+
+// RR-29: the current hour is accepted, so the window opens at the start of this hour.
+export function departureWindow(now: Dayjs): { earliest: Dayjs; latest: Dayjs } {
+  return { earliest: now.startOf('hour'), latest: now.add(MAX_DEPARTURE_DAYS_AHEAD, 'day') }
+}
+
 export function departureError(departure: Dayjs | null, now: Dayjs): string | undefined {
   if (!departure?.isValid()) return 'Pick a departure date and time.'
-  if (departure.isBefore(now.startOf('hour'))) return 'Departure cannot be in the past.'
-  if (departure.isAfter(now.add(MAX_DEPARTURE_DAYS_AHEAD, 'day'))) {
+  const { earliest, latest } = departureWindow(now)
+  if (departure.isBefore(earliest)) return 'Departure cannot be in the past.'
+  if (departure.isAfter(latest)) {
     return `Departure must be within the next ${String(MAX_DEPARTURE_DAYS_AHEAD)} days.`
   }
   return undefined
