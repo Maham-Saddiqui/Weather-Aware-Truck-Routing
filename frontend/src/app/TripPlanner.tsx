@@ -14,7 +14,11 @@ export function TripPlanner() {
     <PlannerLayout
       form={
         <ErrorBoundary area="the trip form">
-          <TripForm onSubmit={planner.submit} />
+          <TripForm
+            initialTrip={planner.run?.trip ?? null}
+            isBusy={results.isPending}
+            onSubmit={planner.submit}
+          />
         </ErrorBoundary>
       }
       results={

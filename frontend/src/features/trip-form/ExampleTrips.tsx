@@ -6,10 +6,11 @@ import type { TripRequest } from '../../shared/types'
 import { EXAMPLE_TRIPS, exampleTripRequest } from './examples'
 
 interface ExampleTripsProps {
+  isBusy: boolean
   onChoose: (trip: TripRequest) => void
 }
 
-export function ExampleTrips({ onChoose }: ExampleTripsProps) {
+export function ExampleTrips({ isBusy, onChoose }: ExampleTripsProps) {
   return (
     <Stack spacing={1} component="section" aria-labelledby="example-trips-title">
       <Typography id="example-trips-title" variant="h3" component="h2">
@@ -21,6 +22,7 @@ export function ExampleTrips({ onChoose }: ExampleTripsProps) {
             key={example.name}
             variant="outlined"
             size="small"
+            disabled={isBusy}
             onClick={() => {
               onChoose(exampleTripRequest(example, dayjs()))
             }}

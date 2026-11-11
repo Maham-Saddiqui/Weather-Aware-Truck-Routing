@@ -19,5 +19,5 @@ export function useTripResults(run: TripRun | null): TripResults {
 
   const results = deriveTripResults(primary, compare, run !== null)
   const isServerWaking = useElapsedFlag(results.phase === 'loading', SERVER_WAKING_DELAY_MS)
-  return { ...results, isServerWaking }
+  return { ...results, isPending: primary.isFetching || compare.isFetching, isServerWaking }
 }

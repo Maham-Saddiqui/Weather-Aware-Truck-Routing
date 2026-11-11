@@ -18,6 +18,7 @@ export interface TripResults {
   routingProvider: RoutingProvider | null
   weather: WeatherStatus | null
   alternativesUnavailable: boolean
+  isPending: boolean
   isServerWaking: boolean
   error: unknown
 }
@@ -36,6 +37,7 @@ export const EMPTY_RESULTS: TripResults = {
   routingProvider: null,
   weather: null,
   alternativesUnavailable: false,
+  isPending: false,
   isServerWaking: false,
   error: null,
 }

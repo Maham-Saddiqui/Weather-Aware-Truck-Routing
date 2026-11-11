@@ -1,6 +1,7 @@
 import type { Problem } from '../types'
 
-export type ProblemCode = Problem['code'] | 'network_error' | 'unreadable_response'
+export type ProblemCode =
+  Problem['code'] | 'network_error' | 'unreadable_response' | 'suggestions_unavailable'
 
 const MESSAGES: Record<ProblemCode, string> = {
   validation_error: 'Some trip details are not valid. Check the form and try again.',
@@ -11,6 +12,8 @@ const MESSAGES: Record<ProblemCode, string> = {
   internal_error: 'Something went wrong on our side. Try again in a minute.',
   network_error: 'The server could not be reached. Check your connection and try again.',
   unreadable_response: 'The server sent an answer the app could not read. Try again in a minute.',
+  suggestions_unavailable:
+    'Address suggestions are unavailable right now. Try again in a moment, or use an example trip.',
 }
 
 export class ApiError extends Error {
