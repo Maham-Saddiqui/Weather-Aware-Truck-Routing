@@ -1,6 +1,8 @@
+import { ThemeProvider } from '@mui/material/styles'
 import { act, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { theme } from '../../app/theme'
 import type { RouteMapProps } from '../../shared/types'
 import { RouteMapCanvas } from './RouteMapCanvas'
 import { TWO_ROUTES } from './routeFixtures'
@@ -35,16 +37,18 @@ const onSelectRoute = vi.fn()
 
 function renderCanvas(overrides: Partial<RouteMapProps> = {}) {
   render(
-    <RouteMapCanvas
-      routes={TWO_ROUTES}
-      selectedRouteId="route-north"
-      selectedCheckpointIndex={null}
-      heatmap={null}
-      hourOffset={0}
-      onSelectRoute={onSelectRoute}
-      onSelectCheckpoint={vi.fn()}
-      {...overrides}
-    />,
+    <ThemeProvider theme={theme}>
+      <RouteMapCanvas
+        routes={TWO_ROUTES}
+        selectedRouteId="route-north"
+        selectedCheckpointIndex={null}
+        heatmap={null}
+        hourOffset={0}
+        onSelectRoute={onSelectRoute}
+        onSelectCheckpoint={vi.fn()}
+        {...overrides}
+      />
+    </ThemeProvider>,
   )
 }
 
@@ -121,6 +125,12 @@ describe('RouteMapCanvas first view (REQ-08)', () => {
 })
 
 describe('RouteMapCanvas legend and failure (FE-09, REQ-09)', () => {
+  it('keys the two routes by colour for phone-width maps', () => {
+    renderCanvas()
+
+    expect(screen.getByLabelText('Route colours')).toHaveTextContent('Route 1Route 2')
+  })
+
   it('shows the legend even when there is no heatmap', () => {
     renderCanvas()
 
