@@ -46,7 +46,7 @@ def _log_summary(endpoint: str, notes: TripNotes) -> None:
         backup_used=bool(notes.backup_reason),
         backup_reason=notes.backup_reason or None,
         alternatives_unavailable=notes.alternatives_unavailable,
-        alternatives_tier=notes.alternatives_tier or None,
+        alternatives_tier=notes.alternatives_tier,
         long_trip=notes.long_trip,
         straight_line_miles=notes.straight_line_miles,
         alternatives_read_timeout_s=notes.alternatives_read_timeout_s,

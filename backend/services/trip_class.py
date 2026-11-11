@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from domain.distance import straight_line_miles
 from domain.units import WHOLE_NUMBER, round_half_up
+from providers.trip_notes import AlternativesTier
 from services.trip_request import TripRequest
 
 MAX_ROUTES_SHOWN = 3
@@ -13,10 +14,6 @@ ALTERNATIVES_ASKED = MAX_ROUTES_SHOWN - 1
 LONG_TRIP_STRAIGHT_LINE_MILES = Decimal(1000)
 
 MILES_LOGGED_IN_STEPS_OF = 10
-
-TIER_TWO = "two"
-TIER_ONE = "one"
-TIER_NONE = "none"
 
 NORMAL_ALTERNATIVES_READ_TIMEOUT_S = 12.0
 LONG_ALTERNATIVES_READ_TIMEOUT_S = 22.0
@@ -33,7 +30,7 @@ class FallbackTier:
     A read timeout of None is the client's own (8 s).
     """
 
-    name: str
+    tier: AlternativesTier
     alternatives: int
     read_timeout_s: float | None
 
@@ -65,7 +62,7 @@ NORMAL_TRIP = TripClass(
     alternatives_read_timeout_s=NORMAL_ALTERNATIVES_READ_TIMEOUT_S,
     eco_alternatives=ALTERNATIVES_ASKED,
     eco_read_timeout_s=NORMAL_ALTERNATIVES_READ_TIMEOUT_S,
-    fallback_tiers=(FallbackTier(TIER_NONE, 0, None),),
+    fallback_tiers=(FallbackTier(AlternativesTier.NONE, 0, None),),
     deadline_s=None,
 )
 
@@ -81,8 +78,8 @@ LONG_TRIP = TripClass(
     eco_alternatives=0,
     eco_read_timeout_s=None,
     fallback_tiers=(
-        FallbackTier(TIER_ONE, 1, ONE_ALTERNATIVE_READ_TIMEOUT_S),
-        FallbackTier(TIER_NONE, 0, SINGLE_ROUTE_READ_TIMEOUT_S),
+        FallbackTier(AlternativesTier.ONE, 1, ONE_ALTERNATIVE_READ_TIMEOUT_S),
+        FallbackTier(AlternativesTier.NONE, 0, SINGLE_ROUTE_READ_TIMEOUT_S),
     ),
     deadline_s=LONG_TRIP_DEADLINE_S,
 )

@@ -3,8 +3,17 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from providers.event_log import elapsed_ms
+
+
+class AlternativesTier(StrEnum):
+    """How many alternative routes TomTom was asked for in the call that answered; logged as is."""
+
+    TWO = "two"
+    ONE = "one"
+    NONE = "none"
 
 
 @dataclass(slots=True)
@@ -14,7 +23,7 @@ class TripNotes:
     routing_provider: str = ""
     backup_reason: str = ""
     alternatives_unavailable: bool = False
-    alternatives_tier: str = ""
+    alternatives_tier: AlternativesTier | None = None
     long_trip: bool = False
     straight_line_miles: int = 0
     alternatives_read_timeout_s: float | None = None

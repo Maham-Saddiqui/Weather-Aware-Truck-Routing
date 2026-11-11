@@ -17,9 +17,9 @@ from providers.routing.port import (
     RoutingProviderName,
     RoutingUnavailable,
 )
-from providers.trip_notes import current_notes, stage
+from providers.trip_notes import AlternativesTier, current_notes, stage
 from services.environment import TripEnvironment
-from services.trip_class import MAX_ROUTES_SHOWN, TIER_NONE, TIER_TWO, TripClass, classify
+from services.trip_class import MAX_ROUTES_SHOWN, TripClass, classify
 from services.trip_request import TripRequest
 
 BACKUP_GUARD_SPENT = "daily_guard_spent"
@@ -87,7 +87,7 @@ def _compare_routes(
     except RoutingUnavailable:
         eco_call.cancel()
         return _fallback_routes(env, fastest, trip_class)
-    current_notes().alternatives_tier = TIER_TWO
+    current_notes().alternatives_tier = AlternativesTier.TWO
     if len(distinct) < MAX_ROUTES_SHOWN:
         distinct = drop_near_duplicates((*distinct, *eco_call.result()), shapes)
     return RoutedRoutes(env.routing.name, choose_variety(distinct, MAX_ROUTES_SHOWN, shapes))
@@ -123,8 +123,8 @@ def _fallback_routes(
         except RoutingUnavailable:
             continue
         notes = current_notes()
-        notes.alternatives_tier = tier.name
-        notes.alternatives_unavailable = tier.name == TIER_NONE
+        notes.alternatives_tier = tier.tier
+        notes.alternatives_unavailable = tier.tier is AlternativesTier.NONE
         return _varied(env.routing.name, routes)
     current_notes().backup_reason = BACKUP_TOMTOM_UNAVAILABLE
     return _from_backup(env.backup_routing, alternatives)
