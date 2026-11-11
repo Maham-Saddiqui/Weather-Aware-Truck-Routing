@@ -4,7 +4,7 @@
 
 A truck driver enters an origin, a destination, a departure time and a cargo weight. The app returns up to three truck routes, rates the weather at checkpoints along each route **at the time the truck will be there**, recommends the safest route in one plain sentence, and shows everything on a map with a corridor heatmap and a 0 to 48 hour forecast slider.
 
-- Live app: https://maham-spotter.vercel.app (the server sleeps when idle, so the first request can take up to a minute)
+- Live app: https://maham-spotter.vercel.app (the free server is kept awake by an external check every 5 minutes; after a restart or a missed check, the first request can still take up to a minute)
 - Four one-click example trips fill the form; everything works from them alone.
 
 ## How risk is calculated
@@ -55,7 +55,9 @@ Each choice is a numbered rule in [`docs/domain/risk-rules.md`](docs/domain/risk
 ## How it is built
 
 ```
-Browser (React, Material UI, TypeScript, Vite)  ->  Django REST Framework server  ->  routing, weather, time-zone providers
+Browser (React, Material UI, TypeScript, Vite)  ->  Django REST Framework server  ->  TomTom (routes), Valhalla (backup routes), Open-Meteo (weather), an offline time-zone library
+        |
+        +-->  OpenFreeMap (map tiles) and Photon (address suggestions), called directly by the browser
 ```
 
 - **Server layers** (dependencies point inward, enforced by an import check): `trips` (HTTP, validation) -> `services` (one use case per request) -> `providers` (ports and adapters) -> `domain` (pure rules, exact decimals, no I/O).
@@ -99,7 +101,7 @@ The first route is always on screen within a few seconds, because the page asks 
 
 ## How it performs on a free server
 
-- The server runs on Render's free plan: a tenth of a processor, 512 MB of memory, and it sleeps after 15 minutes without traffic. The first request after a sleep takes 20 to 50 seconds; the page pings the server when it opens, so it starts waking while the driver types, and a keep-warm check calls it regularly.
+- The server runs on Render's free plan: a tenth of a processor, 512 MB of memory, and it sleeps after 15 minutes without traffic. The first request after a sleep takes 20 to 50 seconds; the page pings the server when it opens, so it starts waking while the driver types, and an external check calls it every 5 minutes to keep it awake.
 - The server's own work is small. In the live logs on 11 November 2026, rating every checkpoint and building the heatmap took roughly 15 to 100 ms per trip, and peak memory stayed around 125 MB of the 512 MB. That is why one process with a tenth of a processor is enough.
 - Almost all of the time is spent waiting for outside services. TomTom answered a three-route request in about 2 to 4 seconds for trips of a few hundred miles and about 6 seconds at 1,000 miles; longer trips take longer because its compute time grows with route length and with the number of alternatives (see "Very long trips"). The first route appears in about 1 to 2 seconds after the driver submits, because it comes from a separate, faster request, so the screen is never blocked; the full comparison follows, typically within 3 to 6 seconds. Very long trips take longer: that is the routing provider's computing time, not the server's own work, but it is what a driver waits for.
 - Weather is one batched request per trip and is cached per map cell for about an hour, so repeat trips and the example trips cost no provider calls.
@@ -130,7 +132,7 @@ The server runs on Render (gunicorn with exactly one worker process and eight th
 
 ## Trade-offs and limits
 
-- The free server tiers are small (a tenth of a processor, 512 MB, sleep after 15 minutes idle). The page shows a "waking the server" state, and the design keeps work per request small.
+- The free server tiers are small (a tenth of a processor, 512 MB, sleep after 15 minutes idle). An external check every 5 minutes keeps the server awake, and the page shows a "waking the server" state if it still has to wake. The design keeps work per request small.
 - The backup router (Valhalla's public server) refuses truck routes longer than about 930 miles, so if TomTom is down, longer trips show a plain "routing unavailable" message instead of a backup route.
 - Weather comes from a free service with per-minute and per-day limits; weather is fetched in one batched call per request and cached per map cell for about an hour. When the service is busy the routes are still shown, without ratings, with a plain message.
 - TomTom's free key is for evaluation. Nothing from TomTom is cached or stored, its credit text is shown in the app, and no comparison with other providers is published.
