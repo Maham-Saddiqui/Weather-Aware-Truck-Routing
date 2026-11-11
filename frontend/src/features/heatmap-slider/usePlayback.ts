@@ -8,29 +8,35 @@ export type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number]
 
 interface PlaybackInput {
   hourOffset: number
+  lastHour: number
   playUntilHour: number
   onChangeHourOffset: (hourOffset: number) => void
   onPlay?: () => void
 }
 
+export type PlayAction = 'play' | 'keep-playing' | 'replay'
+
 export interface Playback {
   isPlaying: boolean
   isUnavailable: boolean
-  isFinished: boolean
+  nextAction: PlayAction
   speed: PlaybackSpeed
   setSpeed: (speed: PlaybackSpeed) => void
   togglePlaying: () => void
   stopPlaying: () => void
 }
 
-interface SteppingInput extends PlaybackInput {
+interface SteppingInput {
   isPlaying: boolean
+  stopAtHour: number | null
   speed: PlaybackSpeed
+  hourOffset: number
+  onChangeHourOffset: (hourOffset: number) => void
 }
 
 function usePlayStepping(
-  { isPlaying, speed, hourOffset, playUntilHour, onChangeHourOffset }: SteppingInput,
-  setWantsToPlay: (wantsToPlay: boolean) => void,
+  { isPlaying, stopAtHour, speed, hourOffset, onChangeHourOffset }: SteppingInput,
+  setStopAtHour: (stopAtHour: number | null) => void,
 ) {
   useEffect(() => {
     if (!isPlaying) {
@@ -38,52 +44,57 @@ function usePlayStepping(
     }
     const timer = setTimeout(() => {
       onChangeHourOffset(hourOffset + 1)
-      setWantsToPlay(hourOffset + 1 < playUntilHour)
+      if (hourOffset + 1 >= (stopAtHour ?? 0)) {
+        setStopAtHour(null)
+      }
     }, PLAYBACK_STEP_MS / speed)
     return () => {
       clearTimeout(timer)
     }
-  }, [isPlaying, hourOffset, playUntilHour, speed, onChangeHourOffset, setWantsToPlay])
+  }, [isPlaying, stopAtHour, hourOffset, speed, onChangeHourOffset, setStopAtHour])
 }
 
-// Plays the trip, not the whole forecast: one hour per step (one second at normal speed, faster at 2x and 4x) from departure to just after arrival, only when the
-// user presses play, and never when reduced motion is requested (FE-07). The slider itself still spans every hour.
-export function usePlayback({
-  hourOffset,
-  playUntilHour,
-  onChangeHourOffset,
-  onPlay,
-}: PlaybackInput): Playback {
-  const isUnavailable = useMediaQuery('(prefers-reduced-motion: reduce)')
-  const [wantsToPlay, setWantsToPlay] = useState(false)
-  const [speed, setSpeed] = useState<PlaybackSpeed>(1)
-  const isFinished = hourOffset >= playUntilHour
-  const isPlaying = wantsToPlay && !isUnavailable && !isFinished
+function nextActionFor({ hourOffset, lastHour, playUntilHour }: PlaybackInput): PlayAction {
+  if (hourOffset >= lastHour) {
+    return 'replay'
+  }
+  return hourOffset >= playUntilHour ? 'keep-playing' : 'play'
+}
 
-  usePlayStepping(
-    { isPlaying, speed, hourOffset, playUntilHour, onChangeHourOffset },
-    setWantsToPlay,
-  )
+// Plays one hour per step (one second at normal speed, faster at 2x and 4x), only when the user presses play, and never
+// when reduced motion is requested (FE-07). From departure it stops at arrival; pressed again there it keeps going to
+// the last hour, and pressed at the last hour it starts over (REQ-09). The slider itself spans every hour.
+export function usePlayback(input: PlaybackInput): Playback {
+  const { hourOffset, lastHour, playUntilHour, onChangeHourOffset, onPlay } = input
+  const isUnavailable = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const [stopAtHour, setStopAtHour] = useState<number | null>(null)
+  const [speed, setSpeed] = useState<PlaybackSpeed>(1)
+  const nextAction = nextActionFor(input)
+  const isPlaying = stopAtHour !== null && !isUnavailable && hourOffset < stopAtHour
+
+  usePlayStepping({ isPlaying, stopAtHour, speed, hourOffset, onChangeHourOffset }, setStopAtHour)
 
   const togglePlaying = () => {
-    if (isFinished) {
+    if (isPlaying) {
+      setStopAtHour(null)
+      return
+    }
+    if (nextAction === 'replay') {
       onChangeHourOffset(0)
     }
-    if (isFinished || !isPlaying) {
-      onPlay?.()
-    }
-    setWantsToPlay(isFinished || !isPlaying)
+    onPlay?.()
+    setStopAtHour(nextAction === 'keep-playing' ? lastHour : playUntilHour)
   }
 
   return {
     isPlaying,
     isUnavailable,
-    isFinished,
+    nextAction,
     speed,
     setSpeed,
     togglePlaying,
     stopPlaying: () => {
-      setWantsToPlay(false)
+      setStopAtHour(null)
     },
   }
 }

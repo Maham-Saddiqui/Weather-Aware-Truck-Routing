@@ -53,13 +53,14 @@ afterEach(() => {
 })
 
 describe('playback speed next to Play (REQ-09, FE-07)', () => {
-  it('shows the speed in the button and says in its name what pressing does', () => {
+  it('shows the speed in the button and starts its name with that text, then says what pressing does (WCAG 2.5.3)', () => {
     render(<SliderWithState onChange={vi.fn()} />)
 
-    const button = screen.getByRole('button', { name: /^Playback speed 1x/ })
+    const button = screen.getByRole('button', { name: /^1x speed/ })
 
     expect(button).toHaveTextContent('1x speed')
-    expect(button).toHaveAccessibleName('Playback speed 1x. Press to play at 2x.')
+    expect(button.getAttribute('aria-label')).toMatch(/^1x speed/)
+    expect(button).toHaveAccessibleName('1x speed. Press to change to 2x speed.')
   })
 
   it('plays one hour per second at the default speed', () => {
@@ -75,13 +76,13 @@ describe('playback speed next to Play (REQ-09, FE-07)', () => {
   it('steps through 2x, 4x and back to 1x', () => {
     render(<SliderWithState onChange={vi.fn()} />)
 
-    press('Playback speed 1x. Press to play at 2x.')
-    expect(screen.getByRole('button', { name: /^Playback speed 2x/ })).toHaveTextContent('2x')
-    press('Playback speed 2x. Press to play at 4x.')
-    expect(screen.getByRole('button', { name: /^Playback speed 4x/ })).toHaveTextContent('4x')
-    press('Playback speed 4x. Press to play at 1x.')
+    press('1x speed. Press to change to 2x speed.')
+    expect(screen.getByRole('button', { name: /^2x speed/ })).toHaveTextContent('2x')
+    press('2x speed. Press to change to 4x speed.')
+    expect(screen.getByRole('button', { name: /^4x speed/ })).toHaveTextContent('4x')
+    press('4x speed. Press to change to 1x speed.')
 
-    expect(screen.getByRole('button', { name: /^Playback speed 1x/ })).toHaveTextContent('1x')
+    expect(screen.getByRole('button', { name: /^1x speed/ })).toHaveTextContent('1x')
   })
 
   it.each([
@@ -96,7 +97,7 @@ describe('playback speed next to Play (REQ-09, FE-07)', () => {
 
       for (let count = 0; count < presses; count += 1) {
         act(() => {
-          screen.getByRole('button', { name: /^Playback speed/ }).click()
+          screen.getByRole('button', { name: /speed\. Press to change/ }).click()
         })
       }
       press('Play the trip')
@@ -110,9 +111,9 @@ describe('playback speed next to Play (REQ-09, FE-07)', () => {
     vi.useRealTimers()
     render(<SliderWithState onChange={vi.fn()} />)
 
-    screen.getByRole('button', { name: /^Playback speed 1x/ }).focus()
+    screen.getByRole('button', { name: /^1x speed/ }).focus()
     await userEvent.keyboard('{Enter}')
 
-    expect(screen.getByRole('button', { name: /^Playback speed 2x/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: /^2x speed/ })).toBeVisible()
   })
 })

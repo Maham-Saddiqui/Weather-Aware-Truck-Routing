@@ -8,6 +8,7 @@ const START_UTC = '2026-11-12T23:00:00Z'
 const PLAYBACK_STEP_MS = 1000
 const PLAY = 'Play the trip'
 const REPLAY = 'Replay the trip'
+const KEEP_PLAYING = 'Keep playing the forecast'
 
 interface SliderWithStateProps {
   initialHour?: number
@@ -177,7 +178,7 @@ describe('HeatmapSlider play button (FE-07: reduced motion respected, no autopla
     expect(screen.getByRole('button', { name: 'Pause' })).toBeVisible()
   })
 
-  it('tells the page each time playing starts, resumes or restarts, but not when it pauses', () => {
+  it('tells the page each time playing starts, resumes or continues, but not when it pauses', () => {
     const onPlay = vi.fn()
     render(<SliderWithState initialHour={46} playUntilHour={47} onPlay={onPlay} />)
 
@@ -188,7 +189,7 @@ describe('HeatmapSlider play button (FE-07: reduced motion respected, no autopla
     pressButton(PLAY)
     expect(onPlay).toHaveBeenCalledTimes(2)
     advanceTime(5 * PLAYBACK_STEP_MS)
-    pressButton(REPLAY)
+    pressButton('Keep playing the forecast')
     expect(onPlay).toHaveBeenCalledTimes(3)
   })
 
@@ -234,9 +235,9 @@ describe('HeatmapSlider plays the trip, not the whole forecast (REQ-09, RR-19, R
     return hoursReported(onChange)
   }
 
-  it('stops one hour after a 2 hour trip arrives and offers a replay', () => {
+  it('stops one hour after a 2 hour trip arrives and offers to keep playing the forecast', () => {
     expect(playToTheEnd(3)).toEqual([1, 2, 3])
-    expect(screen.getByRole('button', { name: REPLAY })).toBeVisible()
+    expect(screen.getByRole('button', { name: KEEP_PLAYING })).toBeVisible()
   })
 
   it('stops after a 20 hour trip at its own end', () => {
@@ -257,14 +258,14 @@ describe('HeatmapSlider plays the trip, not the whole forecast (REQ-09, RR-19, R
     expect(screen.getByRole('slider')).toHaveAttribute('aria-valuenow', '48')
   })
 
-  it('restarts at hour 0 when play is pressed after scrubbing beyond the end', () => {
+  it('continues from the current hour when play is pressed after scrubbing beyond arrival', () => {
     const onChange = vi.fn()
     render(<SliderWithState playUntilHour={3} initialHour={30} onChange={onChange} />)
 
-    pressButton(REPLAY)
+    pressButton(KEEP_PLAYING)
+    advanceSteps(60)
 
-    expect(onChange).toHaveBeenCalledWith(0)
-    expect(screen.getByRole('button', { name: 'Pause' })).toBeVisible()
+    expect(hoursReported(onChange)).toEqual(Array.from({ length: 18 }, (_, step) => 31 + step))
   })
 
   it('does not start playing again by itself when the next route is longer', () => {
@@ -317,6 +318,12 @@ describe('HeatmapSlider caption (REQ-09, FE-07: self-explanatory controls)', () 
     render(<SliderWithState />)
 
     expect(screen.getByText('Forecast time')).toBeVisible()
+  })
+
+  it('does not make "Forecast time" a heading, so it cannot break the heading order', () => {
+    render(<SliderWithState />)
+
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
   })
 
   it('explains map, truck and dots in a tooltip reachable by keyboard', async () => {
