@@ -41,7 +41,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   e2e:
-    runs-on: ubuntu-latest
+    # Playwright's dependency installer does not support Ubuntu 26 (the new ubuntu-latest) yet.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
