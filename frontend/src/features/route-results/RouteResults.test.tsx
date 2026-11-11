@@ -52,8 +52,8 @@ describe('route cards (REQ-06, FE-19)', () => {
     const second = summaryWith(makeRoute('route-y', { rank: 1 }), { distance_miles: '60.5' })
     renderResults(resultsWith({ routes: [first, second], recommendation: null }))
 
-    const firstCard = within(screen.getByRole('button', { name: 'Route 1' }))
-    const secondCard = within(screen.getByRole('button', { name: 'Route 2' }))
+    const firstCard = within(screen.getByRole('article', { name: 'Route 1' }))
+    const secondCard = within(screen.getByRole('article', { name: 'Route 2' }))
 
     expect(firstCard.getByText('70.0 mi')).toBeInTheDocument()
     expect(secondCard.getByText('60.5 mi')).toBeInTheDocument()
@@ -67,7 +67,7 @@ describe('route cards (REQ-06, FE-19)', () => {
     expect(screen.getByText('No data 0 mi')).toBeInTheDocument()
     expect(screen.getByText('Average risk 0.29')).toBeInTheDocument()
     expect(
-      within(screen.getByRole('button', { name: 'Route 1' })).getByText('Moderate', {
+      within(screen.getByRole('article', { name: 'Route 1' })).getByText('Moderate', {
         selector: '.MuiChip-label',
       }),
     ).toBeInTheDocument()
@@ -94,6 +94,51 @@ describe('route cards (REQ-06, FE-19)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Route 2' }))
 
     expect(props.onSelectRoute).toHaveBeenCalledWith('route-b')
+  })
+})
+
+describe('route cards for keyboard and screen readers (FE-07, NFR-03)', () => {
+  it('keeps the route summary outside the select button so it is read as text', () => {
+    renderResults(resultsWith({}))
+
+    const card = screen.getByRole('article', { name: 'Route 1' })
+
+    expect(within(card).getByRole('heading', { name: 'Route 1' })).toBeInTheDocument()
+    expect(within(card).getByText('Recommended')).toBeInTheDocument()
+    expect(within(card).getByRole('button', { name: 'Route 1' })).toHaveTextContent(/^Route 1$/)
+  })
+
+  it.each([['{Enter}'], [' ']])('selects a route from the keyboard with %j', async (key) => {
+    const props = renderResults(resultsWith({}))
+
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'Route 1' })).toHaveFocus()
+    await userEvent.tab()
+    await userEvent.keyboard(key)
+
+    expect(props.onSelectRoute).toHaveBeenCalledWith('route-b')
+  })
+
+  it('tells assistive technology which route is chosen', () => {
+    renderResults(resultsWith({}), { selectedRouteId: 'route-b' })
+
+    expect(screen.getByRole('button', { name: 'Route 1' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Route 2' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('keeps cards at full strength when no route is recommended, so text stays readable', () => {
+    const none: Recommendation = {
+      status: 'none_eligible',
+      route_id: null,
+      least_bad_route_id: 'route-b',
+      deciding_criterion: null,
+      sentence: 'No route is safe enough to recommend.',
+    }
+    renderResults(resultsWith({ recommendation: none }))
+
+    for (const card of screen.getAllByRole('article')) {
+      expect(getComputedStyle(card).opacity).not.toBe('0.7')
+    }
   })
 })
 
@@ -257,5 +302,18 @@ describe('checkpoint details (REQ-08, RR-10)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Mile 25/ }))
 
     expect(props.onSelectCheckpoint).toHaveBeenCalledWith('route-a', 1)
+  })
+
+  it('lists checkpoints as list items and marks the chosen one', () => {
+    renderResults(resultsWith({}), { selectedCheckpointIndex: 1 })
+
+    const list = screen.getByRole('list', { name: 'Checkpoints' })
+    const rows = within(list).getAllByRole('listitem')
+    const buttons = within(list).getAllByRole('button')
+
+    expect(rows.length).toBeGreaterThan(1)
+    expect(buttons).toHaveLength(rows.length)
+    expect(buttons[1]).toHaveAttribute('aria-current', 'true')
+    expect(buttons[0]).not.toHaveAttribute('aria-current')
   })
 })

@@ -7,7 +7,7 @@ const WAKING_MESSAGE =
 
 export function LoadingResults({ isServerWaking }: { isServerWaking: boolean }) {
   return (
-    <Stack spacing={2} aria-busy>
+    <Stack spacing={2}>
       <Typography aria-live="polite">
         {isServerWaking ? WAKING_MESSAGE : 'Planning your trip…'}
       </Typography>
