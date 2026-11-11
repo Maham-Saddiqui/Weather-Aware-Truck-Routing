@@ -105,6 +105,8 @@ LEAST_BAD_NOTE = " The least-bad route is shown greyed out, for information only
 
 def rank_routes(candidates: Sequence[Candidate]) -> Ranking:
     """RR-22 to RR-26: rank the eligible routes, order the rest least-bad first, explain."""
+    if not candidates:
+        raise ValueError("At least one route is needed to rank")
     eligible = sorted((c for c in candidates if c.summary.is_eligible), key=_ranking_key)
     ineligible = sorted((c for c in candidates if not c.summary.is_eligible), key=_least_bad_key)
     ranked = tuple(RankedRoute(c.route_id, rank) for rank, c in enumerate(eligible, start=1))

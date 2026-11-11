@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+import pytest
+
 from domain.levels import Level
 from domain.ranking import (
     Candidate,
@@ -226,3 +228,9 @@ def test_rr26_the_sentence_has_no_data_note_when_every_route_is_fully_rated() ->
     ranking = rank_routes([candidate("a", ["100"], [LOW]), candidate("b", ["100"], [MODERATE])])
 
     assert "no data" not in ranking.recommendation.sentence
+
+
+def test_rr22_ranking_no_routes_at_all_is_refused_with_a_clear_message() -> None:
+    """RR-22."""
+    with pytest.raises(ValueError, match="At least one route is needed"):
+        rank_routes([])
