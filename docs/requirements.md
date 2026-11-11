@@ -1,6 +1,6 @@
 # Requirements
 
-Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval). Requirement IDs (`REQ-nn`) are stable. Risk behaviour lives in `docs/domain/risk-rules.md` (rules `RR-nn`) and is not repeated here.
+Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval). Amended during implementation with the owner's approval on 2026-11-11; see docs/changelog.md. Requirement IDs (`REQ-nn`) are stable. Risk behaviour lives in `docs/domain/risk-rules.md` (rules `RR-nn`) and is not repeated here.
 
 ## 1. Goal
 
@@ -11,8 +11,8 @@ Help a truck driver choose the safest route for a trip, balancing weather risk, 
 | ID | Requirement |
 |---|---|
 | REQ-01 | The driver enters origin, destination, departure date and time, and cargo weight in pounds, and chooses a checkpoint spacing of 10, 25 or 50 miles (default 25). Limits are in RR-29. |
-| REQ-02 | Origin and destination are chosen from address suggestions that appear while typing (after 3 characters, US results only; the server also rejects places outside the lower 48 states). Free text without a chosen suggestion is not accepted. |
-| REQ-03 | The app produces up to 3 distinct truck route options for the trip, chosen for variety (the fastest, then the routes that overlap least), so the weather ranking has real alternatives to compare. If fewer exist, it shows what exists. |
+| REQ-02 | Origin and destination are chosen from address suggestions that appear while typing (after 3 characters, US results only; the server also rejects places outside the lower 48 states). Free text without a chosen suggestion is not accepted. Each suggestion shows the kind of place (state, county, city), so "New York" the state and "New York" the city can be told apart. |
+| REQ-03 | The app produces up to 3 distinct truck route options for the trip, chosen for variety (the fastest, then the routes that overlap least), so the weather ranking has real alternatives to compare. If fewer exist, it shows what exists. Very long trips are given more time and fewer alternatives per request (architecture section 6); the three routes are still the target and the screen says so when only one or two exist. |
 | REQ-04 | For every route, weather is sampled at the checkpoints (RR-12, RR-13) at the truck's estimated arrival time (RR-15, RR-17). |
 | REQ-05 | Every checkpoint gets a risk rating exactly as defined in RR-01 to RR-11. |
 | REQ-06 | Every route gets a summary (RR-19 to RR-21): distance, travel time, arrival time, miles at each risk level, average risk, worst level. |
@@ -25,6 +25,7 @@ Help a truck driver choose the safest route for a trip, balancing weather risk, 
 | REQ-13 | Required credits are always reachable: (c) TomTom, OpenStreetMap and OpenMapTiles, and "Weather data by Open-Meteo.com". |
 | REQ-14 | The trip is kept in the page address so a refresh or a shared link restores it. |
 | REQ-15 | A short "how risk is calculated" explanation is available in the app, and the app states that ETAs are driving time only (RR-16). |
+| REQ-16 | The driver can copy or share a link that restores the trip (buttons "Share trip" and "Copy link"); the link keeps the exact coordinates. Extends REQ-14. |
 
 ## 2a. Out of scope
 

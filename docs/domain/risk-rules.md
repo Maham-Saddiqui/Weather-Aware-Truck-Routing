@@ -1,6 +1,6 @@
 # Risk Rules
 
-**Status: APPROVED by the owner on 2026-11-11 (draft 6). Any change needs the owner's approval.** This file is the single source of truth for how weather becomes a risk rating and how routes are ranked. Code, tests and the UI must follow it; if code and this file disagree, this file wins and the code is a bug. Rules have stable IDs (`RR-nn`) that tests cite.
+**Status: APPROVED by the owner on 2026-11-11 (draft 6). Any change needs the owner's approval.** Amended during implementation with the owner's approval on 2026-11-11 (assumptions 13 to 20 in section 13 only; no rule text changed); see docs/changelog.md. This file is the single source of truth for how weather becomes a risk rating and how routes are ranked. Code, tests and the UI must follow it; if code and this file disagree, this file wins and the code is a bug. Rules have stable IDs (`RR-nn`) that tests cite.
 
 Source: the assessment brief (thresholds, load rules, ranking order). Everything marked **Assumption** is our reading where the brief is silent. Assumptions are listed again in section 13.
 
@@ -191,3 +191,11 @@ Average risk on a route with no rated miles shows "—" (never a number, never a
 10. Limits in RR-29: departure within 7 days, load 0 to 80,000 lb.
 11. A route with more than 10% of its miles without weather data cannot be recommended (RR-22).
 12. For the greyed-out "least-bad" route, unknown miles count as badly as No Travel miles (RR-23).
+13. RR-25 gives no precision for the distance tie-break; the code compares distance at 0.1 mile, like the miles criteria.
+14. A route with both a No Travel checkpoint and too much missing data reports its ineligible reason as `no_travel` (RR-22).
+15. RR-10: a Low checkpoint has no driving factors, and a load rule is reported only when wind drove the final level.
+16. RR-23: when no mile on any route has data, `least_bad_route_id` is null and no route is shown as least bad.
+17. RR-26: when the winner is fully rated but another route has gaps, the sentence says the rating is "based on all N of its miles".
+18. RR-25: travel time is rounded to whole minutes half up (30 seconds rounds to the next minute).
+19. RR-02: if only one of rain or showers is missing for an hour, their sum is treated as missing, and RR-11 then applies to rain.
+20. RR-25 and RR-30: Severe miles of 10.04 and 10.06 do not tie, because they round to 10.0 and 10.1 before the comparison.

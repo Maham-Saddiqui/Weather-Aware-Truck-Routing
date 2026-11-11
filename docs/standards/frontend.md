@@ -1,6 +1,6 @@
 # Front-End Standards (React, Material UI, TypeScript)
 
-Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval). Read with `docs/coding-standards.md` and `docs/architecture.md`.
+Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval). Amended during implementation with the owner's approval on 2026-11-11; see docs/changelog.md. Read with `docs/coding-standards.md` and `docs/architecture.md`.
 
 | ID | Rule |
 |---|---|
@@ -12,7 +12,7 @@ Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval).
 | FE-06 | Every asynchronous view has loading (skeleton), empty and error states with plain-English text. Problem codes map to messages in one place. |
 | FE-07 | Accessibility: semantic HTML, labels, visible focus, logical focus order, `aria-live` for status changes, AA contrast, risk shown with a word and an icon as well as colour, keyboard-operable slider with `aria-valuetext` giving the real time, reduced motion respected. `jsx-a11y` in lint and an automated axe check in end-to-end tests. |
 | FE-08 | Map: MapLibre through `@vis.gl/react-maplibre`, lazy-loaded. Layers are updated through the map API, not React state. The slider changes one paint property or filter. No re-render per slider tick. Clean up listeners and sources. |
-| FE-09 | Heatmap and checkpoint colours use the one risk scale (`RR-01`). Low is near-transparent in the heatmap so only risky stretches glow. A legend is always visible. The heatmap comes from one server-built, de-duplicated list per response; never merge routes' points in the browser. Its colour must show the risk level, not how closely points are packed; if the heatmap layer cannot do that, use a non-additive layer (blurred circles). |
+| FE-09 | Heatmap and checkpoint colours use the one risk scale (`RR-01`). Low is near-transparent in the heatmap so only risky stretches glow. A legend is always visible. The heatmap comes from one server-built, de-duplicated list per response; never merge routes' points in the browser. Its colour must show the risk level, not how closely points are packed; if the heatmap layer cannot do that, use a non-additive layer (blurred circles). Tested: MapLibre's own heatmap layer failed this rule (60 packed Moderate points rendered as No Travel purple; a lone No Travel point rendered yellow), so the map uses one layer of blurred circles coloured from each point's risk digit; the slider changes one paint property. |
 | FE-10 | Address search: Photon directly from the browser, 300 ms pause, at least 3 characters, previous request cancelled, US results only (box plus country code), a plain message if it fails, and a suggestion must be chosen. |
 | FE-11 | Performance: code-split the map and results, memoize only after measuring, self-host the font, respect the budgets in `docs/standards/performance.md`. |
 | FE-12 | Errors: an error boundary at app and feature level. Never show raw errors or stack traces. |

@@ -1,6 +1,6 @@
 # Performance Standards
 
-Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval). The numbers below are **proposed budgets, not measurements**. They are measured from the first deployment and adjusted with a written reason. Rule: no optimisation without a measurement.
+Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval). Amended during implementation with the owner's approval on 2026-11-11; see docs/changelog.md. The numbers below are **proposed budgets, not measurements**. They are measured from the first deployment and adjusted with a written reason. Rule: no optimisation without a measurement.
 
 ## 1. Budgets (proposed)
 
@@ -12,13 +12,19 @@ Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval).
 | Server overhead without provider time | 150 ms or less for 3 routes |
 | Response size (compressed) | primary 150 KB or less, compare 400 KB or less |
 | First page load (app shell, compressed JavaScript, without the map chunk) | 200 KB or less |
-| Map chunk (lazy) | 300 KB or less compressed |
+| Map chunk (lazy) | 350 KB or less compressed |
 | Largest contentful paint | 2.5 s or less on a throttled mobile connection |
 | Layout shift | 0.1 or less |
 | Lighthouse (desktop) | performance 90 or more, accessibility 95 or more |
 | Heatmap slider | each change drawn within one frame (16 ms), 3 routes, no network |
 | Map pan and zoom | 60 frames per second |
 | Address suggestions | at most one request per 300 ms pause, first suggestion within 0.5 s median |
+
+The map library alone is about 299 KB gzip (its worker, about 147 KB gzip, loads separately) and cannot be made smaller without dropping it; the eager first-load shell is about 193 KB against its 200 KB budget.
+
+## 1a. Measured on the live free instance (2026-11-11)
+
+First route 1.6 s (786 miles); full comparison 5 to 6 s (786 miles), 10.4 s (about 1,570 miles), 15 to 19 s (about 3,300 miles, three routes, 670 KB uncompressed). These are single manual runs on the live server. The compare budget of 12 s (95th percentile) is exceeded only by the longest trips, which get the long-trip deadline of 40 s (architecture section 6); the first route is on screen within seconds because it comes from the separate primary request.
 
 ## 2. Rules
 
