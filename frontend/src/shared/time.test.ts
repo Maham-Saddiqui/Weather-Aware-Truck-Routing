@@ -4,6 +4,7 @@ import {
   formatClockTime,
   formatDuration,
   formatLocalTime,
+  hoursBetween,
   instantAfterHours,
   tomorrowMorning,
   zoneAbbreviation,
@@ -68,6 +69,10 @@ describe('time formatting', () => {
     expect(instantAfterHours('2026-11-12T23:00:00Z', 6).toISOString()).toBe(
       '2026-11-13T05:00:00.000Z',
     )
+  })
+
+  it('counts the hours from the departure to a later instant, with the part hour (RR-28)', () => {
+    expect(hoursBetween('2026-11-12T23:00:00Z', '2026-11-13T01:30:00Z')).toBe(2.5)
   })
 
   it('writes travel time as hours and minutes', () => {
