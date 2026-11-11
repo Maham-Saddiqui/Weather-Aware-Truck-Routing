@@ -119,6 +119,16 @@ describe('route cards for keyboard and screen readers (FE-07, NFR-03)', () => {
     expect(props.onSelectRoute).toHaveBeenCalledWith('route-b')
   })
 
+  it('anchors the select overlay to the card by keeping the button unpositioned (NFR-03)', () => {
+    renderResults(resultsWith({}))
+
+    const button = screen.getByRole('button', { name: 'Route 1' })
+    const card = screen.getByRole('article', { name: 'Route 1' })
+
+    expect(getComputedStyle(button).position).toBe('static')
+    expect(getComputedStyle(card).position).toBe('relative')
+  })
+
   it('tells assistive technology which route is chosen', () => {
     renderResults(resultsWith({}), { selectedRouteId: 'route-b' })
 
