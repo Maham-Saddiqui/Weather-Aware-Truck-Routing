@@ -234,6 +234,8 @@ def test_a_guard_spent_before_the_eco_call_logs_that_fastest_routes_alone_answer
     assert post(client, COMPARE) == 200
 
     assert single(caplog, "tomtom_daily_guard_spent")["fell_back_to"] == "fastest_routes_only"
+    (spent,) = [r for r in caplog.records if r.getMessage() == "tomtom_daily_guard_spent"]
+    assert spent.__dict__["request_id"] != "-"
 
 
 def test_a_spent_guard_on_the_credit_text_logs_that_there_is_no_credit_text(

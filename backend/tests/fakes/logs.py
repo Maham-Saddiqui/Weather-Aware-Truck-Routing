@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from config.request_logging import JsonFormatter
+from config.request_logging import JsonFormatter, RequestIdFilter
 
 EVENTS_LOGGER = "trips.events"
 COORDINATE_LIKE = re.compile(r"-?\d+\.\d{3,}")
@@ -38,4 +38,6 @@ def assert_nothing_sensitive_was_logged(caplog: pytest.LogCaptureFixture, *secre
 
 
 def capture_events(caplog: pytest.LogCaptureFixture) -> None:
+    """Also stamps each record with the request id, as the real handler does, in any thread."""
     caplog.set_level(logging.INFO)
+    caplog.handler.addFilter(RequestIdFilter())
