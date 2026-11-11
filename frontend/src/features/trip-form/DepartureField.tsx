@@ -5,6 +5,7 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import type { Dayjs } from 'dayjs'
 import { dayjs, zoneAbbreviation } from '../../shared/time'
+import { NowActionBar } from './NowActionBar'
 import type { OriginZone, OriginZoneState } from './useOriginTimeZone'
 import { DEPARTURE_WINDOW_HINT, departureWindow } from './validation'
 
@@ -54,6 +55,7 @@ export function DepartureField({ value, zone, error, onChange }: DepartureFieldP
         minDateTime={earliest.tz(zone.timeZone)}
         maxDateTime={latest.tz(zone.timeZone)}
         onChange={onChange}
+        slots={{ actionBar: NowActionBar }}
         slotProps={{
           textField: {
             error: error !== undefined,
