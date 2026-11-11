@@ -8,7 +8,8 @@ import { TWO_ROUTES } from './routeFixtures'
 interface MapStubProps {
   children: ReactNode
   onClick: (event: unknown) => void
-  onError: () => void
+  onLoad: () => void
+  onError: (event: object | null) => void
   interactiveLayerIds: string[]
 }
 
@@ -95,14 +96,41 @@ describe('RouteMapCanvas legend and failure (FE-09, REQ-09)', () => {
     expect(screen.getByRole('region', { name: 'Risk legend' })).toBeVisible()
   })
 
-  it('shows a plain message, keeping the legend, when the map reports an error', () => {
+  it('shows a plain message, keeping the legend, when the map could not be created', () => {
     renderCanvas()
 
     act(() => {
-      mapProps.current?.onError()
+      mapProps.current?.onError({ type: 'error', target: null, error: new Error('no WebGL') })
     })
 
     expect(screen.getByRole('alert')).toHaveTextContent('The map could not load')
     expect(screen.getByRole('region', { name: 'Risk legend' })).toBeVisible()
+  })
+
+  it('shows the plain message when the basemap style itself cannot be loaded', () => {
+    renderCanvas()
+
+    act(() => {
+      mapProps.current?.onError({ type: 'error', error: new Error('style request failed') })
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('The map could not load')
+  })
+
+  it('keeps the map when a single tile fails to load, before or after the first load', () => {
+    renderCanvas()
+    const tileError = { type: 'error', sourceId: 'basemap', tile: {}, error: new Error('404') }
+
+    act(() => {
+      mapProps.current?.onError(tileError)
+    })
+    act(() => {
+      mapProps.current?.onLoad()
+    })
+    act(() => {
+      mapProps.current?.onError({ type: 'error', error: new Error('late sprite failure') })
+    })
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

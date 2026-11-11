@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { RouteMap } from './RouteMap'
-import { TWO_ROUTES } from './routeFixtures'
-import type { RouteMapProps } from '../../shared/types'
+import { TWO_ROUTES } from '../features/map/routeFixtures'
+import { EMPTY_RESULTS } from '../features/route-results/tripResults'
+import { MapPane } from './MapPane'
 
 const canvas = vi.hoisted(() => ({ shouldFail: false }))
 
-vi.mock('./RouteMapCanvas', () => ({
+vi.mock('../features/map/RouteMapCanvas', () => ({
   RouteMapCanvas: () => {
     if (canvas.shouldFail) {
       throw new Error('the map library did not load')
@@ -15,23 +15,21 @@ vi.mock('./RouteMapCanvas', () => ({
   },
 }))
 
-const props: RouteMapProps = {
-  routes: TWO_ROUTES,
+const planner = {
+  results: { ...EMPTY_RESULTS, routes: TWO_ROUTES },
   selectedRouteId: null,
   selectedCheckpointIndex: null,
-  heatmap: null,
-  hourOffset: 0,
-  onSelectRoute: vi.fn(),
-  onSelectCheckpoint: vi.fn(),
+  selectRoute: vi.fn(),
+  selectCheckpoint: vi.fn(),
 }
 
 afterEach(() => {
   canvas.shouldFail = false
 })
 
-describe('RouteMap (FE-08, FE-11: the map loads lazily and may fail without hurting the page)', () => {
+describe('MapPane (FE-08, FE-11: the map loads lazily and may fail without hurting the page)', () => {
   it('shows the map once its chunk has loaded', async () => {
-    render(<RouteMap {...props} />)
+    render(<MapPane planner={planner} hourOffset={0} />)
 
     expect(await screen.findByRole('img', { name: 'The loaded map' })).toBeVisible()
   })
@@ -40,7 +38,7 @@ describe('RouteMap (FE-08, FE-11: the map loads lazily and may fail without hurt
     canvas.shouldFail = true
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    render(<RouteMap {...props} />)
+    render(<MapPane planner={planner} hourOffset={0} />)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The map could not load. Your routes and weather ratings are still listed next to it.',

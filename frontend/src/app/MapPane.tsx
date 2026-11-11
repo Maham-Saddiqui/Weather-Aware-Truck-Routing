@@ -1,21 +1,17 @@
 import Skeleton from '@mui/material/Skeleton'
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { MapUnavailable, RouteMap } from '../features/map'
 import { ErrorBoundary } from './ErrorBoundary'
 import type { TripPlannerState } from './useTripPlanner'
 
-const RouteMap = lazy(() =>
-  import('../features/map').then((module) => ({ default: module.RouteMap })),
-)
+type MapPlanner = Pick<
+  TripPlannerState,
+  'results' | 'selectedRouteId' | 'selectedCheckpointIndex' | 'selectRoute' | 'selectCheckpoint'
+>
 
-export function MapPane({
-  planner,
-  hourOffset,
-}: {
-  planner: TripPlannerState
-  hourOffset: number
-}) {
+export function MapPane({ planner, hourOffset }: { planner: MapPlanner; hourOffset: number }) {
   return (
-    <ErrorBoundary area="the map">
+    <ErrorBoundary area="the map" fallback={<MapUnavailable />}>
       <Suspense fallback={<Skeleton variant="rectangular" height="100%" />}>
         <RouteMap
           routes={planner.results.routes}
