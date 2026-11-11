@@ -253,6 +253,18 @@ describe('states (REQ-10, REQ-12)', () => {
     expect(screen.getByText(/The server is waking up/)).toBeInTheDocument()
   })
 
+  it.each([
+    [false, 'Planning your trip'],
+    [true, 'The server is waking up'],
+  ])(
+    'announces the loading message politely as a status when waking is %s (NFR-03)',
+    (isServerWaking, words) => {
+      renderResults({ ...EMPTY_RESULTS, phase: 'loading', isServerWaking })
+
+      expect(screen.getByRole('status')).toHaveTextContent(words)
+    },
+  )
+
   it('shows a plain message and a retry button when both requests fail', async () => {
     const props = renderResults({
       ...EMPTY_RESULTS,

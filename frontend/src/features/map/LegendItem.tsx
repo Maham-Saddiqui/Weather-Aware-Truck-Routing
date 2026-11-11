@@ -11,7 +11,7 @@ interface LegendItemProps {
 export function LegendItem({ level }: LegendItemProps) {
   return (
     <Stack component="li" direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-      <RiskIcon level={level} fontSize="small" sx={{ color: RISK_COLOURS[level] }} />
+      <RiskIcon level={level} sx={{ color: RISK_COLOURS[level], fontSize: '1rem' }} />
       <Typography variant="caption">{LEVEL_LABELS[level]}</Typography>
     </Stack>
   )

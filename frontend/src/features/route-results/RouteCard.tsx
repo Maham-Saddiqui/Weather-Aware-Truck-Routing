@@ -2,7 +2,7 @@ import { useId } from 'react'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Stack from '@mui/material/Stack'
-import { styled } from '@mui/material/styles'
+import { alpha, styled } from '@mui/material/styles'
 import type { Route } from '../../shared/types'
 import { MilesBar } from './MilesBar'
 import { RouteHeading } from './RouteHeading'
@@ -15,6 +15,9 @@ const SelectableCard = styled(Card, {
   position: 'relative',
   borderColor: isSelected ? theme.palette.primary.main : theme.palette.divider,
   borderWidth: isSelected ? 2 : 1,
+  '&:hover': {
+    borderColor: isSelected ? theme.palette.primary.main : alpha(theme.palette.primary.main, 0.6),
+  },
   ...(isMuted && {
     backgroundColor: theme.palette.background.paper,
     borderStyle: 'dashed',

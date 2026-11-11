@@ -18,7 +18,11 @@ export function CheckpointList({
   onSelectCheckpoint,
 }: CheckpointListProps) {
   return (
-    <List dense sx={{ maxHeight: 280, overflowY: 'auto' }} aria-label="Checkpoints">
+    <List
+      dense
+      aria-label="Checkpoints"
+      sx={{ maxHeight: 280, overflowY: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}
+    >
       {route.checkpoints.map((checkpoint) => (
         <ListItem key={checkpoint.index} disablePadding>
           <ListItemButton
