@@ -1,6 +1,8 @@
+import SpeedIcon from '@mui/icons-material/Speed'
 import Button from '@mui/material/Button'
 import Tooltip from '@mui/material/Tooltip'
 import { MIN_TOUCH_TARGET_PX } from '../../shared/constants'
+import { TOOLTIP_ABOVE_DOCK } from './tooltipAboveDock'
 import { PLAYBACK_SPEEDS } from './usePlayback'
 import type { Playback, PlaybackSpeed } from './usePlayback'
 
@@ -17,17 +19,18 @@ function nextSpeed(speed: PlaybackSpeed): PlaybackSpeed {
 export function SpeedControl({ playback }: SpeedControlProps) {
   const label = `Playback speed ${String(playback.speed)}x. Press to play at ${String(nextSpeed(playback.speed))}x.`
   return (
-    <Tooltip title={label}>
+    <Tooltip title={label} {...TOOLTIP_ABOVE_DOCK}>
       <Button
         variant="outlined"
         size="small"
+        startIcon={<SpeedIcon aria-hidden />}
         aria-label={label}
-        sx={{ minWidth: MIN_TOUCH_TARGET_PX, minHeight: MIN_TOUCH_TARGET_PX }}
+        sx={{ minWidth: MIN_TOUCH_TARGET_PX, minHeight: MIN_TOUCH_TARGET_PX, whiteSpace: 'nowrap' }}
         onClick={() => {
           playback.setSpeed(nextSpeed(playback.speed))
         }}
       >
-        {`${String(playback.speed)}x`}
+        {`${String(playback.speed)}x speed`}
       </Button>
     </Tooltip>
   )

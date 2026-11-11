@@ -48,14 +48,14 @@ const Pin = styled(Box)(({ theme }) => ({
 
 const ArrivedLabel = styled(Typography)(({ theme }) => ({
   position: 'absolute',
-  left: '100%',
-  top: '50%',
-  transform: 'translateY(-50%)',
-  marginLeft: theme.spacing(0.75),
+  bottom: `calc(100% + ${theme.spacing(0.5)})`,
+  left: '50%',
+  transform: 'translateX(-50%)',
   padding: theme.spacing(0, 0.75),
   borderRadius: theme.shape.borderRadius,
   backgroundColor: theme.palette.background.paper,
   fontWeight: 'bold',
+  whiteSpace: 'nowrap',
 }))
 
 interface TruckBadgeProps {
