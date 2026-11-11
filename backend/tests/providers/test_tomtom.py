@@ -200,8 +200,21 @@ def test_the_copyright_text_is_fetched_fresh_on_every_call() -> None:
     assert len(calls) == 2
 
 
-def test_an_unreadable_copyright_answer_is_a_routing_failure() -> None:
-    attribution = TomTomAttribution(FAKE_API_KEY, make_client(1.0, answering(200, {"other": 1})))
+@pytest.mark.parametrize(
+    "body", [{"other": 1}, {"copyrightsCaption": None}, {"copyrightsCaption": ""}, [], "text", 7]
+)
+def test_an_unreadable_copyright_answer_is_a_routing_failure_never_the_text_none(
+    body: object,
+) -> None:
+    """BE-07"""
+    attribution = TomTomAttribution(FAKE_API_KEY, make_client(1.0, answering(200, body)))
 
     with pytest.raises(RoutingUnavailable):
         attribution.routing_copyright()
+
+
+@pytest.mark.parametrize("body", [[], "text", 7, None])
+def test_a_route_answer_that_is_not_a_json_object_is_a_routing_failure(body: object) -> None:
+    """BE-07"""
+    with pytest.raises(RoutingUnavailable):
+        routing_with(answering(200, body)).routes(QUERY)
