@@ -62,10 +62,10 @@ export const FOLLOW_EDGE_CLEARANCE_PX = 24
 export const FOLLOW_IN_VIEW_SLACK_PX = 8
 // The forecast panel floats above the bottom of the map. Measured in a browser, a map up to 560 px wide has a compact
 // panel 128.7 px tall and 12 px above the edge (plus 10 px of margin is 151); up to 700 px it is at most 128 px. Wide
-// maps keep their earlier step. The map frame's width picks the step.
+// maps have a panel about 132 px tall and 24 px above the edge (156). The map frame's width picks the step.
 export const NARROW_MAP_BELOW_PX = 440
 export const MEDIUM_MAP_BELOW_PX = 700
-export const FOLLOW_WIDE_PANEL_CLEARANCE_PX = 140
+export const FOLLOW_WIDE_PANEL_CLEARANCE_PX = 156
 export const FOLLOW_MEDIUM_PANEL_CLEARANCE_PX = 151
 export const FOLLOW_NARROW_PANEL_CLEARANCE_PX = 151
 export const FOLLOW_EASE_MS = 600

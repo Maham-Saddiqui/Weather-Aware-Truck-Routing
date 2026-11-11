@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
@@ -16,7 +17,7 @@ export function ExampleTrips({ isBusy, onChoose }: ExampleTripsProps) {
       <Typography id="example-trips-title" variant="h3" component="h2">
         Try an example
       </Typography>
-      <Stack direction="row" useFlexGap spacing={1} sx={{ flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1 }}>
         {EXAMPLE_TRIPS.map((example) => (
           <Button
             key={example.name}
@@ -30,7 +31,7 @@ export function ExampleTrips({ isBusy, onChoose }: ExampleTripsProps) {
             {example.name}
           </Button>
         ))}
-      </Stack>
+      </Box>
     </Stack>
   )
 }

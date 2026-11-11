@@ -49,7 +49,7 @@ describe('isInsideSafeArea keeps the truck in the part of the map the driver can
   })
 })
 
-describe('safeMargins lets the bottom margin follow the forecast panel, which is taller on a narrower map (REQ-08, FE-07)', () => {
+describe('safeMargins lets the bottom margin follow the forecast panel, which is compact on a tablet-sized map (REQ-08, FE-07)', () => {
   it.each([
     [1000, FOLLOW_WIDE_PANEL_CLEARANCE_PX],
     [700, FOLLOW_MEDIUM_PANEL_CLEARANCE_PX],
@@ -60,16 +60,16 @@ describe('safeMargins lets the bottom margin follow the forecast panel, which is
     expect(safeMargins(mapWidth, true).bottom).toBe(clearance)
   })
 
-  it('grows the clearance from a wide map to a medium one, which share one height below it', () => {
-    expect(safeMargins(600, true).bottom).toBeGreaterThan(safeMargins(900, true).bottom)
+  it('keeps more room on a wide map than on a compact tablet-sized one, which share one height below it', () => {
+    expect(safeMargins(900, true).bottom).toBeGreaterThan(safeMargins(600, true).bottom)
     expect(safeMargins(400, true).bottom).toBe(safeMargins(600, true).bottom)
   })
 
-  it('keeps a truck at 138 px from the bottom in view on a wide map but not on a medium one', () => {
-    const point = { x: 500, y: SIZE.height - 138 }
+  it('keeps a truck at 145 px from the bottom in view on a tablet-sized map but not on a wide one', () => {
+    const point = { x: 500, y: SIZE.height - 145 }
 
-    expect(isInsideSafeArea(point, SIZE, safeMargins(900, true))).toBe(true)
-    expect(isInsideSafeArea(point, SIZE, safeMargins(600, true))).toBe(false)
+    expect(isInsideSafeArea(point, SIZE, safeMargins(600, true))).toBe(true)
+    expect(isInsideSafeArea(point, SIZE, safeMargins(900, true))).toBe(false)
   })
 })
 
