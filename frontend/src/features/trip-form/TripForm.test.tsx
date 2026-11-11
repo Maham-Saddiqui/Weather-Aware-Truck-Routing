@@ -179,6 +179,24 @@ describe('departure time zone (RR-18, RR-29)', () => {
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ departure_utc: typedInBrowserZone })
   })
 
+  it('shows the departure window hint and limits the calendar to now through 7 days in the origin zone (RR-29)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-10T12:00:00Z') })
+    server.use(
+      http.get('*/api/v1/timezone', () => HttpResponse.json({ time_zone: 'Pacific/Honolulu' })),
+    )
+    renderForm()
+    await chooseOriginAndDestination()
+    expect(await screen.findByText('Local time at the origin (HST)')).toBeInTheDocument()
+    expect(screen.getByText('Departures from now to 7 days ahead')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /Choose date/ }))
+
+    expect(screen.getByRole('gridcell', { name: '9' })).toBeDisabled()
+    expect(screen.getByRole('gridcell', { name: '10' })).toBeEnabled()
+    expect(screen.getByRole('gridcell', { name: '17' })).toBeEnabled()
+    expect(screen.getByRole('gridcell', { name: '18' })).toBeDisabled()
+  })
+
   it('says it is finding the origin time zone and blocks planning until it arrives', async () => {
     let answer: () => void = () => undefined
     server.use(

@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles'
+import { alpha, createTheme } from '@mui/material/styles'
 import type {} from '@mui/x-date-pickers/themeAugmentation'
 import { ACCENT_TURQUOISE, RISK_COLOURS, ROUTE_HUES } from '../shared/colours'
 import { MIN_TOUCH_TARGET_PX } from '../shared/constants'
@@ -22,7 +22,7 @@ const TEXT_PRIMARY = '#e9eff7'
 const TEXT_SECONDARY = '#a3b4c8'
 // WCAG 1.4.11: the edge that identifies a text box needs 3:1 against every surface a field can sit on.
 export const INPUT_BORDER = '#6b7f99'
-const BORDER = 'rgba(163, 180, 200, 0.2)'
+const BORDER = alpha(TEXT_SECONDARY, 0.2)
 const ACCENT_LIGHT = '#5eead4'
 const ACCENT_DARK = '#14b8a6'
 const SURFACE_SHADOW = '0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18)'
@@ -41,7 +41,7 @@ const MAP_CONTROLS = {
   [`${MAP} .maplibregl-ctrl-group button:hover`]: { backgroundColor: NAVY_RAISED },
   [`${MAP} .maplibregl-ctrl-group .maplibregl-ctrl-icon`]: { filter: 'invert(1)' },
   [`${MAP} .maplibregl-ctrl-attrib`]: {
-    backgroundColor: 'rgba(10, 21, 36, 0.8)',
+    backgroundColor: alpha(NAVY_BACKGROUND, 0.8),
     color: TEXT_SECONDARY,
     fontSize: '0.6875rem',
   },
