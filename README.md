@@ -1,5 +1,7 @@
 # Weather-Aware Truck Routing
 
+[![ci](https://github.com/Maham-Saddiqui/Weather-Aware-Truck-Routing/actions/workflows/ci.yml/badge.svg)](https://github.com/Maham-Saddiqui/Weather-Aware-Truck-Routing/actions/workflows/ci.yml)
+
 A truck driver enters an origin, a destination, a departure time and a cargo weight. The app returns up to three truck routes, rates the weather at checkpoints along each route **at the time the truck will be there**, recommends the safest route in one plain sentence, and shows everything on a map with a corridor heatmap and a 0 to 48 hour forecast slider.
 
 - Live app: https://maham-spotter.vercel.app (the server sleeps when idle, so the first request can take up to a minute)
