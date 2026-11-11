@@ -3,12 +3,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 
 const HIGHLIGHT_MS = 2500
 
-function scrollToCheckpoint(section: HTMLElement | null, behavior: ScrollBehavior) {
-  section?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest', behavior })
-  section?.scrollIntoView({ block: 'start', behavior })
-}
-
-// A checkpoint chosen on the map has no sign of life on the map side, so the section opens, scrolls to it and marks the row.
+// A checkpoint chosen on the map has no sign of life on the map side, so the section opens, scrolls to its detail card and marks the row.
 // A checkpoint chosen in the list needs none of that: the driver is already looking at it.
 export function useCheckpointDisclosure(
   selectedIndex: number | null,
@@ -33,7 +28,7 @@ export function useCheckpointDisclosure(
   useEffect(() => {
     if (revealedIndex === null) return
     const behavior = prefersReducedMotion ? 'auto' : 'smooth'
-    scrollToCheckpoint(section.current, behavior)
+    section.current?.scrollIntoView({ block: 'start', behavior })
     const timer = setTimeout(() => {
       setRevealedIndex(null)
     }, HIGHLIGHT_MS)
