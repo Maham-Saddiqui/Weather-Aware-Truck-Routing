@@ -10,6 +10,7 @@ from domain.distance import EARTH_RADIUS_M
 from domain.types import GeoPoint
 from providers.http import make_client
 from providers.routing.tomtom import TomTomRouting
+from providers.trip_notes import AlternativesTier
 from services import trip_class
 from services.compare_trip import plan_compare_trip
 from services.trip_class import (
@@ -17,8 +18,6 @@ from services.trip_class import (
     MAX_ROUTES_SHOWN,
     NORMAL_TRIP,
     ONE_ALTERNATIVE_READ_TIMEOUT_S,
-    TIER_NONE,
-    TIER_ONE,
     WEATHER_AND_RATING_RESERVE_S,
     classify,
 )
@@ -125,10 +124,10 @@ def test_the_waits_of_every_long_trip_tier_plus_the_weather_reserve_fit_in_the_l
 
 def test_a_long_trip_steps_down_from_two_alternatives_to_one_then_to_a_single_route() -> None:
     """REQ-03"""
-    steps = [(tier.name, tier.alternatives) for tier in LONG_TRIP.fallback_tiers]
+    steps = [(tier.tier, tier.alternatives) for tier in LONG_TRIP.fallback_tiers]
 
-    assert steps == [(TIER_ONE, 1), (TIER_NONE, 0)]
-    assert [tier.name for tier in NORMAL_TRIP.fallback_tiers] == [TIER_NONE]
+    assert steps == [(AlternativesTier.ONE, 1), (AlternativesTier.NONE, 0)]
+    assert [tier.tier for tier in NORMAL_TRIP.fallback_tiers] == [AlternativesTier.NONE]
 
 
 def tomtom_timing_out_on_two_alternatives() -> tuple[TomTomRouting, list[httpx.Request]]:
