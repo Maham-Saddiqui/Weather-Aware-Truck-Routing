@@ -1,25 +1,26 @@
 import { render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
 import App from './App'
 
-describe('App skeleton', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('shows the server as ok when the health check answers', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
-
+describe('App shell', () => {
+  it('shows the product name and a Credits button from the first screen (REQ-13)', async () => {
     render(<App />)
 
-    expect(await screen.findByText('Server: ok')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Weather-Aware Truck Routing',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Credits' }))
+
+    expect(await screen.findByText('Weather data by Open-Meteo.com')).toBeInTheDocument()
+    expect(await screen.findByText('©TomTom (test)')).toBeInTheDocument()
   })
 
-  it('says the server is unreachable when the health check fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
-
+  it('plans an example trip with one click and lists the route (REQ-11)', async () => {
     render(<App />)
 
-    expect(await screen.findByText('Server: unreachable')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Chicago to Denver' }))
+
+    expect(await screen.findAllByText('60.0 mi')).not.toHaveLength(0)
   })
 })

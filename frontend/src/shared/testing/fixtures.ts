@@ -1,0 +1,92 @@
+import type {
+  Checkpoint,
+  CompareTripResponse,
+  Heatmap,
+  PrimaryTripResponse,
+  Recommendation,
+  Route,
+} from '../types'
+
+const ZERO_MILES = {
+  low: '0',
+  moderate: '0',
+  high: '0',
+  severe: '0',
+  no_travel: '0',
+  no_data: '0',
+}
+
+export function makeCheckpoint(overrides: Partial<Checkpoint> = {}): Checkpoint {
+  return {
+    index: 0,
+    distance_miles: '0',
+    covered_miles: '12.5',
+    position: { lat: 41.88, lon: -87.63 },
+    eta_utc: '2026-11-12T14:00:00Z',
+    time_zone: 'America/Chicago',
+    measurements: { wind_mph: '12', rain_in_hr: '0.00', snow_in_hr: '0.00', gust_mph: '18' },
+    level: 'low',
+    driving_factors: [],
+    load_rule: 'none',
+    ...overrides,
+  }
+}
+
+export function makeRoute(id: string, overrides: Partial<Route> = {}): Route {
+  return {
+    id,
+    rank: 1,
+    geometry: { encoding: 'encoded_polyline', precision: 5, data: '_p~iF~ps|U_ulLnnqC_mqNvxq`@' },
+    summary: {
+      distance_miles: '60.0',
+      travel_time_s: 4200,
+      arrival_utc: '2026-11-12T15:10:00Z',
+      miles_by_level: { ...ZERO_MILES, low: '42.5', moderate: '17.5' },
+      average_risk: '0.29',
+      worst_level: 'moderate',
+      eligible: true,
+      ineligible_reason: null,
+    },
+    checkpoints: [
+      makeCheckpoint(),
+      makeCheckpoint({ index: 1, distance_miles: '25', covered_miles: '25', level: 'moderate' }),
+      makeCheckpoint({ index: 2, distance_miles: '60', covered_miles: '22.5' }),
+    ],
+    ...overrides,
+  }
+}
+
+export const HEATMAP: Heatmap = {
+  start_utc: '2026-11-12T14:00:00Z',
+  hours: 49,
+  points: [{ position: { lat: 41.88, lon: -87.63 }, risk: '0'.repeat(49) }],
+}
+
+export const RECOMMENDATION: Recommendation = {
+  status: 'recommended',
+  route_id: 'route-a',
+  least_bad_route_id: null,
+  deciding_criterion: 'severe_miles',
+  sentence: 'Route 1 has the fewest Severe miles.',
+}
+
+export function makePrimaryResponse(route: Route = makeRoute('route-a')): PrimaryTripResponse {
+  return {
+    route: { ...route, rank: null },
+    heatmap: HEATMAP,
+    routing_provider: 'tomtom',
+    weather: { status: 'ok' },
+  }
+}
+
+export function makeCompareResponse(
+  routes: Route[] = [makeRoute('route-a'), makeRoute('route-b', { rank: 2 })],
+): CompareTripResponse {
+  return {
+    routes,
+    recommendation: RECOMMENDATION,
+    heatmap: HEATMAP,
+    routing_provider: 'tomtom',
+    weather: { status: 'ok' },
+  }
+}

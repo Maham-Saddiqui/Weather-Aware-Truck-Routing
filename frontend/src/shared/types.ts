@@ -22,3 +22,18 @@ export interface HeatmapSliderProps {
   hourOffset: number
   onChangeHourOffset: (hourOffset: number) => void
 }
+
+export type Place = components['schemas']['Place']
+export type TripRequest = components['schemas']['TripRequest']
+export type SpacingMiles = TripRequest['spacing_miles']
+export type CheckpointLevel = components['schemas']['CheckpointLevel']
+export type WeatherStatus = components['schemas']['WeatherStatus']['status']
+export type Recommendation = components['schemas']['Recommendation']
+export type Problem = components['schemas']['Problem']
+export type PrimaryTripResponse = components['schemas']['PrimaryTripResponse']
+export type CompareTripResponse = components['schemas']['CompareTripResponse']
+
+export interface TripRun {
+  trip: TripRequest
+  runId: number
+}

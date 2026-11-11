@@ -1,26 +1,13 @@
-import { useEffect, useState } from 'react'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
-
-type ServerStatus = 'checking' | 'ok' | 'unreachable'
+import { AppShell } from './app/AppShell'
+import { Providers } from './app/Providers'
+import { TripPlanner } from './app/TripPlanner'
 
 export default function App() {
-  const [serverStatus, setServerStatus] = useState<ServerStatus>('checking')
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/api/v1/health`)
-      .then((response) => {
-        setServerStatus(response.ok ? 'ok' : 'unreachable')
-      })
-      .catch(() => {
-        setServerStatus('unreachable')
-      })
-  }, [])
-
   return (
-    <main style={{ padding: '2rem' }}>
-      <h1>Weather-Aware Truck Routing</h1>
-      <p>Server: {serverStatus}</p>
-    </main>
+    <Providers>
+      <AppShell>
+        <TripPlanner />
+      </AppShell>
+    </Providers>
   )
 }
