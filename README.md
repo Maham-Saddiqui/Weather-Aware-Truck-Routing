@@ -67,6 +67,8 @@ Browser (React, Material UI, TypeScript, Vite)  ->  Django REST Framework server
 
 ## Code tour (reading order)
 
+Size, so the repository is not judged by its total: the application code is about 11,400 lines (backend 3,800, of which the risk rules in `backend/domain/` are about 1,000; front end 7,500). The tests are about 16,100 lines (backend 8,100 in `backend/tests/`, which mirrors the code layout; front end 7,700 sitting beside each file as `*.test.ts` or `*.test.tsx`; 300 lines of browser tests in `frontend/e2e/`). The API types in `frontend/src/shared/api/generated/` (about 500 lines) are generated from the contract, not written by hand.
+
 1. [`docs/domain/risk-rules.md`](docs/domain/risk-rules.md): the rules everything else follows.
 2. `backend/domain/rating.py`, `checkpoints.py`, `summary.py`, `ranking.py`: weather to rating, checkpoints and miles, route summary, ranking and recommendation.
 3. `backend/domain/dedupe.py`, `heatmap.py`: choosing three distinct routes, and the heatmap digits.
