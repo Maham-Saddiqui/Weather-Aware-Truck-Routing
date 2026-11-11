@@ -16,4 +16,3 @@ def test_rr30_metres_convert_to_miles_exactly_and_round_once_to_a_tenth() -> Non
 def test_vehicle_weight_is_load_plus_35000_lb_converted_and_rounded_up_to_whole_kg() -> None:
     assert vehicle_weight_kg(0) == 15_876
     assert vehicle_weight_kg(40_000) == 34_020
-
