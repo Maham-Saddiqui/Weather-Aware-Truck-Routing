@@ -86,6 +86,7 @@ def scenario() -> container.Providers:
             weather=FakeWeather(lambda point: storm_window(point, first_hour)),
             timezone=FakeTimeZone("America/Chicago"),
             executor=ThreadPoolExecutor(4),
+            clock=utc_now,
         ),
         attribution=FakeAttribution("Synthetic routing credit"),
         clock=utc_now,
