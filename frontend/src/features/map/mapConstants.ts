@@ -20,4 +20,6 @@ export const HEATMAP_BLUR = 0.9
 // The truck pin stands about 63 px above its point, so the truck is kept this far below the top edge.
 export const FOLLOW_TOP_CLEARANCE_PX = 80
 export const FOLLOW_EDGE_CLEARANCE_PX = 24
+// Measured in a browser: the forecast panel floats 24 px above the bottom and is about 106 px tall.
+export const FOLLOW_PANEL_CLEARANCE_PX = 140
 export const FOLLOW_EASE_MS = 600

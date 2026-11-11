@@ -1,7 +1,7 @@
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'
 import Button from '@mui/material/Button'
 import { styled } from '@mui/material/styles'
-import { FIT_BOTTOM_CLEARANCE_PX } from './mapConstants'
+import { FOLLOW_PANEL_CLEARANCE_PX } from './mapConstants'
 
 const Floating = styled(Button)(({ theme }) => ({
   position: 'absolute',
@@ -12,7 +12,7 @@ const Floating = styled(Button)(({ theme }) => ({
   boxShadow: theme.shadows[6],
   backgroundColor: theme.palette.background.paper,
   [theme.breakpoints.up('md')]: {
-    bottom: `calc(${theme.spacing(1)} + ${String(FIT_BOTTOM_CLEARANCE_PX)}px)`,
+    bottom: `calc(${theme.spacing(1)} + ${String(FOLLOW_PANEL_CLEARANCE_PX)}px)`,
   },
 }))
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FIT_BOTTOM_CLEARANCE_PX } from './mapConstants'
+import { FOLLOW_PANEL_CLEARANCE_PX } from './mapConstants'
 import { isInsideSafeArea, safeAreaCentreOffset, safeMargins } from './safeArea'
 
 const SIZE = { width: 1000, height: 600 }
@@ -25,7 +25,7 @@ describe('isInsideSafeArea keeps the truck in the part of the map the driver can
   })
 
   it('refuses a truck behind the forecast panel on a wide screen but not on a phone', () => {
-    const behindPanel = { x: 500, y: SIZE.height - FIT_BOTTOM_CLEARANCE_PX / 2 }
+    const behindPanel = { x: 500, y: SIZE.height - FOLLOW_PANEL_CLEARANCE_PX / 2 }
 
     expect(isInsideSafeArea(behindPanel, SIZE, WIDE)).toBe(false)
     expect(isInsideSafeArea(behindPanel, SIZE, PHONE)).toBe(true)

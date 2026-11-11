@@ -1,7 +1,7 @@
 import {
-  FIT_BOTTOM_CLEARANCE_PX,
   FIT_PADDING_PX,
   FOLLOW_EDGE_CLEARANCE_PX,
+  FOLLOW_PANEL_CLEARANCE_PX,
   FOLLOW_TOP_CLEARANCE_PX,
 } from './mapConstants'
 
@@ -29,7 +29,7 @@ export function safeMargins(isPanelOverMap: boolean): Margins {
     top: FOLLOW_TOP_CLEARANCE_PX,
     right: FIT_PADDING_PX,
     left: FIT_PADDING_PX,
-    bottom: FOLLOW_EDGE_CLEARANCE_PX + (isPanelOverMap ? FIT_BOTTOM_CLEARANCE_PX : 0),
+    bottom: isPanelOverMap ? FOLLOW_PANEL_CLEARANCE_PX : FOLLOW_EDGE_CLEARANCE_PX,
   }
 }
 
