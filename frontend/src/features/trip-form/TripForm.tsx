@@ -1,4 +1,3 @@
-import { useMediaQuery, useTheme } from '@mui/material'
 import Stack from '@mui/material/Stack'
 import { useEffect, useRef, useState } from 'react'
 import type { TripRequest } from '../../shared/types'
@@ -15,9 +14,8 @@ interface TripFormProps {
 }
 
 export function TripForm({ initialTrip, needsReview, isBusy, onSubmit }: TripFormProps) {
-  const isPhone = useMediaQuery(useTheme().breakpoints.down('md'))
   const [isCollapsed, setIsCollapsed] = useState(initialTrip !== null && !needsReview)
-  const showsSummary = isPhone && isCollapsed
+  const showsSummary = isCollapsed
   const root = useRef<HTMLDivElement>(null)
   const mustMoveFocus = useRef(false)
   const collapse = (shouldCollapse: boolean) => {
@@ -41,6 +39,7 @@ export function TripForm({ initialTrip, needsReview, isBusy, onSubmit }: TripFor
       {showsSummary ? (
         <TripSummary
           values={form.values}
+          departureZone={form.originZone.state === 'found' ? form.originZone.timeZone : null}
           onEdit={() => {
             collapse(false)
           }}

@@ -21,6 +21,15 @@ function restoreTrip(): RestoredTrip | null {
   return { trip, isPlannable: departureError(dayjs(trip.departure_utc), dayjs()) === undefined }
 }
 
+// A sandboxed or privacy-hardened page may forbid rewriting its address; the trip must still run, only the link is lost.
+function writeTripToAddress(trip: TripRequest) {
+  try {
+    window.history.replaceState(null, '', `?${encodeTrip(trip)}`)
+  } catch {
+    return
+  }
+}
+
 export function useTripPlanner() {
   const [restored] = useState(restoreTrip)
   const [run, setRun] = useState<TripRun | null>(
@@ -47,7 +56,7 @@ export function useTripPlanner() {
     selectedCheckpointIndex:
       selection.routeId === selectedRouteId ? selection.checkpointIndex : null,
     submit: (trip: TripRequest) => {
-      window.history.replaceState(null, '', `?${encodeTrip(trip)}`)
+      writeTripToAddress(trip)
       setRun((previous) => ({ trip, runId: (previous?.runId ?? 0) + 1 }))
     },
     retry: () => {

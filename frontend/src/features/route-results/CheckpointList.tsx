@@ -1,21 +1,28 @@
 import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemText from '@mui/material/ListItemText'
-import { formatLocalTime } from '../../shared/time'
+import type { SxProps, Theme } from '@mui/material/styles'
 import type { Route } from '../../shared/types'
-import { RiskChip } from './RiskChip'
+import { CheckpointRow } from './CheckpointRow'
 import { useRovingRows } from './useRovingRows'
+
+// Only a wide screen scrolls the list inside the panel; on a phone a box inside the page is a scroll trap.
+const listBox: SxProps<Theme> = (theme) => ({
+  [theme.breakpoints.up('md')]: { maxHeight: 280, overflowY: 'auto' },
+  border: 1,
+  borderColor: 'divider',
+  borderRadius: 1,
+})
 
 interface CheckpointListProps {
   route: Route
   selectedCheckpointIndex: number | null
+  highlightedCheckpointIndex: number | null
   onSelectCheckpoint: (routeId: string, checkpointIndex: number) => void
 }
 
 export function CheckpointList({
   route,
   selectedCheckpointIndex,
+  highlightedCheckpointIndex,
   onSelectCheckpoint,
 }: CheckpointListProps) {
   const { checkpoints } = route
@@ -23,32 +30,21 @@ export function CheckpointList({
   const roving = useRovingRows(checkpoints.length, selectedPosition)
 
   return (
-    <List
-      dense
-      aria-label="Checkpoints"
-      onKeyDown={roving.moveFocus}
-      sx={{ maxHeight: 280, overflowY: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}
-    >
+    <List dense aria-label="Checkpoints" onKeyDown={roving.moveFocus} sx={listBox}>
       {checkpoints.map((checkpoint, position) => (
-        <ListItem key={checkpoint.index} disablePadding>
-          <ListItemButton
-            selected={checkpoint.index === selectedCheckpointIndex}
-            aria-current={checkpoint.index === selectedCheckpointIndex ? 'true' : undefined}
-            tabIndex={position === roving.tabStopPosition ? 0 : -1}
-            onFocus={() => {
-              roving.rememberRow(position)
-            }}
-            onClick={() => {
-              onSelectCheckpoint(route.id, checkpoint.index)
-            }}
-          >
-            <ListItemText
-              primary={`Mile ${checkpoint.distance_miles}`}
-              secondary={formatLocalTime(checkpoint.eta_utc, checkpoint.time_zone)}
-            />
-            <RiskChip level={checkpoint.level} />
-          </ListItemButton>
-        </ListItem>
+        <CheckpointRow
+          key={checkpoint.index}
+          checkpoint={checkpoint}
+          isSelected={checkpoint.index === selectedCheckpointIndex}
+          isHighlighted={checkpoint.index === highlightedCheckpointIndex}
+          isTabStop={position === roving.tabStopPosition}
+          onFocus={() => {
+            roving.rememberRow(position)
+          }}
+          onSelect={() => {
+            onSelectCheckpoint(route.id, checkpoint.index)
+          }}
+        />
       ))}
     </List>
   )

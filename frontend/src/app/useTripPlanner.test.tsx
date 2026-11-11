@@ -33,6 +33,7 @@ async function planTrip() {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.useRealTimers()
   window.history.replaceState(null, '', '/')
 })
@@ -115,6 +116,16 @@ describe('planning and trying again (REQ-14)', () => {
 
     expect(new URLSearchParams(window.location.search).get('o')).toBe('Chicago, Illinois')
     expect(window.history.length).toBe(lengthBefore)
+  })
+
+  it('still plans the trip when the browser refuses to rewrite the page address', async () => {
+    vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError')
+    })
+    const { result } = await planTrip()
+
+    expect(result.current.run?.trip).toEqual(TRIP)
+    expect(result.current.results.routes).not.toHaveLength(0)
   })
 
   it('numbers each run so a new trip is never mistaken for the last one', async () => {

@@ -42,29 +42,46 @@ describe('focus after a rejected submit (FE-07, NFR-03)', () => {
   })
 })
 
-function showOnPhone() {
+function showOnScreen(width: 'phone' | 'desktop') {
   vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: query.includes('max-width'),
+    matches: width === 'phone' && query.includes('max-width'),
     media: query,
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
   }))
 }
 
-describe('focus when the form folds into a summary on a phone (FE-07, NFR-03)', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
+describe.each(['phone', 'desktop'] as const)(
+  'focus when the form folds into a summary on a %s (FE-07, NFR-03, REQ-10)',
+  (width) => {
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
 
-  it('moves focus to Edit trip when planning folds the form away, and back to Origin when edited', async () => {
-    showOnPhone()
-    renderForm()
+    it('moves focus to Edit trip when planning folds the form away, and back to Origin when edited', async () => {
+      showOnScreen(width)
+      renderForm()
 
-    await userEvent.click(screen.getByRole('button', { name: /Chicago to Denver/ }))
-    expect(screen.getByRole('button', { name: 'Edit trip' })).toHaveFocus()
-    expect(screen.getByRole('button', { name: 'Edit trip' })).not.toHaveAttribute('aria-expanded')
+      await userEvent.click(screen.getByRole('button', { name: /Chicago to Denver/ }))
+      expect(screen.getByRole('button', { name: 'Edit trip' })).toHaveFocus()
+      expect(screen.getByRole('button', { name: 'Edit trip' })).not.toHaveAttribute('aria-expanded')
+      expect(screen.queryByLabelText('Origin')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Chicago to Denver/ })).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Edit trip' }))
-    expect(screen.getByLabelText('Origin')).toHaveFocus()
-  })
-})
+      await userEvent.click(screen.getByRole('button', { name: 'Edit trip' }))
+      expect(screen.getByLabelText('Origin')).toHaveFocus()
+    })
+
+    it('shows the departure in the origin time zone once it is known', async () => {
+      server.use(
+        http.get('*/api/v1/timezone', () => HttpResponse.json({ time_zone: 'America/Chicago' })),
+      )
+      showOnScreen(width)
+      renderForm()
+
+      await userEvent.click(screen.getByRole('button', { name: /Chicago to Denver/ }))
+
+      expect(await screen.findByText(/departs .* CT/)).toBeInTheDocument()
+    })
+  },
+)
