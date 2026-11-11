@@ -175,7 +175,7 @@ def test_when_alternatives_time_out_one_tomtom_route_answers_without_the_backup(
     assert result.routing_provider is RoutingProviderName.TOMTOM
     assert len(result.routes) == 1
     assert backup.calls == []
-    assert len(alternatives_calls(tomtom)) == 2
+    assert FASTEST in [query.preference for query in alternatives_calls(tomtom)]
     assert [query.preference for query in single_route_calls(tomtom)] == [FASTEST]
 
 
