@@ -40,6 +40,8 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 SECRET_KEY = required_env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = list_env("DJANGO_ALLOWED_HOSTS")
 CORS_ALLOWED_ORIGINS = list_env("ALLOWED_ORIGINS")
+# Without this the browser hides the header that says how long to wait after a 429 or 503.
+CORS_EXPOSE_HEADERS = ["Retry-After"]
 
 # Only read when a TomTom call is made; without it the backup provider answers (BE-11).
 TOMTOM_API_KEY = os.environ.get("TOMTOM_API_KEY", "")
