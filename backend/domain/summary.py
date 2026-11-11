@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
 
-from domain.checkpoints import Stop
+from domain.checkpoints import Checkpoint
 from domain.constants import COMPARISON_RISK_DECIMALS, NO_DATA_SHARE_LIMIT_DENOMINATOR
 from domain.levels import Level, worst_of
 from domain.rating import CheckpointRating
@@ -17,8 +17,8 @@ class IneligibleReason(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class RatedStop:
-    stop: Stop
+class RatedCheckpoint:
+    checkpoint: Checkpoint
     rating: CheckpointRating
 
 
@@ -37,7 +37,7 @@ class MetresByLevel:
         return (self.low, self.moderate, self.high, self.severe, self.no_travel)[level]
 
     @property
-    def rated(self) -> Decimal:
+    def with_data(self) -> Decimal:
         return sum((self.of(level) for level in Level), Decimal(0))
 
 
@@ -59,12 +59,12 @@ class RouteSummary:
 
 
 def summarize(
-    rated_stops: Sequence[RatedStop], travel_time_s: int, departure_utc: datetime
+    rated_checkpoints: Sequence[RatedCheckpoint], travel_time_s: int, departure_utc: datetime
 ) -> RouteSummary:
     """RR-19 to RR-22: miles per level, mile-weighted average risk, worst level, eligibility."""
-    metres = _metres_by_level(rated_stops)
-    distance_m = metres.rated + metres.no_data
-    worst = worst_of(rated.rating.level for rated in rated_stops if rated.rating.level is not None)
+    metres = _metres_by_level(rated_checkpoints)
+    distance_m = metres.with_data + metres.no_data
+    worst = worst_of(c.rating.level for c in rated_checkpoints if c.rating.level is not None)
     return RouteSummary(
         distance_m=distance_m,
         travel_time_s=travel_time_s,
@@ -76,14 +76,14 @@ def summarize(
     )
 
 
-def _metres_by_level(rated_stops: Sequence[RatedStop]) -> MetresByLevel:
+def _metres_by_level(rated_checkpoints: Sequence[RatedCheckpoint]) -> MetresByLevel:
     totals = {level: Decimal(0) for level in Level}
     no_data = Decimal(0)
-    for rated in rated_stops:
-        if rated.rating.level is None:
-            no_data += rated.stop.covered_m
+    for rated_checkpoint in rated_checkpoints:
+        if rated_checkpoint.rating.level is None:
+            no_data += rated_checkpoint.checkpoint.covered_m
         else:
-            totals[rated.rating.level] += rated.stop.covered_m
+            totals[rated_checkpoint.rating.level] += rated_checkpoint.checkpoint.covered_m
     return MetresByLevel(
         low=totals[Level.LOW],
         moderate=totals[Level.MODERATE],
@@ -96,10 +96,10 @@ def _metres_by_level(rated_stops: Sequence[RatedStop]) -> MetresByLevel:
 
 def _average_risk(metres: MetresByLevel) -> Decimal | None:
     """RR-21: sum of level value x covered road, over the road that has data; None without any."""
-    if metres.rated == 0:
+    if metres.with_data == 0:
         return None
     weighted = sum((level.value * metres.of(level) for level in Level), Decimal(0))
-    return round_half_up(weighted / metres.rated, COMPARISON_RISK_DECIMALS)
+    return round_half_up(weighted / metres.with_data, COMPARISON_RISK_DECIMALS)
 
 
 def _ineligible_reason(

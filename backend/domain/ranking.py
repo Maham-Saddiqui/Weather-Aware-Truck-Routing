@@ -176,14 +176,16 @@ def _data_coverage_note(winner: Candidate, candidates: Sequence[Candidate]) -> s
     total = miles_from_metres(winner.summary.distance_m)
     if winner.summary.metres_by_level.no_data == 0:
         return f" This route's rating is based on all {total} of its miles."
-    rated = miles_from_metres(winner.summary.metres_by_level.rated)
-    return f" This route's rating is based on {rated} of its {total} miles; the rest has no data."
+    with_data = miles_from_metres(winner.summary.metres_by_level.with_data)
+    return (
+        f" This route's rating is based on {with_data} of its {total} miles; the rest has no data."
+    )
 
 
 def _recommend_none(ineligible: list[Candidate]) -> Recommendation:
     reasons = _reasons_of(ineligible)
-    has_ratings = any(c.summary.metres_by_level.rated > 0 for c in ineligible)
-    least_bad = ineligible[0].route_id if has_ratings else None
+    has_data = any(c.summary.metres_by_level.with_data > 0 for c in ineligible)
+    least_bad = ineligible[0].route_id if has_data else None
     sentence = NO_ROUTE_SENTENCES[reasons] + LEAVE_LATER_ADVICE
     if least_bad is not None:
         sentence += LEAST_BAD_NOTE
