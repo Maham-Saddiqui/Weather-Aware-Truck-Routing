@@ -23,7 +23,7 @@ def test_calm_weather_gives_a_rated_route_with_every_checkpoint_low() -> None:
     """RR-12, RR-13: checkpoints at the origin, every 25 miles and the destination"""
     result = plan_primary_trip(environment(), trip_request())
 
-    assert [c.stop.index for c in result.route.checkpoints] == [0, 1, 2, 3, 4]
+    assert [c.checkpoint.index for c in result.route.checkpoints] == [0, 1, 2, 3, 4]
     assert {c.rating.level for c in result.route.checkpoints} == {Level.LOW}
     assert result.weather_status is WeatherStatus.OK
     assert result.routing_provider is RoutingProviderName.TOMTOM
@@ -36,7 +36,7 @@ def test_the_first_checkpoint_arrives_at_the_departure_time() -> None:
 
     result = plan_primary_trip(environment(), request)
 
-    assert result.route.checkpoints[0].stop.eta_utc == request.departure_utc
+    assert result.route.checkpoints[0].checkpoint.eta_utc == request.departure_utc
 
 
 def test_one_vehicle_weight_and_one_call_without_alternatives_are_sent_to_the_provider() -> None:

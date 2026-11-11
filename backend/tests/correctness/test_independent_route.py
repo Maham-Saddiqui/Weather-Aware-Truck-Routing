@@ -6,11 +6,11 @@ from typing import cast
 
 import pytest
 
-from domain.checkpoints import plan_stops
+from domain.checkpoints import plan_checkpoints
 from domain.heatmap import risk_digits
 from domain.levels import Level, LoadRule
 from domain.rating import CheckpointRating
-from domain.summary import RatedStop, summarize
+from domain.summary import RatedCheckpoint, summarize
 from domain.types import (
     CheckpointSpacing,
     GeoPoint,
@@ -66,10 +66,10 @@ def test_checkpoints_sit_at_spacing_multiples_and_cover_midpoint_stretches_rr13_
 ) -> None:
     """RR-13 RR-19 RR-30: placement, no duplicate at an exact multiple, stretches add up."""
     length_m = Decimal(length) * ONE_MILE_M
-    stops = plan_stops(route_of_length(length_m), CheckpointSpacing(spacing), DEPARTURE)
-    assert [stop.distance_m for stop in stops] == in_metres(places)
-    assert [stop.covered_m for stop in stops] == in_metres(covers)
-    assert sum((stop.covered_m for stop in stops), Decimal(0)) == length_m
+    checkpoints = plan_checkpoints(route_of_length(length_m), CheckpointSpacing(spacing), DEPARTURE)
+    assert [checkpoint.distance_m for checkpoint in checkpoints] == in_metres(places)
+    assert [checkpoint.covered_m for checkpoint in checkpoints] == in_metres(covers)
+    assert sum((checkpoint.covered_m for checkpoint in checkpoints), Decimal(0)) == length_m
 
 
 @pytest.mark.parametrize(
@@ -79,10 +79,11 @@ def test_whole_metre_routes_keep_exact_decimal_positions_and_stretches_rr30(
     length: str, spacing: int, places: list[str], covers: list[str]
 ) -> None:
     """RR-30: a 25-mile checkpoint at 40,233.6 m, never rounded, stretches add up exactly."""
-    stops = plan_stops(route_of_length(Decimal(length)), CheckpointSpacing(spacing), DEPARTURE)
-    assert [stop.distance_m for stop in stops] == decimals(places)
-    assert [stop.covered_m for stop in stops] == decimals(covers)
-    assert sum((stop.covered_m for stop in stops), Decimal(0)) == Decimal(length)
+    route = route_of_length(Decimal(length))
+    checkpoints = plan_checkpoints(route, CheckpointSpacing(spacing), DEPARTURE)
+    assert [checkpoint.distance_m for checkpoint in checkpoints] == decimals(places)
+    assert [checkpoint.covered_m for checkpoint in checkpoints] == decimals(covers)
+    assert sum((checkpoint.covered_m for checkpoint in checkpoints), Decimal(0)) == Decimal(length)
 
 
 def rating_of(level: str) -> CheckpointRating:
@@ -102,9 +103,12 @@ def test_route_summary_reports_miles_average_worst_and_eligibility_rr20_rr21_rr2
     """RR-19 RR-20 RR-21 RR-22: exact miles per level, mile-weighted average, 10 percent cap."""
     why, length, spacing, levels, miles, average, worst, eligible, reason = case
     route = route_of_length(Decimal(length) * ONE_MILE_M)
-    stops = plan_stops(route, CheckpointSpacing(spacing), DEPARTURE)
-    assert len(stops) == len(levels), why
-    rated = [RatedStop(stop, rating_of(level)) for stop, level in zip(stops, levels, strict=True)]
+    checkpoints = plan_checkpoints(route, CheckpointSpacing(spacing), DEPARTURE)
+    assert len(checkpoints) == len(levels), why
+    rated = [
+        RatedCheckpoint(checkpoint, rating_of(level))
+        for checkpoint, level in zip(checkpoints, levels, strict=True)
+    ]
     summary = summarize(rated, 3600, DEPARTURE)
     by_level = summary.metres_by_level
     actual = {
@@ -184,8 +188,8 @@ def test_arrival_is_departure_plus_the_providers_travel_time_to_that_distance_rr
         travel_time_s=seconds,
         progress=progress,
     )
-    stops = plan_stops(route, CheckpointSpacing(spacing), DEPARTURE)
-    actual = [(stop.distance_m, stop.eta_utc) for stop in stops]
+    checkpoints = plan_checkpoints(route, CheckpointSpacing(spacing), DEPARTURE)
+    actual = [(checkpoint.distance_m, checkpoint.eta_utc) for checkpoint in checkpoints]
     wanted = [
         (Decimal(metres), DEPARTURE + timedelta(microseconds=int(Decimal(elapsed) * 1_000_000)))
         for metres, elapsed in expected

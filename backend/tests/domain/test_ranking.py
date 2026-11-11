@@ -209,7 +209,7 @@ def test_rr23_no_weather_data_anywhere_shows_routes_without_a_least_bad_pick() -
     assert ranking.display_order == (RankedRoute("a", None),)
 
 
-def test_rr26_the_sentence_says_how_many_miles_are_rated_when_a_route_has_no_data_miles() -> None:
+def test_rr26_the_sentence_says_how_many_miles_have_data_when_a_route_has_no_data_miles() -> None:
     """RR-26."""
     gaps = candidate("a", ["5", "90", "5"], [None, LOW, LOW])
     complete = candidate("b", ["100"], [MODERATE])
