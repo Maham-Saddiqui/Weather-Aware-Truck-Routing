@@ -59,6 +59,10 @@ Browser (React, Material UI, TypeScript, Vite)  ->  Django REST Framework server
 9. `frontend/src/features/trip-form/`, `features/route-results/`: the form and the results.
 10. [`docs/architecture.md`](docs/architecture.md) and `docs/standards/`: the design and the coding standards the code is held to.
 
+## Growing the system
+
+The server is a deliberate modular monolith: one process, because the weather cache, the daily provider counter, the rate limits and the backup router's limiter live in memory and must be shared. The layer boundaries are already the cut lines if it ever has to be split: the risk rules in `backend/domain/` are pure and could become a shared library, and each outside service sits behind a small interface in `backend/providers/*/port.py`, so it could move behind its own service by replacing the code behind that interface with a network call. The first candidates would be a weather service (cache and budget together), then a routing gateway (TomTom, Valhalla and the daily counter). The shared in-memory state would have to move to a shared store first, and every in-process call that becomes a network call needs timeouts, retries and request-id propagation. Splitting before there is a scaling or ownership reason would make each trip slower and the free hosting insufficient, so it is deferred on purpose.
+
 ## Run it locally
 
 Requirements: Python 3.13 with [uv](https://docs.astral.sh/uv/), Node 26 (see `.nvmrc`).
