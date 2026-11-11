@@ -11,6 +11,7 @@ import httpx
 
 from domain.types import GeoPoint, ProgressEntry, ProviderRoute, RouteGeometry
 from domain.units import round_half_up
+from providers.routing.polyline import decode_polyline
 from providers.routing.port import (
     NoRouteFound,
     RouteQuery,
@@ -29,11 +30,6 @@ WHOLE_NUMBER = Decimal(1)
 EARTH_RADIUS_M = 6_371_000.0
 PROGRESS_POINT_STRIDE = 10
 NO_ROUTE_ERROR_CODES = frozenset({171, 442})
-
-POLYLINE_OFFSET = 63
-POLYLINE_VALUE_BITS = 0x1F
-POLYLINE_CONTINUATION_BIT = 0x20
-POLYLINE_BITS_PER_CHARACTER = 5
 
 
 class RequestLimiter:
@@ -107,32 +103,6 @@ class ValhallaRouting:
         )
 
 
-def decode_polyline(encoded: str, precision: int) -> tuple[GeoPoint, ...]:
-    """Standard encoded polyline; each value is a zig-zag number split into 5-bit characters."""
-    factor = 10**precision
-    points: list[GeoPoint] = []
-    position = lat = lon = 0
-    while position < len(encoded):
-        lat_change, position = _next_change(encoded, position)
-        lon_change, position = _next_change(encoded, position)
-        lat += lat_change
-        lon += lon_change
-        points.append(GeoPoint(lat / factor, lon / factor))
-    return tuple(points)
-
-
-def _next_change(encoded: str, position: int) -> tuple[int, int]:
-    value = shift = 0
-    while True:
-        chunk = ord(encoded[position]) - POLYLINE_OFFSET
-        position += 1
-        value |= (chunk & POLYLINE_VALUE_BITS) << shift
-        shift += POLYLINE_BITS_PER_CHARACTER
-        if chunk < POLYLINE_CONTINUATION_BIT:
-            break
-    return (~value >> 1 if value & 1 else value >> 1), position
-
-
 def _request_body(query: RouteQuery) -> dict[str, Any]:
     """The preference is ignored: the backup always answers with its default costing."""
     return {
@@ -165,7 +135,7 @@ def _routes_from(payload: dict[str, Any]) -> tuple[ProviderRoute, ...]:
             *(alternate["trip"] for alternate in payload.get("alternates", [])),
         ]
         return tuple(_route_from(trip) for trip in trips)
-    except (KeyError, IndexError, TypeError, InvalidOperation) as error:
+    except (KeyError, IndexError, TypeError, ValueError, InvalidOperation) as error:
         raise RoutingUnavailable("The backup routing service sent an unreadable answer.") from error
 
 
