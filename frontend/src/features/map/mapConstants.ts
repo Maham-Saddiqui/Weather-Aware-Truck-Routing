@@ -35,6 +35,10 @@ export const INITIAL_VIEW = {
 } as const
 export const FIT_DURATION_MS = 700
 
+// A checkpoint dot is 24 px wide; at least this far apart they stay separate dots instead of one smear.
+export const MIN_DOT_SPACING_PX = 30
+export const MAX_DOT_STRIDE = 8
+
 export const ROUTE_LINE_LAYER_ID = 'route-line'
 export const ROUTE_HIT_LAYER_ID = 'route-hit'
 export const HEATMAP_LAYER_ID = 'heatmap-circles'

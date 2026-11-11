@@ -7,6 +7,8 @@ import { MapPane } from './MapPane'
 import type { TripPlannerState } from './useTripPlanner'
 
 const SLIDER_HEIGHT_PX = 40
+// On a phone the map is the main thing on screen: at least this share of the visible height, and never shorter than the fixed minimum.
+const PHONE_MAP_MIN_VIEWPORT_SHARE_PERCENT = 55
 
 const MapArea = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -14,7 +16,7 @@ const MapArea = styled('div')(({ theme }) => ({
 }))
 
 const MapFrame = styled('div')(({ theme }) => ({
-  height: PHONE_MAP_HEIGHT_PX,
+  height: `max(${String(PHONE_MAP_MIN_VIEWPORT_SHARE_PERCENT)}svh, ${String(PHONE_MAP_HEIGHT_PX)}px)`,
   [theme.breakpoints.up('md')]: { position: 'absolute', inset: 0, height: 'auto' },
 }))
 

@@ -1,6 +1,8 @@
 import { useCallback } from 'react'
 import type { Route } from '../../shared/types'
 import { CheckpointMarker } from './CheckpointMarker'
+import { isDotDrawn } from './dotThinning'
+import { useDotStride } from './useDotStride'
 
 interface CheckpointMarkersProps {
   route: Route
@@ -21,7 +23,17 @@ export function CheckpointMarkers({
     },
     [onSelectCheckpoint, route.id],
   )
-  return route.checkpoints.map((checkpoint) => (
+  const stride = useDotStride(route.checkpoints.map((checkpoint) => checkpoint.position))
+  const lastPosition = route.checkpoints.length - 1
+  const drawn = route.checkpoints.filter((checkpoint, position) =>
+    isDotDrawn({
+      position,
+      lastPosition,
+      stride,
+      isSelected: checkpoint.index === selectedCheckpointIndex,
+    }),
+  )
+  return drawn.map((checkpoint) => (
     <CheckpointMarker
       key={checkpoint.index}
       checkpoint={checkpoint}

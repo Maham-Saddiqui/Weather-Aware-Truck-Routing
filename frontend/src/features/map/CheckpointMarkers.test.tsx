@@ -1,12 +1,21 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CheckpointMarkers } from './CheckpointMarkers'
 import { NORTH_ROUTE } from './routeFixtures'
 
+const map = vi.hoisted(() => ({ spacingPx: 100 }))
+
 vi.mock('@vis.gl/react-maplibre', () => ({
   Marker: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  useMap: () => ({
+    current: {
+      on: vi.fn(),
+      off: vi.fn(),
+      project: ([longitude]: [number, number]) => ({ x: longitude * map.spacingPx, y: 0 }),
+    },
+  }),
 }))
 
 function renderMarkers(
@@ -30,6 +39,10 @@ function opacityOf(button: HTMLElement): string {
 }
 
 describe('CheckpointMarkers (REQ-08, NFR-03: risk is never shown by colour alone)', () => {
+  beforeEach(() => {
+    map.spacingPx = 100
+  })
+
   it('gives every checkpoint of the selected route a button named with its risk word, mile and ETA', () => {
     renderMarkers(null)
 
@@ -98,5 +111,37 @@ describe('CheckpointMarkers (REQ-08, NFR-03: risk is never shown by colour alone
     const card = await screen.findByRole('tooltip')
     expect(card).toHaveTextContent('Low')
     expect(card).toHaveTextContent('Mile 0.0, Thu 07:00 CT')
+  })
+})
+
+describe('CheckpointMarkers thin out while zoomed far out (REQ-08, NFR-03)', () => {
+  const LAST = NORTH_ROUTE.checkpoints.length - 1
+
+  beforeEach(() => {
+    map.spacingPx = 10
+  })
+
+  it('draws every 4th checkpoint and the destination instead of a smear of all of them', () => {
+    renderMarkers(null)
+
+    const drawn = screen.getAllByRole('button')
+    const expected = NORTH_ROUTE.checkpoints.filter((_, i) => i % 4 === 0 || i === LAST)
+
+    expect(drawn).toHaveLength(expected.length)
+    expect(drawn.length).toBeLessThan(NORTH_ROUTE.checkpoints.length)
+  })
+
+  it('keeps the icon on every dot that is drawn, so risk is still not colour alone (FE-07)', () => {
+    renderMarkers(null)
+
+    for (const button of screen.getAllByRole('button')) {
+      expect(button.querySelector('svg')).not.toBeNull()
+    }
+  })
+
+  it('always draws the selected checkpoint', () => {
+    renderMarkers(5)
+
+    expect(screen.getByRole('button', { pressed: true })).toBeVisible()
   })
 })
