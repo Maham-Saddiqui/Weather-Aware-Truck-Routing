@@ -67,11 +67,4 @@ export function hoursBetween(startUtc: string, laterUtc: string): number {
   return (Date.parse(laterUtc) - Date.parse(startUtc)) / MS_PER_HOUR
 }
 
-export function formatDuration(totalSeconds: number): string {
-  const totalMinutes = Math.round(totalSeconds / SECONDS_PER_MINUTE)
-  const hours = Math.floor(totalMinutes / MINUTES_PER_HOUR)
-  const minutes = totalMinutes % MINUTES_PER_HOUR
-  return hours === 0 ? `${String(minutes)} min` : `${String(hours)} h ${String(minutes)} min`
-}
-
 export { dayjs }

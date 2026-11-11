@@ -104,6 +104,7 @@ function makeRoute(id: string, waypoints: readonly LonLat[], levelOffset: number
     summary: {
       distance_miles: '1003.0',
       travel_time_s: 64800,
+      travel_time_text: '18 h 0 min',
       arrival_utc: '2026-11-13T07:00:00Z',
       miles_by_level: {
         low: '800.0',

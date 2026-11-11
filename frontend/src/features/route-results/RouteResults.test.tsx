@@ -80,6 +80,13 @@ describe('route cards (REQ-06, FE-19)', () => {
     expect(screen.getByText('Average risk —')).toBeInTheDocument()
   })
 
+  it('shows the travel time text the server sent, without converting the seconds (FE-05, RR-25)', () => {
+    const route = summaryWith(makeRoute('route-a'), { travel_time_text: '14 h 4 min' })
+    renderResults(resultsWith({ routes: [route] }))
+
+    expect(screen.getByText('14 h 4 min')).toBeInTheDocument()
+  })
+
   it('shows the arrival in the destination checkpoint zone with its abbreviation (RR-18)', () => {
     const route = summaryWith(makeRoute('route-a'), { arrival_utc: '2026-11-12T21:05:00Z' })
     route.checkpoints = [makeCheckpoint({ time_zone: 'America/Denver' })]
@@ -156,7 +163,11 @@ describe('recommendation (REQ-07, RR-23, RR-26)', () => {
   it('badges the recommended route and shows the server sentence', () => {
     renderResults(resultsWith({}))
 
-    expect(screen.getByText('Route 1 has the fewest Severe miles.')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Route 1 has fewer Severe-weather miles than Route 2 (0.0 against 10.0 miles).',
+      ),
+    ).toBeInTheDocument()
     expect(screen.getAllByText('Recommended')).toHaveLength(1)
   })
 

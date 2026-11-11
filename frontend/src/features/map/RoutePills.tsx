@@ -1,6 +1,5 @@
 import Box from '@mui/material/Box'
 import { Marker } from '@vis.gl/react-maplibre'
-import { formatDuration } from '../../shared/time'
 import type { Route } from '../../shared/types'
 import { lineMidpoint } from './lineMidpoint'
 import type { RouteLines } from './routeGeoJson'
@@ -46,7 +45,7 @@ export function RoutePills({ routes, lines, selectedRouteId, onSelectRoute }: Ro
             cursor: 'pointer',
           }}
         >
-          {`Route ${String(index + 1)} · ${formatDuration(route.summary.travel_time_s)}`}
+          {`Route ${String(index + 1)} · ${route.summary.travel_time_text}`}
         </Box>
       </Marker>
     )

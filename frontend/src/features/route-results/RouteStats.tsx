@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import { browserTimeZone, formatDuration, formatLocalTime } from '../../shared/time'
+import { browserTimeZone, formatLocalTime } from '../../shared/time'
 import type { Route } from '../../shared/types'
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -30,7 +30,7 @@ export function RouteStats({ route }: { route: Route }) {
       }}
     >
       <Stat label="Distance" value={`${summary.distance_miles} mi`} />
-      <Stat label="Travel time" value={formatDuration(summary.travel_time_s)} />
+      <Stat label="Travel time" value={summary.travel_time_text} />
       <Stat label="Arrives" value={formatLocalTime(summary.arrival_utc, arrivalZone)} />
     </Box>
   )

@@ -85,7 +85,11 @@ describe('App shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Chicago to Denver' }))
 
     expect(await screen.findByRole('button', { name: 'Route 2' })).toBeInTheDocument()
-    expect(screen.getByText('Route 1 has the fewest Severe miles.')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Route 1 has fewer Severe-weather miles than Route 2 (0.0 against 10.0 miles).',
+      ),
+    ).toBeInTheDocument()
   })
 })
 

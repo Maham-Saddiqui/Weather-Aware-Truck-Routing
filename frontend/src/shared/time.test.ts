@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   dayjs,
   formatClockTime,
-  formatDuration,
   formatLocalTime,
   hoursBetween,
   instantAfterHours,
@@ -73,10 +72,5 @@ describe('time formatting', () => {
 
   it('counts the hours from the departure to a later instant, with the part hour (RR-28)', () => {
     expect(hoursBetween('2026-11-12T23:00:00Z', '2026-11-13T01:30:00Z')).toBe(2.5)
-  })
-
-  it('writes travel time as hours and minutes', () => {
-    expect(formatDuration(4200)).toBe('1 h 10 min')
-    expect(formatDuration(1500)).toBe('25 min')
   })
 })
