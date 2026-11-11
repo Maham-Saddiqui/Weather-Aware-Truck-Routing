@@ -8,7 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_VALHALLA_BASE_URL = "https://valhalla1.openstreetmap.de"
 DEFAULT_OPEN_METEO_BASE_URL = "https://api.open-meteo.com"
 DEFAULT_THROTTLE_RATE = "60/min"
+# A trip request costs routing and weather calls, so it gets a much stricter bucket (SEC-05).
+DEFAULT_TRIP_THROTTLE_RATE = "10/min"
 DEFAULT_TOMTOM_DAILY_CALL_LIMIT = 2_000
+
+
+TRIP_THROTTLE_SCOPE = "trips"
 
 
 def required_env(name: str) -> str:
@@ -37,6 +42,7 @@ TOMTOM_API_KEY = os.environ.get("TOMTOM_API_KEY", "")
 VALHALLA_BASE_URL = os.environ.get("VALHALLA_BASE_URL", DEFAULT_VALHALLA_BASE_URL)
 OPEN_METEO_BASE_URL = os.environ.get("OPEN_METEO_BASE_URL", DEFAULT_OPEN_METEO_BASE_URL)
 API_THROTTLE_RATE = os.environ.get("API_THROTTLE_RATE", DEFAULT_THROTTLE_RATE)
+TRIP_THROTTLE_RATE = os.environ.get("TRIP_THROTTLE_RATE", DEFAULT_TRIP_THROTTLE_RATE)
 TOMTOM_DAILY_CALL_LIMIT = int_env("TOMTOM_DAILY_CALL_LIMIT", DEFAULT_TOMTOM_DAILY_CALL_LIMIT)
 
 INSTALLED_APPS = ["rest_framework", "corsheaders", "trips"]
@@ -46,6 +52,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "trips.body_limit.BodyLimitMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -64,11 +71,13 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [],
     "UNAUTHENTICATED_USER": None,
+    # Only the trip endpoints read a body, and they declare JSON themselves (SEC-03).
+    "DEFAULT_PARSER_CLASSES": [],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "EXCEPTION_HANDLER": "trips.problems.problem_response",
     # Every endpoint is throttled per client address unless a view opts out (SEC-05).
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.AnonRateThrottle"],
-    "DEFAULT_THROTTLE_RATES": {"anon": API_THROTTLE_RATE},
+    "DEFAULT_THROTTLE_RATES": {"anon": API_THROTTLE_RATE, TRIP_THROTTLE_SCOPE: TRIP_THROTTLE_RATE},
     # Behind Render's proxy the client address is read from X-Forwarded-For (BE-17).
     "NUM_PROXIES": int(os.environ.get("NUM_PROXIES", "1")),
 }

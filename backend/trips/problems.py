@@ -3,21 +3,25 @@ import math
 from dataclasses import dataclass, replace
 from typing import Any
 
+from django.http import JsonResponse
 from rest_framework.exceptions import APIException, Throttled, ValidationError
 from rest_framework.response import Response
 
 from providers.routing.port import NoRouteFound, RoutingUnavailable
+from services.trip_runner import TripsBusy
 from trips.responses import no_store
 
 logger = logging.getLogger("trips.problems")
 
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 HTTP_BAD_REQUEST = 400
+HTTP_PAYLOAD_TOO_LARGE = 413
 HTTP_UNPROCESSABLE = 422
 HTTP_TOO_MANY_REQUESTS = 429
 HTTP_INTERNAL_ERROR = 500
 HTTP_SERVICE_UNAVAILABLE = 503
 DEFAULT_RETRY_AFTER_S = 60
+BUSY_RETRY_AFTER_S = 5
 UNUSABLE_REQUEST_DETAIL = "The request could not be used. Check it and try again."
 
 
@@ -47,11 +51,21 @@ ROUTING_UNAVAILABLE = Problem(
     "Routing is unavailable",
     "We could not get a route right now. Please try again in a minute.",
 )
+PAYLOAD_TOO_LARGE = Problem(
+    HTTP_PAYLOAD_TOO_LARGE,
+    "validation_error",
+    "Request too large",
+    "This request is much larger than a trip request can be. Check it and try again.",
+)
 RATE_LIMITED = Problem(
     HTTP_TOO_MANY_REQUESTS,
     "rate_limited",
     "Too many requests",
     "You are sending requests too quickly. Please wait a little and try again.",
+)
+BUSY = replace(
+    RATE_LIMITED,
+    detail="The server is busy with other trips. Please wait a few seconds and try again.",
 )
 INTERNAL = Problem(
     HTTP_INTERNAL_ERROR,
@@ -69,12 +83,40 @@ def problem_response(exc: Exception, context: dict[str, Any]) -> Response:
         return _respond(RATE_LIMITED, retry_after_s=_seconds_to_wait(exc))
     if isinstance(exc, APIException) and exc.status_code < HTTP_INTERNAL_ERROR:
         return _respond(replace(VALIDATION, status=exc.status_code, detail=UNUSABLE_REQUEST_DETAIL))
+    if isinstance(exc, TripsBusy):
+        return _respond(BUSY, retry_after_s=BUSY_RETRY_AFTER_S)
+    return _respond(_problem_of(exc))
+
+
+def _problem_of(exc: Exception) -> Problem:
+    if isinstance(exc, RecursionError):
+        logger.warning("Rejected a request body nested too deeply")
+        return replace(VALIDATION, detail=UNUSABLE_REQUEST_DETAIL)
     if isinstance(exc, NoRouteFound):
-        return _respond(NO_ROUTE)
+        return NO_ROUTE
     if isinstance(exc, RoutingUnavailable):
-        return _respond(ROUTING_UNAVAILABLE)
+        return ROUTING_UNAVAILABLE
     logger.exception("Unhandled error")
-    return _respond(INTERNAL)
+    return INTERNAL
+
+
+def too_large_response() -> JsonResponse:
+    """Built outside DRF, because this answer is given before any view runs."""
+    response = JsonResponse(
+        _body(PAYLOAD_TOO_LARGE), status=HTTP_PAYLOAD_TOO_LARGE, content_type=PROBLEM_CONTENT_TYPE
+    )
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def _body(problem: Problem) -> dict[str, Any]:
+    return {
+        "type": f"/problems/{problem.code.replace('_', '-')}",
+        "title": problem.title,
+        "status": problem.status,
+        "detail": problem.detail,
+        "code": problem.code,
+    }
 
 
 def _respond(
@@ -82,13 +124,7 @@ def _respond(
     field_errors: dict[str, list[str]] | None = None,
     retry_after_s: int | None = None,
 ) -> Response:
-    body: dict[str, Any] = {
-        "type": f"/problems/{problem.code.replace('_', '-')}",
-        "title": problem.title,
-        "status": problem.status,
-        "detail": problem.detail,
-        "code": problem.code,
-    }
+    body = _body(problem)
     if field_errors is not None:
         body["field_errors"] = field_errors
     response = no_store(Response(body, status=problem.status, content_type=PROBLEM_CONTENT_TYPE))

@@ -11,8 +11,10 @@ import httpx
 from domain.heatmap import cell_of
 from domain.types import GeoPoint, HourlyWeather
 from providers.http import QueryParams, get_with_one_retry
+from providers.weather.budget import WeatherBudget
 from providers.weather.cache import CellKey, WindowCache
 from providers.weather.port import WeatherBusy, WeatherUnavailable
+from providers.weather.series import CompactSeries
 
 OPEN_METEO_BASE_URL = "https://api.open-meteo.com"
 OPEN_METEO_READ_TIMEOUT_S = 5.0
@@ -40,7 +42,13 @@ class OpenMeteoWeather:
         self._client = client
         self._cache = cache
         self._clock = clock
+        self._budget = WeatherBudget((), clock)
         self._fetch_lock = threading.Lock()
+
+    def limited_by(self, budget: WeatherBudget) -> "OpenMeteoWeather":
+        """Without a budget every fetch is allowed; the server always sets one."""
+        self._budget = budget
+        return self
 
     def forecast(self, points: Sequence[GeoPoint]) -> Mapping[GeoPoint, HourlyWeather]:
         deadline = time.monotonic() + WEATHER_TOTAL_TIMEOUT_S
@@ -69,6 +77,8 @@ class OpenMeteoWeather:
             if missing and deadline - time.monotonic() < OPEN_METEO_READ_TIMEOUT_S:
                 raise WeatherUnavailable("The weather service is too slow")
             for chunk in _chunks(missing, POINTS_PER_REQUEST):
+                if not self._budget.try_spend(len(chunk)):
+                    raise WeatherBusy("The weather allowance is spent for now")
                 for cell, text in self._fetch(chunk).items():
                     self._cache.put(cell, text)
                     windows[cell] = text
@@ -125,25 +135,63 @@ def _compact_by_cell(cells: Sequence[CellKey], text: str) -> dict[CellKey, str]:
             for cell, location in zip(cells, locations, strict=True)
             if location.get("hourly", {}).get("time")
         }
-    except (KeyError, TypeError, ValueError, ArithmeticError):
+    except (
+        KeyError,
+        TypeError,
+        ValueError,
+        ArithmeticError,
+        AttributeError,
+        OSError,
+        RecursionError,
+    ):
         raise WeatherUnavailable("The weather service sent an answer we cannot read") from None
 
 
 def _compact(hourly: JsonObject) -> str:
-    """Rain plus showers in exact decimals (RR-02); a missing part stays missing."""
-    rain_and_showers = [
-        _add(rain, showers) for rain, showers in zip(hourly["rain"], hourly["showers"], strict=True)
-    ]
-    rows = [
-        hourly["wind_speed_10m"],
-        hourly["wind_gusts_10m"],
-        rain_and_showers,
-        hourly["snowfall"],
+    """Rain plus showers in exact decimals (RR-02); a missing part stays missing.
+
+    Anything that is not a plain number, or a first hour that is not a whole timestamp, is
+    refused here, so only text that can be read back is ever cached.
+    """
+    wind, gust, rain, showers, snow = (
+        _readings(hourly[name])
+        for name in ("wind_speed_10m", "wind_gusts_10m", "rain", "showers", "snowfall")
+    )
+    rows: list[Sequence[Decimal | int | None]] = [
+        wind,
+        gust,
+        [_add(r, s) for r, s in zip(rain, showers, strict=True)],
+        snow,
     ]
     if any(len(row) != len(hourly["time"]) for row in rows):
         raise ValueError("Every series must cover every hour")
     lines = [",".join("" if value is None else str(value) for value in row) for row in rows]
-    return "\n".join([str(hourly["time"][0]), *lines])
+    return "\n".join([str(_first_hour(hourly["time"])), *lines])
+
+
+def _first_hour(times: list[Any]) -> int:
+    first = times[0]
+    if isinstance(first, bool) or not isinstance(first, int):
+        raise ValueError("Hours must be whole timestamps")
+    datetime.fromtimestamp(first, UTC)
+    return first
+
+
+def _readings(row: list[Any]) -> list[Decimal | int | None]:
+    if not isinstance(row, list):
+        raise TypeError("A series must be a list")
+    for value in row:
+        if value is not None and not _is_finite_number(value):
+            raise ValueError("Readings must be finite numbers")
+    return row
+
+
+def _is_finite_number(value: object) -> bool:
+    return (
+        isinstance(value, int | Decimal)
+        and not isinstance(value, bool)
+        and Decimal(value).is_finite()
+    )
 
 
 def _add(first: Decimal | int | None, second: Decimal | int | None) -> Decimal | None:
@@ -154,9 +202,7 @@ def _add(first: Decimal | int | None, second: Decimal | int | None) -> Decimal |
 
 def _expand(window: str) -> HourlyWeather:
     first_hour, *rows = window.split("\n")
-    wind, gust, rain, snow = (
-        tuple(_decimal_or_none(cell) for cell in row.split(",")) for row in rows
-    )
+    wind, gust, rain, snow = (CompactSeries(row) for row in rows)
     return HourlyWeather(
         first_hour_utc=datetime.fromtimestamp(int(first_hour), UTC),
         wind_mph=wind,
@@ -164,7 +210,3 @@ def _expand(window: str) -> HourlyWeather:
         rain_in=rain,
         snow_in=snow,
     )
-
-
-def _decimal_or_none(text: str) -> Decimal | None:
-    return Decimal(text) if text else None

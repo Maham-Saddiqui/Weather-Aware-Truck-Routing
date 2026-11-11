@@ -1,10 +1,14 @@
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import JSONParser
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from config import container
+from config.settings import TRIP_THROTTLE_SCOPE
 from domain.types import GeoPoint
+from providers.routing.port import RoutingUnavailable
 from providers.timezone.offline import TimeZoneNotFound
 from services.compare_trip import plan_compare_trip
 from services.primary_trip import plan_primary_trip
@@ -26,7 +30,10 @@ class HealthView(APIView):
 
 class AttributionView(APIView):
     def get(self, request: Request) -> Response:
-        credit = container.providers().attribution.routing_copyright()
+        providers = container.providers()
+        if not providers.trips.call_guard.try_acquire():
+            raise RoutingUnavailable("The daily routing budget is spent")
+        credit = providers.attribution.routing_copyright()
         return no_store(Response({"routing_copyright": credit}))
 
 
@@ -43,14 +50,28 @@ class TimeZoneView(APIView):
 
 
 class PrimaryTripView(APIView):
+    parser_classes = (JSONParser,)
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = TRIP_THROTTLE_SCOPE
+
     def post(self, request: Request) -> Response:
         providers = container.providers()
         trip = parse_trip_request(request.data, providers.clock())
-        return no_store(Response(present_primary(plan_primary_trip(providers.trips, trip))))
+        answer = providers.trip_runner.run(
+            lambda: present_primary(plan_primary_trip(providers.trips, trip))
+        )
+        return no_store(Response(answer))
 
 
 class CompareTripView(APIView):
+    parser_classes = (JSONParser,)
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = TRIP_THROTTLE_SCOPE
+
     def post(self, request: Request) -> Response:
         providers = container.providers()
         trip = parse_trip_request(request.data, providers.clock())
-        return no_store(Response(present_compare(plan_compare_trip(providers.trips, trip))))
+        answer = providers.trip_runner.run(
+            lambda: present_compare(plan_compare_trip(providers.trips, trip))
+        )
+        return no_store(Response(answer))
