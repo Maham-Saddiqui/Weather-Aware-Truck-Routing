@@ -2,6 +2,7 @@ import { styled } from '@mui/material/styles'
 import Skeleton from '@mui/material/Skeleton'
 import { Suspense, useState } from 'react'
 import { MAP_MIN_HEIGHT_PX, PHONE_MAP_HEIGHT_PX } from '../shared/constants'
+import { EmptyMapCard } from './EmptyMapCard'
 import { heatmapSliderFor } from './heatmapSliderFor'
 import { MapPane } from './MapPane'
 import type { TripPlannerState } from './useTripPlanner'
@@ -63,6 +64,7 @@ export function MapWithSlider({ planner }: { planner: TripPlannerState }) {
     <MapArea>
       <MapFrame>
         <MapPane planner={planner} hourOffset={hourOffset} />
+        {planner.results.phase === 'idle' && <EmptyMapCard />}
       </MapFrame>
       {slider !== null && (
         <SliderDock>

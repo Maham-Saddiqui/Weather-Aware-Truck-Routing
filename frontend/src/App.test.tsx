@@ -19,6 +19,22 @@ afterEach(() => {
 })
 
 describe('App shell', () => {
+  it('says in one line what the app does, under the product name', () => {
+    render(<App />)
+
+    expect(
+      screen.getByText(
+        'Compare up to three truck routes by the weather you will actually meet, hour by hour.',
+      ),
+    ).toBeVisible()
+  })
+
+  it('invites the first trip with a card over the map until a trip is planned', async () => {
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Plan your first trip' })).toBeVisible()
+  })
+
   it('pings the server once when the app opens so a sleeping server wakes (REQ-12)', async () => {
     let healthPings = 0
     server.use(

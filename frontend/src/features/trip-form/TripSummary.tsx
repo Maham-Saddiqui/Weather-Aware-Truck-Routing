@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography'
 import type { ReactNode } from 'react'
 import { EndpointLetter, type EndpointLetterName } from '../../shared/EndpointLetter'
 import { formatLocalTime } from '../../shared/time'
+import { parseLoad } from './validation'
 import type { TripFormValues } from './validation'
 
 interface TripSummaryProps {
@@ -19,6 +20,12 @@ interface TripSummaryProps {
 function departureText({ departure }: TripFormValues, zone: string | null): string {
   if (!departure || zone === null) return ''
   return `, departs ${formatLocalTime(departure.toISOString(), zone)}`
+}
+
+// Display only: the box keeps plain digits and the link keeps the number as typed.
+function loadText(loadLb: string): string {
+  const load = parseLoad(loadLb)
+  return load === null ? loadLb : load.toLocaleString('en-US')
 }
 
 function LetteredPlace({ letter, label }: { letter: EndpointLetterName; label?: string }) {
@@ -50,7 +57,7 @@ export function TripSummary({ values, departureZone, onEdit, actions }: TripSumm
             <LetteredPlace letter="B" label={values.destination?.label} />
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {values.loadLb} lb, checkpoint every {values.spacingMiles} miles
+            {loadText(values.loadLb)} lb, checkpoint every {values.spacingMiles} miles
             {departureText(values, departureZone)}
           </Typography>
         </Box>

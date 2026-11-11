@@ -36,4 +36,25 @@ describe('collapsed trip summary (REQ-08)', () => {
     const heading = screen.getByRole('heading')
     expect(heading).toHaveTextContent('A Chicago, Illinois to B Denver, Colorado')
   })
+
+  it('shows the cargo weight with a thousands separator while the input keeps plain digits', () => {
+    summary()
+
+    expect(screen.getByText(/^42,000 lb, checkpoint every 25 miles/)).toBeVisible()
+  })
+
+  it('shows the actions it is given next to the trip', () => {
+    render(
+      <Providers>
+        <TripSummary
+          values={VALUES}
+          departureZone="America/Chicago"
+          onEdit={() => undefined}
+          actions={<button type="button">Copy link</button>}
+        />
+      </Providers>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Copy link' })).toBeVisible()
+  })
 })

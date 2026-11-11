@@ -1,7 +1,7 @@
 import { Marker } from '@vis.gl/react-maplibre'
 import type { Marker as MapLibreMarker } from 'maplibre-gl'
 import { useRef } from 'react'
-import { arrivalEtaUtc } from '../../shared/arrival'
+import { arrivalEtaUtc, arrivalTimeZone } from '../../shared/arrival'
 import { formatClockTime } from '../../shared/time'
 import type { Heatmap, Route } from '../../shared/types'
 import { TruckBadge } from './TruckBadge'
@@ -21,7 +21,7 @@ interface TruckMarkerProps {
 function labelFor(route: Route, truck: TruckAtHour): string {
   const arrival = arrivalEtaUtc(route)
   if (truck.hasArrived && arrival) {
-    return `Truck arrived at ${formatClockTime(arrival, truck.timeZone)}`
+    return `Truck arrived at ${formatClockTime(arrival, arrivalTimeZone(route) ?? truck.timeZone)}`
   }
   return `Truck at ${formatClockTime(truck.instant.toISOString(), truck.timeZone)}`
 }

@@ -285,6 +285,12 @@ describe('HeatmapSlider with reduced motion (FE-07)', () => {
 })
 
 describe('HeatmapSlider caption (REQ-09, FE-07: self-explanatory controls)', () => {
+  it('says which time zone the slider times are shown in', () => {
+    render(<SliderWithState />)
+
+    expect(screen.getByText("Times shown in the origin's time zone (MT)")).toBeVisible()
+  })
+
   it('names the slider "Forecast time" in visible text', () => {
     render(<SliderWithState />)
 
