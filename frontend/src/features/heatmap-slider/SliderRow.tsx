@@ -1,14 +1,13 @@
-import Slider from '@mui/material/Slider'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import type { HeatmapSliderProps } from '../../shared/types'
 import { formatHourLabel } from './formatHourLabel'
+import { HoursSlider } from './HoursSlider'
 import { PlayButton } from './PlayButton'
 import { SpeedControl } from './SpeedControl'
 import { usePlayback } from './usePlayback'
 
 const LABEL_MIN_WIDTH_PX = 150
-const SLIDER_MIN_WIDTH_PX = 160
 
 export function SliderRow({
   startUtc,
@@ -26,17 +25,14 @@ export function SliderRow({
     <Stack direction="row" useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 2 }}>
       <PlayButton playback={playback} />
       <SpeedControl playback={playback} />
-      <Slider
-        aria-label="Hours after departure"
-        min={0}
-        max={lastHour}
-        step={1}
-        value={hourOffset}
-        getAriaValueText={labelFor}
-        sx={{ flex: `1 1 ${String(SLIDER_MIN_WIDTH_PX)}px` }}
-        onChange={(_event, value) => {
+      <HoursSlider
+        hourOffset={hourOffset}
+        lastHour={lastHour}
+        arrivalHour={playUntilHour}
+        labelFor={labelFor}
+        onChange={(hour) => {
           playback.stopPlaying()
-          onChangeHourOffset(value)
+          onChangeHourOffset(hour)
         }}
       />
       <Typography

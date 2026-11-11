@@ -332,3 +332,33 @@ describe('HeatmapSlider caption (REQ-09, FE-07: self-explanatory controls)', () 
     expect(tooltip).toHaveTextContent('Checkpoint dots show conditions when the truck arrives.')
   })
 })
+
+describe('HeatmapSlider arrival mark (REQ-09, RR-28: the forecast goes on after arrival)', () => {
+  it('shows the word Arrival on the track when the trip arrives before the last hour', () => {
+    render(<SliderWithState playUntilHour={14} />)
+
+    expect(screen.getByText('Arrival')).toBeVisible()
+  })
+
+  it('puts the arrival in the slider description for screen readers', () => {
+    render(<SliderWithState playUntilHour={14} />)
+
+    expect(screen.getByRole('slider')).toHaveAccessibleDescription(
+      'Arrival at +14 h; the forecast continues to +48 h',
+    )
+  })
+
+  it('follows the selected route', () => {
+    const { rerender } = render(<SliderWithState playUntilHour={14} />)
+    rerender(<SliderWithState playUntilHour={30} />)
+
+    expect(screen.getByRole('slider')).toHaveAccessibleDescription(/Arrival at \+30 h/)
+  })
+
+  it('has no mark when the trip arrives at the end of the forecast', () => {
+    render(<SliderWithState playUntilHour={48} />)
+
+    expect(screen.queryByText('Arrival')).not.toBeInTheDocument()
+    expect(screen.getByRole('slider')).not.toHaveAccessibleDescription()
+  })
+})
