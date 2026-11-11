@@ -11,12 +11,14 @@ interface MapStubProps {
   onLoad: () => void
   onError: (event: object | null) => void
   interactiveLayerIds: string[]
+  initialViewState: { bounds: [[number, number], [number, number]] }
 }
 
 const mapProps = vi.hoisted(() => ({ current: null as MapStubProps | null }))
 
 vi.mock('./mapLib', () => ({ mapLib: Promise.resolve({}) }))
 vi.mock('./BlankMissingImages', () => ({ BlankMissingImages: () => null }))
+vi.mock('./ReadableLabels', () => ({ ReadableLabels: () => null }))
 vi.mock('./RouteScene', () => ({ RouteScene: () => null }))
 vi.mock('./HeatmapLayer', () => ({ HeatmapLayer: () => null }))
 vi.mock('./RouteMarkers', () => ({ RouteMarkers: () => null }))
@@ -88,6 +90,17 @@ describe('RouteMapCanvas (REQ-08: click a route line to select it)', () => {
     clickOn(document.body)
 
     expect(onSelectRoute).not.toHaveBeenCalled()
+  })
+})
+
+describe('RouteMapCanvas first view (REQ-08)', () => {
+  it('opens on the contiguous United States at any window size, before any trip', () => {
+    renderCanvas({ routes: [], selectedRouteId: null })
+
+    expect(mapProps.current?.initialViewState.bounds).toEqual([
+      [-125, 24],
+      [-66.5, 49.5],
+    ])
   })
 })
 

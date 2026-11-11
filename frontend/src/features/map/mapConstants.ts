@@ -1,6 +1,15 @@
 export const BASEMAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark'
 
-export const INITIAL_VIEW = { longitude: -98, latitude: 39, zoom: 3 } as const
+// The contiguous United States, so the empty map opens on the country the app serves at any window size.
+export const UNITED_STATES_BOUNDS: [[number, number], [number, number]] = [
+  [-125, 24],
+  [-66.5, 49.5],
+]
+
+// Place names in the free dark basemap are mid grey; these lift them above 7:1 against the dark land.
+export const LABEL_TEXT_COLOUR = '#e2e8f0'
+export const LABEL_HALO_COLOUR = '#0b1623'
+export const LABEL_HALO_WIDTH_PX = 1.6
 
 export const FIT_PADDING_PX = 56
 // The forecast panel floating over the bottom of the map on wide screens is about 100 px tall.
@@ -12,6 +21,18 @@ export const TRUCK_PIN_HEIGHT_PX = 63
 export const FIT_TOP_CLEARANCE_PX = LEGEND_BOTTOM_PX + TRUCK_PIN_HEIGHT_PX
 // The zoom buttons end 51 px from the right edge; half a pin's width must stay clear of them too.
 export const FIT_RIGHT_CLEARANCE_PX = 76
+
+export const INITIAL_VIEW = {
+  bounds: UNITED_STATES_BOUNDS,
+  fitBoundsOptions: {
+    padding: {
+      top: LEGEND_BOTTOM_PX,
+      left: FIT_PADDING_PX,
+      right: FIT_RIGHT_CLEARANCE_PX,
+      bottom: FIT_PADDING_PX,
+    },
+  },
+} as const
 export const FIT_DURATION_MS = 700
 
 export const ROUTE_LINE_LAYER_ID = 'route-line'

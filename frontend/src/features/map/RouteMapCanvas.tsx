@@ -13,6 +13,7 @@ import { mapLib } from './mapLib'
 import { MapLegend } from './MapLegend'
 import { MapUnavailable } from './MapUnavailable'
 import { useMapFailure } from './useMapFailure'
+import { ReadableLabels } from './ReadableLabels'
 import { RouteMarkers } from './RouteMarkers'
 import { RouteScene } from './RouteScene'
 
@@ -78,6 +79,7 @@ export function RouteMapCanvas({
         <AttributionControl position="bottom-right" compact={false} />
         <NavigationControl position="top-right" showCompass={false} />
         <BlankMissingImages />
+        <ReadableLabels />
         {heatmap && <HeatmapLayer heatmap={heatmap} hourOffset={hourOffset} />}
         <RouteScene {...scene} onSelectRoute={onSelectRoute} />
         <RouteMarkers
