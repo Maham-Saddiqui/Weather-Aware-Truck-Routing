@@ -48,6 +48,15 @@ describe('announcing the arrival of results (REQ-10, NFR-03)', () => {
     expect(announcement).toHaveTextContent('Route options are ready')
   })
 
+  it('is one pixel in size, so it can never stretch the page (NFR-04)', () => {
+    render(view(EMPTY_RESULTS))
+
+    const style = getComputedStyle(screen.getByRole('status'))
+
+    expect(style.width).toBe('1px')
+    expect(style.height).toBe('1px')
+  })
+
   it('goes quiet when the results are no longer ready, so the next arrival is announced again', () => {
     const { rerender } = render(view(FULL_SET))
     const announcement = screen.getByRole('status')
