@@ -1,4 +1,5 @@
 import Alert from '@mui/material/Alert'
+import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
 import type { WeatherStatus } from '../../shared/types'
 import type { TripResults } from './tripResults'
@@ -6,6 +7,7 @@ import type { TripResults } from './tripResults'
 interface Notice {
   severity: 'warning' | 'info'
   text: string
+  canRetry?: boolean
 }
 
 const BACKUP_NOTICE: Notice = {
@@ -32,8 +34,13 @@ const WEATHER_NOTICES: Record<WeatherStatus, Notice | null> = {
   unavailable: {
     severity: 'warning',
     text: 'Weather data is unavailable right now. Routes are shown without ratings and no route is recommended.',
+    canRetry: true,
   },
-  busy: { severity: 'warning', text: 'Weather service busy, try again in a minute' },
+  busy: {
+    severity: 'warning',
+    text: 'Weather service busy, try again in a minute',
+    canRetry: true,
+  },
 }
 
 function noticesFor(results: TripResults): Notice[] {
@@ -46,12 +53,31 @@ function noticesFor(results: TripResults): Notice[] {
   return notices
 }
 
-export function ResultNotices({ results }: { results: TripResults }) {
+interface ResultNoticesProps {
+  results: TripResults
+  onRetry: () => void
+}
+
+export function ResultNotices({ results, onRetry }: ResultNoticesProps) {
   return (
     <Stack spacing={1} aria-live="polite">
       {noticesFor(results).map((notice) => (
         <Alert key={notice.text} severity={notice.severity}>
           {notice.text}
+          {notice.canRetry && (
+            <div>
+              <Button
+                color="inherit"
+                variant="outlined"
+                size="small"
+                disabled={results.isPending}
+                onClick={onRetry}
+                sx={{ mt: 1.5 }}
+              >
+                Try again
+              </Button>
+            </div>
+          )}
         </Alert>
       ))}
     </Stack>

@@ -162,4 +162,26 @@ describe('planning and trying again (REQ-14)', () => {
     })
     expect(result.current.run?.trip).toEqual(TRIP)
   })
+
+  it('sends exactly the same trip again when retrying after a busy weather answer (REQ-12)', async () => {
+    const bodies: unknown[] = []
+    const busy = { ...makeCompareResponse(), weather: { status: 'busy' as const } }
+    server.use(
+      http.post('*/api/v1/trips/compare', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json(busy)
+      }),
+    )
+    const { result } = await planTrip()
+    expect(result.current.results.weather).toBe('busy')
+
+    act(() => {
+      result.current.retry()
+    })
+
+    await waitFor(() => {
+      expect(bodies).toHaveLength(2)
+    })
+    expect(bodies[1]).toEqual(bodies[0])
+  })
 })
