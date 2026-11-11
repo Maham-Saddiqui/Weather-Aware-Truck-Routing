@@ -1,9 +1,8 @@
-import { skipToken, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { api } from '../../shared/api/client'
 import { DEFAULT_SPACING_MILES } from '../../shared/constants'
 import { browserTimeZone, dayjs, tomorrowMorning } from '../../shared/time'
-import type { Place, TripRequest } from '../../shared/types'
+import type { TripRequest } from '../../shared/types'
+import { useOriginTimeZone, zoneBlockMessage } from './useOriginTimeZone'
 import { checkTripForm, type TripFormErrors, type TripFormValues } from './validation'
 
 function defaultValues(): TripFormValues {
@@ -26,14 +25,6 @@ function valuesFromTrip(trip: TripRequest): TripFormValues {
   }
 }
 
-function useOriginTimeZone(origin: Place | null): string {
-  const lookup = useQuery({
-    queryKey: ['timezone', origin?.lat, origin?.lon],
-    queryFn: origin ? ({ signal }) => api.getTimeZone(origin, signal) : skipToken,
-  })
-  return lookup.data?.time_zone ?? browserTimeZone()
-}
-
 export function useTripForm(
   initialTrip: TripRequest | null,
   onSubmit: (trip: TripRequest) => void,
@@ -42,15 +33,19 @@ export function useTripForm(
     initialTrip ? valuesFromTrip(initialTrip) : defaultValues(),
   )
   const [hasAttempted, setHasAttempted] = useState(false)
-  const timeZone = useOriginTimeZone(values.origin)
+  const originZone = useOriginTimeZone(values.origin)
 
   const check = checkTripForm(values, dayjs())
-  const errors: TripFormErrors = hasAttempted && !check.isValid ? check.errors : {}
+  const zoneBlock = zoneBlockMessage(originZone.state)
+  const checkErrors: TripFormErrors = check.isValid ? {} : check.errors
+  const errors: TripFormErrors = hasAttempted
+    ? { ...checkErrors, ...(zoneBlock && { departure: zoneBlock }) }
+    : {}
 
   return {
     values,
     errors,
-    timeZone,
+    originZone,
     change: (changes: Partial<TripFormValues>) => {
       setValues((previous) => ({ ...previous, ...changes }))
     },
@@ -63,7 +58,7 @@ export function useTripForm(
     },
     submit: () => {
       setHasAttempted(true)
-      if (check.isValid) onSubmit(check.trip)
+      if (check.isValid && !zoneBlock) onSubmit(check.trip)
     },
     submitTrip: (trip: TripRequest) => {
       setValues(valuesFromTrip(trip))

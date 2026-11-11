@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Providers } from '../../app/Providers'
 import { PHOTON_SEARCH_URL } from '../../shared/constants'
 import { server } from '../../shared/testing/server'
@@ -87,6 +87,86 @@ describe('address suggestions (REQ-02, FE-10)', () => {
     expect(screen.getByText('Choose an origin from the suggestions.')).toBeInTheDocument()
     expect(screen.getByText('Choose a destination from the suggestions.')).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
+  })
+})
+
+async function chooseOriginAndDestination() {
+  answerWithPlaces()
+  await chooseFirstSuggestion('Origin', 'Chicago')
+  server.use(
+    http.get(PHOTON_SEARCH_URL, () =>
+      HttpResponse.json({
+        features: [
+          photonFeature({ name: 'Denver', state: 'Colorado', countrycode: 'US' }, -104.99, 39.74),
+        ],
+      }),
+    ),
+  )
+  await userEvent.type(screen.getByLabelText('Destination'), 'Denver')
+  await userEvent.click(await screen.findByRole('option', { name: /Denver/ }))
+  await userEvent.type(screen.getByLabelText('Cargo weight (lb)'), '42000')
+}
+
+describe('departure time zone (RR-18, RR-29)', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('sends the typed wall-clock time as the instant in the origin zone, not the browser zone', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-10T12:00:00Z') })
+    server.use(
+      http.get('*/api/v1/timezone', () => HttpResponse.json({ time_zone: 'Pacific/Honolulu' })),
+    )
+    const onSubmit = renderForm()
+    await chooseOriginAndDestination()
+    expect(await screen.findByText('Local time at the origin (HST)')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByRole('group', { name: 'Departure' }), '{Control>}a{/Control}')
+    await userEvent.keyboard('{Backspace}111220260900')
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ departure_utc: '2026-11-12T19:00:00.000Z' })
+  })
+
+  it('says it is finding the origin time zone and blocks planning until it arrives', async () => {
+    let answer: () => void = () => undefined
+    server.use(
+      http.get('*/api/v1/timezone', async () => {
+        await new Promise<void>((resolve) => {
+          answer = resolve
+        })
+        return HttpResponse.json({ time_zone: 'America/Chicago' })
+      }),
+    )
+    const onSubmit = renderForm()
+    await chooseOriginAndDestination()
+
+    expect(await screen.findByText('Finding the origin’s time zone…')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(screen.getByText(/still finding the origin’s time zone/)).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    answer()
+    expect(await screen.findByText(/Local time at the origin/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('says the lookup failed, blocks planning and lets the driver look it up again', async () => {
+    server.use(http.get('*/api/v1/timezone', () => HttpResponse.error()))
+    const onSubmit = renderForm()
+    await chooseOriginAndDestination()
+    expect(await screen.findByText('We could not find the origin’s time zone.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(screen.getByText(/cannot read the departure time/)).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    server.resetHandlers()
+    await userEvent.click(screen.getByRole('button', { name: 'Look up the time zone again' }))
+    expect(await screen.findByText(/Local time at the origin/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Plan route' }))
+    expect(onSubmit).toHaveBeenCalledTimes(1)
   })
 })
 
