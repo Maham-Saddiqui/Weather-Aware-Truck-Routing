@@ -1,8 +1,25 @@
+import importlib
 import logging
+import sys
 
 import pytest
 
+from config import container
 from config.startup import configured_worker_count, log_worker_count
+
+
+def test_the_provider_bundle_is_built_at_start_up_before_any_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """BE-09"""
+    builds: list[str] = []
+    monkeypatch.setattr(container, "providers", lambda: builds.append("built"))
+    sys.modules.pop("config.wsgi", None)
+
+    importlib.import_module("config.wsgi")
+
+    assert builds == ["built"]
+    sys.modules.pop("config.wsgi", None)
 
 
 @pytest.mark.parametrize(
