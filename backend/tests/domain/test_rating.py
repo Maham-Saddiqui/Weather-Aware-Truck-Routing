@@ -58,6 +58,7 @@ def at(hour: int, minute: int = 0) -> datetime:
     ],
 )
 def test_rr03_wind_bands_with_a_10000_lb_load(wind: str, expected: Level) -> None:
+    """RR-03."""
     assert level_of(readings(wind=wind)) is expected
 
 
@@ -78,6 +79,7 @@ def test_rr03_wind_bands_with_a_10000_lb_load(wind: str, expected: Level) -> Non
 def test_rr06_rr07_rr08_load_rules_raise_wind_only_above_the_limits(
     wind: str, load_lb: int, expected: Level
 ) -> None:
+    """RR-06, RR-07, RR-08."""
     assert level_of(readings(wind=wind), load_lb) is expected
 
 
@@ -97,6 +99,7 @@ def test_rr06_rr07_rr08_load_rules_raise_wind_only_above_the_limits(
 def test_rr04_rain_bands_include_the_lower_edge_and_no_travel_is_strictly_above(
     rain: str, expected: Level
 ) -> None:
+    """RR-04."""
     assert level_of(readings(rain=rain)) is expected
 
 
@@ -116,19 +119,23 @@ def test_rr04_rain_bands_include_the_lower_edge_and_no_travel_is_strictly_above(
 def test_rr05_snow_bands_include_the_lower_edge_and_no_travel_is_strictly_above(
     snow: str, expected: Level
 ) -> None:
+    """RR-05."""
     assert level_of(readings(snow=snow)) is expected
 
 
 def test_rr04_a_heavy_load_never_changes_the_rain_or_snow_rating() -> None:
+    """RR-04."""
     assert level_of(readings(rain="0.30", snow="1.50"), 80_000) is Level.HIGH
 
 
 def test_rr01_worst_of_is_the_maximum_and_none_for_nothing() -> None:
+    """RR-01."""
     assert worst_of([Level.LOW, Level.SEVERE, Level.HIGH]) is Level.SEVERE
     assert worst_of([]) is None
 
 
 def test_rr09_rr10_wind_moderate_rain_high_snow_low_is_high_driven_by_rain() -> None:
+    """RR-09, RR-10."""
     rating = rate_checkpoint(readings(wind="30", rain="0.30", snow="0"), 10_000)
 
     assert rating.level is Level.HIGH
@@ -137,6 +144,7 @@ def test_rr09_rr10_wind_moderate_rain_high_snow_low_is_high_driven_by_rain() -> 
 
 
 def test_rr10_wind_raised_by_load_and_severe_rain_are_both_driving_factors() -> None:
+    """RR-10."""
     rating = rate_checkpoint(readings(wind="38", rain="0.60", snow="0"), 41_000)
 
     assert rating.level is Level.SEVERE
@@ -145,6 +153,7 @@ def test_rr10_wind_raised_by_load_and_severe_rain_are_both_driving_factors() -> 
 
 
 def test_rr10_a_load_rule_is_not_reported_when_worse_rain_decides_the_rating() -> None:
+    """RR-10."""
     rating = rate_checkpoint(readings(wind="38", rain="1.50", snow="0"), 41_000)
 
     assert rating.level is Level.NO_TRAVEL
@@ -153,6 +162,7 @@ def test_rr10_a_load_rule_is_not_reported_when_worse_rain_decides_the_rating() -
 
 
 def test_rr10_wind_raised_to_no_travel_by_load_reports_the_rule() -> None:
+    """RR-10."""
     rating = rate_checkpoint(readings(wind="50"), 30_001)
 
     assert rating.level is Level.NO_TRAVEL
@@ -161,6 +171,7 @@ def test_rr10_wind_raised_to_no_travel_by_load_reports_the_rule() -> None:
 
 
 def test_rr10_a_low_checkpoint_has_no_driving_factor() -> None:
+    """RR-10."""
     rating = rate_checkpoint(readings(), 10_000)
 
     assert rating.level is Level.LOW
@@ -169,6 +180,7 @@ def test_rr10_a_low_checkpoint_has_no_driving_factor() -> None:
 
 
 def test_rr11_wind_30_with_rain_missing_is_no_data() -> None:
+    """RR-11."""
     rating = rate_checkpoint(readings(wind="30", rain=None, snow="0"), 10_000)
 
     assert rating.level is None
@@ -176,10 +188,12 @@ def test_rr11_wind_30_with_rain_missing_is_no_data() -> None:
 
 
 def test_rr11_wind_50_severe_so_far_with_rain_missing_is_no_data() -> None:
+    """RR-11."""
     assert level_of(readings(wind="50", rain=None, snow="0"), 10_000) is None
 
 
 def test_rr11_wind_60_with_rain_missing_is_still_no_travel() -> None:
+    """RR-11."""
     rating = rate_checkpoint(readings(wind="60", rain=None, snow="0"), 10_000)
 
     assert rating.level is Level.NO_TRAVEL
@@ -187,22 +201,27 @@ def test_rr11_wind_60_with_rain_missing_is_still_no_travel() -> None:
 
 
 def test_rr11_every_reading_missing_is_no_data_never_low() -> None:
+    """RR-11."""
     assert level_of(readings(wind=None, rain=None, snow=None)) is None
 
 
 def test_rr11_missing_wind_with_severe_rain_is_no_data_not_severe() -> None:
+    """RR-11."""
     assert level_of(readings(wind=None, rain="0.60", snow="0")) is None
 
 
 def test_rr02_wind_34_5_rounds_half_up_to_35_which_is_high() -> None:
+    """RR-02."""
     assert level_of(measurements_at(forecast(wind=("34.5",) * 5), at(13))) is Level.HIGH
 
 
 def test_rr02_wind_34_49_rounds_down_to_34_which_is_moderate() -> None:
+    """RR-02."""
     assert level_of(measurements_at(forecast(wind=("34.49",) * 5), at(13))) is Level.MODERATE
 
 
 def test_rr02_rain_0_245_rounds_half_up_to_0_25_which_is_high() -> None:
+    """RR-02."""
     measurements = measurements_at(forecast(rain=("0.245",) * 5), at(13))
 
     assert measurements.rain_in == Decimal("0.25")
@@ -210,14 +229,17 @@ def test_rr02_rain_0_245_rounds_half_up_to_0_25_which_is_high() -> None:
 
 
 def test_rr02_rain_0_244_rounds_to_0_24_which_is_moderate() -> None:
+    """RR-02."""
     assert level_of(measurements_at(forecast(rain=("0.244",) * 5), at(13))) is Level.MODERATE
 
 
 def test_rr02_rain_0_495_rounds_half_up_to_0_50_which_is_severe() -> None:
+    """RR-02."""
     assert level_of(measurements_at(forecast(rain=("0.495",) * 5), at(13))) is Level.SEVERE
 
 
 def test_rr02_snow_and_gusts_are_rounded_once_for_display() -> None:
+    """RR-02."""
     measurements = measurements_at(forecast(snow=("0.125",) * 5, gust=("40.5",) * 5), at(13))
 
     assert measurements.snow_in == Decimal("0.13")
@@ -225,6 +247,7 @@ def test_rr02_snow_and_gusts_are_rounded_once_for_display() -> None:
 
 
 def test_rr17_arrival_13_20_uses_wind_at_13_00_and_rain_snow_at_14_00() -> None:
+    """RR-17."""
     weather = forecast(
         wind=("0", "10", "20", "30", "40"),
         rain=("0", "0.11", "0.22", "0.33", "0.44"),
@@ -239,6 +262,7 @@ def test_rr17_arrival_13_20_uses_wind_at_13_00_and_rain_snow_at_14_00() -> None:
 
 
 def test_rr17_arrival_13_40_uses_wind_at_14_00_and_rain_snow_at_14_00() -> None:
+    """RR-17."""
     weather = forecast(wind=("0", "10", "20", "30", "40"), rain=("0", "0.11", "0.22", "0.33", "0"))
 
     measurements = measurements_at(weather, at(13, 40))
@@ -248,6 +272,7 @@ def test_rr17_arrival_13_40_uses_wind_at_14_00_and_rain_snow_at_14_00() -> None:
 
 
 def test_rr17_arrival_exactly_13_00_uses_wind_at_13_00_and_rain_snow_at_14_00() -> None:
+    """RR-17."""
     weather = forecast(wind=("0", "10", "20", "30", "40"), rain=("0", "0.11", "0.22", "0.33", "0"))
 
     measurements = measurements_at(weather, at(13))
@@ -257,12 +282,14 @@ def test_rr17_arrival_exactly_13_00_uses_wind_at_13_00_and_rain_snow_at_14_00() 
 
 
 def test_rr17_arrival_exactly_13_30_rounds_the_wind_hour_half_up_to_14_00() -> None:
+    """RR-17."""
     weather = forecast(wind=("0", "10", "20", "30", "40"))
 
     assert measurements_at(weather, at(13, 30)).wind_mph == Decimal("20")
 
 
 def test_rr11_an_hour_outside_the_forecast_window_is_a_missing_reading() -> None:
+    """RR-11."""
     weather = forecast()
 
     assert measurements_at(weather, at(11, 0)).wind_mph is None
@@ -271,12 +298,14 @@ def test_rr11_an_hour_outside_the_forecast_window_is_a_missing_reading() -> None
 
 
 def test_rr11_a_missing_value_inside_the_window_stays_missing() -> None:
+    """RR-11."""
     weather = HourlyWeather(FIRST_HOUR, (None,), (None,), (None,), (None,))
 
     assert measurements_at(weather, at(12)) == Measurements(None, None, None, None)
 
 
 def test_rr11_no_forecast_at_all_gives_missing_readings() -> None:
+    """RR-11."""
     assert measurements_at(None, at(13)) == Measurements(None, None, None, None)
 
 
@@ -297,6 +326,7 @@ def rated_level(measurements: Measurements, load_lb: int) -> Level:
 def test_rr09_a_worse_wind_never_lowers_the_rating(
     base: Measurements, wind_a: Decimal, wind_b: Decimal, load_lb: int
 ) -> None:
+    """RR-09."""
     low, high = sorted((wind_a, wind_b))
     assert rated_level(replace(base, wind_mph=low), load_lb) <= rated_level(
         replace(base, wind_mph=high), load_lb
@@ -307,6 +337,7 @@ def test_rr09_a_worse_wind_never_lowers_the_rating(
 def test_rr09_a_worse_rain_never_lowers_the_rating(
     base: Measurements, rain_a: Decimal, rain_b: Decimal, load_lb: int
 ) -> None:
+    """RR-09."""
     low, high = sorted((rain_a, rain_b))
     assert rated_level(replace(base, rain_in=low), load_lb) <= rated_level(
         replace(base, rain_in=high), load_lb
@@ -317,6 +348,7 @@ def test_rr09_a_worse_rain_never_lowers_the_rating(
 def test_rr09_a_worse_snow_never_lowers_the_rating(
     base: Measurements, snow_a: Decimal, snow_b: Decimal, load_lb: int
 ) -> None:
+    """RR-09."""
     low, high = sorted((snow_a, snow_b))
     assert rated_level(replace(base, snow_in=low), load_lb) <= rated_level(
         replace(base, snow_in=high), load_lb
@@ -327,5 +359,6 @@ def test_rr09_a_worse_snow_never_lowers_the_rating(
 def test_rr06_rr07_rr08_a_heavier_load_never_lowers_the_rating(
     readings_: Measurements, load_a: int, load_b: int
 ) -> None:
+    """RR-06, RR-07, RR-08."""
     light, heavy = sorted((load_a, load_b))
     assert rated_level(readings_, light) <= rated_level(readings_, heavy)
