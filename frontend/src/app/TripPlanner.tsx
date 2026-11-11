@@ -5,11 +5,20 @@ import { MapWithSlider } from './MapWithSlider'
 import { PlannerLayout } from './PlannerLayout'
 import { ResultsPane } from './ResultsPane'
 import { useTripPlanner } from './useTripPlanner'
+import type { TripPlannerState } from './useTripPlanner'
+
+function arrivalOf({ run, results }: TripPlannerState): string | null {
+  if (results.phase === 'partial' || results.phase === 'complete') {
+    return `${String(run?.runId)}-result`
+  }
+  return results.phase === 'failed' ? `${String(run?.runId)}-error` : null
+}
 
 export function TripPlanner() {
   const planner = useTripPlanner()
   return (
     <PlannerLayout
+      arrival={arrivalOf(planner)}
       form={
         <ErrorBoundary area="the trip form">
           <TripForm

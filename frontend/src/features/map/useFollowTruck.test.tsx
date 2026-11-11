@@ -22,11 +22,12 @@ const stub = vi.hoisted(() => {
   return {
     handlers,
     point: { x: 0, y: 0 },
+    width: 1000,
     isZooming: false,
     easeTo: vi.fn<(options: EaseOptions) => void>(),
     map: {
       project: () => stub.point,
-      getContainer: () => ({ clientWidth: 1000, clientHeight: 600 }),
+      getContainer: () => ({ clientWidth: stub.width, clientHeight: 600 }),
       isZooming: () => stub.isZooming,
       easeTo: (options: EaseOptions) => {
         stub.easeTo(options)
@@ -94,6 +95,7 @@ beforeEach(() => {
   stub.handlers.clear()
   stub.easeTo.mockClear()
   stub.isZooming = false
+  stub.width = 1000
 })
 
 afterEach(() => {
@@ -101,6 +103,15 @@ afterEach(() => {
 })
 
 describe('useFollowTruck keeps the truck in view without changing the zoom (REQ-08, REQ-09, FE-08)', () => {
+  it('eases to the truck when the results panel reopens and the narrower map leaves it under the zoom buttons', () => {
+    renderFollowing({ x: 900, y: 250 })
+
+    stub.width = 800
+    emit('move')
+
+    expect(stub.easeTo).toHaveBeenCalledTimes(1)
+  })
+
   it('does nothing while the truck stays inside the visible area', () => {
     const hook = renderFollowing()
 
