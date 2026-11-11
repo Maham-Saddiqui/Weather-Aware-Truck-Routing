@@ -3,6 +3,7 @@ import math
 from dataclasses import dataclass, replace
 from typing import Any
 
+from django.http import JsonResponse
 from rest_framework.exceptions import APIException, Throttled, ValidationError
 from rest_framework.response import Response
 
@@ -14,6 +15,7 @@ logger = logging.getLogger("trips.problems")
 
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 HTTP_BAD_REQUEST = 400
+HTTP_PAYLOAD_TOO_LARGE = 413
 HTTP_UNPROCESSABLE = 422
 HTTP_TOO_MANY_REQUESTS = 429
 HTTP_INTERNAL_ERROR = 500
@@ -49,6 +51,12 @@ ROUTING_UNAVAILABLE = Problem(
     "Routing is unavailable",
     "We could not get a route right now. Please try again in a minute.",
 )
+PAYLOAD_TOO_LARGE = Problem(
+    HTTP_PAYLOAD_TOO_LARGE,
+    "validation_error",
+    "Request too large",
+    "This request is much larger than a trip request can be. Check it and try again.",
+)
 RATE_LIMITED = Problem(
     HTTP_TOO_MANY_REQUESTS,
     "rate_limited",
@@ -81,6 +89,9 @@ def problem_response(exc: Exception, context: dict[str, Any]) -> Response:
 
 
 def _problem_of(exc: Exception) -> Problem:
+    if isinstance(exc, RecursionError):
+        logger.warning("Rejected a request body nested too deeply")
+        return replace(VALIDATION, detail=UNUSABLE_REQUEST_DETAIL)
     if isinstance(exc, NoRouteFound):
         return NO_ROUTE
     if isinstance(exc, RoutingUnavailable):
@@ -89,18 +100,31 @@ def _problem_of(exc: Exception) -> Problem:
     return INTERNAL
 
 
-def _respond(
-    problem: Problem,
-    field_errors: dict[str, list[str]] | None = None,
-    retry_after_s: int | None = None,
-) -> Response:
-    body: dict[str, Any] = {
+def too_large_response() -> JsonResponse:
+    """Built outside DRF, because this answer is given before any view runs."""
+    response = JsonResponse(
+        _body(PAYLOAD_TOO_LARGE), status=HTTP_PAYLOAD_TOO_LARGE, content_type=PROBLEM_CONTENT_TYPE
+    )
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def _body(problem: Problem) -> dict[str, Any]:
+    return {
         "type": f"/problems/{problem.code.replace('_', '-')}",
         "title": problem.title,
         "status": problem.status,
         "detail": problem.detail,
         "code": problem.code,
     }
+
+
+def _respond(
+    problem: Problem,
+    field_errors: dict[str, list[str]] | None = None,
+    retry_after_s: int | None = None,
+) -> Response:
+    body = _body(problem)
     if field_errors is not None:
         body["field_errors"] = field_errors
     response = no_store(Response(body, status=problem.status, content_type=PROBLEM_CONTENT_TYPE))

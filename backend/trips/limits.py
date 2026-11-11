@@ -14,3 +14,6 @@ MAX_DEPARTURE_AHEAD = timedelta(days=7)
 SPACING_CHOICES_MILES = tuple(int(spacing) for spacing in CheckpointSpacing)
 DEFAULT_SPACING_MILES = CheckpointSpacing.TWENTY_FIVE_MILES.value
 MAX_LABEL_LENGTH = 200
+
+# A valid trip request is under 1 KB; the rest is room for long place names.
+MAX_BODY_BYTES = 8 * 1024

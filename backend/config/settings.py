@@ -46,6 +46,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.gzip.GZipMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "trips.body_limit.BodyLimitMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -64,6 +65,8 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [],
     "UNAUTHENTICATED_USER": None,
+    # Only the trip endpoints read a body, and they declare JSON themselves (SEC-03).
+    "DEFAULT_PARSER_CLASSES": [],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "EXCEPTION_HANDLER": "trips.problems.problem_response",
     # Every endpoint is throttled per client address unless a view opts out (SEC-05).
