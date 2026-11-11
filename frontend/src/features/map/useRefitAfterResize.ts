@@ -1,23 +1,32 @@
 import type { MapRef } from '@vis.gl/react-maplibre'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 // MapLibre resizes in steps while the results panel slides; this waits for the last step.
 const RESIZE_SETTLE_MS = 150
 
-function watchResizeHidingRoute(map: MapRef, isRouteVisible: () => boolean, refit: () => void) {
-  let wasVisible = isRouteVisible()
+interface RefitRules {
+  isRouteVisible: () => boolean
+  isFramedByFit: () => boolean
+  refit: () => void
+}
+
+function watchResizeReframing(map: MapRef, rules: RefitRules) {
+  let wasVisible = rules.isRouteVisible()
+  let width = map.getContainer().clientWidth
   let settleTimer: number | undefined
   const rememberVisibility = () => {
     if (settleTimer === undefined) {
-      wasVisible = isRouteVisible()
+      wasVisible = rules.isRouteVisible()
     }
   }
   const settle = () => {
     settleTimer = undefined
-    if (wasVisible && !isRouteVisible()) {
-      refit()
+    const hasWidthChanged = map.getContainer().clientWidth !== width
+    width = map.getContainer().clientWidth
+    if ((wasVisible && !rules.isRouteVisible()) || (hasWidthChanged && rules.isFramedByFit())) {
+      rules.refit()
     } else {
-      wasVisible = isRouteVisible()
+      wasVisible = rules.isRouteVisible()
     }
   }
   const restartSettling = () => {
@@ -33,17 +42,47 @@ function watchResizeHidingRoute(map: MapRef, isRouteVisible: () => boolean, refi
   }
 }
 
-// Fits the route again only when a resize pushed a route that was fully in view under the legend, zoom
-// buttons or forecast panel. A map the driver has moved, with the route still clear of them, stays put.
+// Fits the route again after the map got wider or narrower (the results panel hiding or showing) when the
+// view is still the one a fit chose, and when a resize pushed a route that was fully in view under the
+// legend, zoom buttons or forecast panel. A map the driver moved, with the route still clear of them, stays put.
 export function useRefitAfterResize(
   map: MapRef | undefined,
   isRouteVisible: (map: MapRef) => boolean,
+  isFramedByFit: () => boolean,
   refit: () => void,
 ) {
   useEffect(() => {
     if (!map) {
       return
     }
-    return watchResizeHidingRoute(map, () => isRouteVisible(map), refit)
-  }, [map, isRouteVisible, refit])
+    return watchResizeReframing(map, {
+      isRouteVisible: () => isRouteVisible(map),
+      isFramedByFit,
+      refit,
+    })
+  }, [map, isRouteVisible, isFramedByFit, refit])
+}
+
+// The view stays the one a fit chose until anything else moves the map: the driver's hands, or the truck
+// follow easing it. A move that a fit starts is the fit's own, even when the button's click is attached.
+export function useFramingByFit(map: MapRef | undefined) {
+  const state = useRef({ isFramed: false, isFitting: false })
+  useEffect(() => {
+    const dropOnOtherMove = () => {
+      if (!state.current.isFitting) {
+        state.current.isFramed = false
+      }
+    }
+    map?.on('movestart', dropOnOtherMove)
+    return () => {
+      map?.off('movestart', dropOnOtherMove)
+    }
+  }, [map])
+  const fitAndFrame = useCallback((fit: () => void) => {
+    state.current.isFitting = true
+    fit()
+    state.current = { isFramed: true, isFitting: false }
+  }, [])
+  const isFramedByFit = useCallback(() => state.current.isFramed, [])
+  return { fitAndFrame, isFramedByFit }
 }

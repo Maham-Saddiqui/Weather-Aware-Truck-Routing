@@ -7,7 +7,9 @@ const SETTLE_MS = 150
 
 type Handler = () => void
 const handlers = new Map<string, Set<Handler>>()
+let mapWidth = 1000
 const map = {
+  getContainer: () => ({ clientWidth: mapWidth }),
   on: (name: string, handler: Handler) => {
     handlers.set(name, (handlers.get(name) ?? new Set()).add(handler))
   },
@@ -17,6 +19,7 @@ const map = {
 } as unknown as MapRef
 
 let isVisible = true
+let isFramed = false
 const refit = vi.fn()
 
 function emit(name: string) {
@@ -40,8 +43,15 @@ beforeEach(() => {
   handlers.clear()
   refit.mockClear()
   isVisible = true
+  isFramed = false
+  mapWidth = 1000
   renderHook(() => {
-    useRefitAfterResize(map, () => isVisible, refit)
+    useRefitAfterResize(
+      map,
+      () => isVisible,
+      () => isFramed,
+      refit,
+    )
   })
 })
 
@@ -96,5 +106,44 @@ describe('useRefitAfterResize fits the route again when a resize hides it (REQ-0
     resizeThenWait(false)
 
     expect(refit).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useRefitAfterResize frames the route again when the map width changes (REQ-08, FE-08)', () => {
+  function widenThenWait(width: number) {
+    mapWidth = width
+    resizeThenWait(true)
+  }
+
+  it('fits again after a hidden panel made the map wider when a fit chose the view', () => {
+    isFramed = true
+
+    widenThenWait(1460)
+
+    expect(refit).toHaveBeenCalledTimes(1)
+  })
+
+  it('fits again after the panel came back and made the map narrower', () => {
+    isFramed = true
+
+    widenThenWait(540)
+
+    expect(refit).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves a view the driver chose alone when the map gets wider', () => {
+    isFramed = false
+
+    widenThenWait(1460)
+
+    expect(refit).not.toHaveBeenCalled()
+  })
+
+  it('does not fit again for a resize that left the width as it was, such as a phone address bar', () => {
+    isFramed = true
+
+    widenThenWait(1000)
+
+    expect(refit).not.toHaveBeenCalled()
   })
 })
