@@ -1,34 +1,10 @@
-from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from decimal import Decimal
 
-from domain.checkpoints import Stop
-from domain.constants import METRES_PER_MILE
-from domain.levels import Level, LoadRule
-from domain.rating import NO_DATA, CheckpointRating
-from domain.summary import IneligibleReason, RatedStop, RouteSummary, summarize
-from domain.types import GeoPoint
+from domain.levels import Level
+from domain.summary import IneligibleReason
 from domain.units import miles_from_metres
-
-DEPARTURE = datetime(2026, 11, 12, 8, 0, tzinfo=UTC)
-HERE = GeoPoint(35.0, -100.0)
-
-
-def rated(level: Level | None) -> CheckpointRating:
-    return NO_DATA if level is None else CheckpointRating(level, (), LoadRule.NONE)
-
-
-def summary_of(
-    covered_miles: Sequence[str], levels: Sequence[Level | None], travel_time_s: int = 3600
-) -> RouteSummary:
-    stops = [
-        RatedStop(
-            Stop(index, Decimal(0), Decimal(covered) * METRES_PER_MILE, HERE, DEPARTURE),
-            rated(level),
-        )
-        for index, (covered, level) in enumerate(zip(covered_miles, levels, strict=True))
-    ]
-    return summarize(stops, travel_time_s, DEPARTURE)
+from tests.domain.builders import DEPARTURE, summary_of
 
 
 def test_rr20_miles_at_each_level_add_the_stretches_of_checkpoints_with_that_level() -> None:
