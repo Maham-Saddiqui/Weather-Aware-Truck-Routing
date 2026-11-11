@@ -54,8 +54,13 @@ export const HEATMAP_FADE_MS = 400
 // The truck is kept as far below the top edge as a route start is, so its pin never sits behind the legend.
 export const FOLLOW_TOP_CLEARANCE_PX = FIT_TOP_CLEARANCE_PX
 export const FOLLOW_EDGE_CLEARANCE_PX = 24
-// Measured in a browser: the forecast panel floats 24 px above the bottom and is about 106 px tall.
-export const FOLLOW_PANEL_CLEARANCE_PX = 140
+// The forecast panel floats 24 px above the bottom of the map and grows taller as the map narrows (measured in a
+// browser: about 106 px tall at 820 px wide, 132 at 640, 178 at 428, 208 at 380). The map frame's width picks the step.
+export const NARROW_MAP_BELOW_PX = 440
+export const MEDIUM_MAP_BELOW_PX = 700
+export const FOLLOW_WIDE_PANEL_CLEARANCE_PX = 140
+export const FOLLOW_MEDIUM_PANEL_CLEARANCE_PX = 166
+export const FOLLOW_NARROW_PANEL_CLEARANCE_PX = 242
 export const FOLLOW_EASE_MS = 600
 // The truck glides between two forecast hours for at most as long as one playback step lasts at normal speed.
 export const TRUCK_TWEEN_MAX_MS = 1000

@@ -1,8 +1,12 @@
 import {
   FIT_PADDING_PX,
   FOLLOW_EDGE_CLEARANCE_PX,
-  FOLLOW_PANEL_CLEARANCE_PX,
+  FOLLOW_MEDIUM_PANEL_CLEARANCE_PX,
+  FOLLOW_NARROW_PANEL_CLEARANCE_PX,
   FOLLOW_TOP_CLEARANCE_PX,
+  FOLLOW_WIDE_PANEL_CLEARANCE_PX,
+  MEDIUM_MAP_BELOW_PX,
+  NARROW_MAP_BELOW_PX,
 } from './mapConstants'
 
 export interface PixelPoint {
@@ -22,14 +26,23 @@ export interface Margins {
   left: number
 }
 
-// Keeps the truck clear of the legend (top left), the zoom buttons (top right) and, on wide screens,
-// the forecast panel floating over the bottom of the map.
-export function safeMargins(isPanelOverMap: boolean): Margins {
+function panelClearance(mapWidth: number): number {
+  if (mapWidth <= NARROW_MAP_BELOW_PX) {
+    return FOLLOW_NARROW_PANEL_CLEARANCE_PX
+  }
+  return mapWidth <= MEDIUM_MAP_BELOW_PX
+    ? FOLLOW_MEDIUM_PANEL_CLEARANCE_PX
+    : FOLLOW_WIDE_PANEL_CLEARANCE_PX
+}
+
+// Keeps the truck clear of the legend (top left), the zoom buttons (top right) and, when the forecast panel
+// floats over the bottom of the map, the panel, whose height follows the map's width.
+export function safeMargins(mapWidth: number, isPanelOverMap: boolean): Margins {
   return {
     top: FOLLOW_TOP_CLEARANCE_PX,
     right: FIT_PADDING_PX,
     left: FIT_PADDING_PX,
-    bottom: isPanelOverMap ? FOLLOW_PANEL_CLEARANCE_PX : FOLLOW_EDGE_CLEARANCE_PX,
+    bottom: isPanelOverMap ? panelClearance(mapWidth) : FOLLOW_EDGE_CLEARANCE_PX,
   }
 }
 
