@@ -30,10 +30,23 @@ The single source of truth is [`docs/domain/risk-rules.md`](docs/domain/risk-rul
 - Sustained wind decides the rating; gusts are shown for information only.
 - ETAs are **driving time only**: no rest breaks or hours-of-service rules.
 - The departure time is read in the origin's time zone; every time shown carries its zone.
-- Where the brief's bands touch, the higher (more cautious) band applies.
 - Changing the checkpoint spacing can change which route wins, because the miles per level are measured at the checkpoints.
-- Trips are limited to the lower 48 states, a departure within 7 days, and a load of 0 to 80,000 lb.
+- Trips are limited to the lower 48 states, a departure within 7 days, and a load of 0 to 80,000 lb. The limits keep a hand-made request from spending the free provider quotas.
 - Per-level miles are each rounded once to 0.1 mile, so they can differ from the total in the last digit.
+
+### Where the brief can be read two ways, and what we chose
+
+Each choice is a numbered rule in [`docs/domain/risk-rules.md`](docs/domain/risk-rules.md) with tests, so it can be changed in one place.
+
+| The brief says | Other reading | What the app does | Effect |
+|---|---|---|---|
+| Wind "below 25 mph" is Low, and rain and snow have limits to two decimals or fewer | Compare the raw reading, for example 24.6 mph | Rounds each reading **once, on the server, to the precision shown on screen** (wind to a whole mph, rain and snow to 2 decimals; halves round up), then rates the rounded number (`RR-02`) | The number on screen and its rating can never disagree. A reading within half a unit below a limit rates one level higher (wind 24.6 mph shows as 25 and is Moderate). Rain just above 1.00 (up to 1.004) or snow just above 3.0 (up to 3.004) rounds back into the band below, the one case that is less cautious. At whole-number values the two readings agree. |
+| Bands that touch, such as 0.25 in/hr in both "0.10 to 0.25" and "0.25 to 0.50" | Either band | The higher (more cautious) band applies, so 0.25 is High and 1.00 is Severe (`RR-03` to `RR-05`) | Exactly on a limit is never rated safer than the table suggests. |
+| Weather "at the truck's ETA" | Any of the hourly values near the arrival | Wind uses the hour nearest to the arrival; rain and snow use the hour that contains it, because the service reports those as totals over the hour (`RR-17`) | Each checkpoint reads the forecast for the moment the truck is there, not for the departure. |
+| Load weight | Add the empty truck | The wind rules use the cargo weight the driver types; the routing provider is told cargo plus an assumed 35,000 lb tractor-trailer (`RR-06` to `RR-08`, and the definitions in section 2 of the rules) | The load thresholds are applied to the cargo figures as the brief states them. |
+| "Recommend the best route" by fewest Severe miles, fewest High miles, lowest average risk, shortest time | Rank every route | A route with any No Travel checkpoint, or with more than 10% of its miles lacking weather data, is **not eligible**; the rest are ranked in the brief's order (`RR-22`). If none is eligible the app says so and shows the least-bad route greyed out (`RR-23`) | Missing data is never treated as safe, and a route cannot win by having gaps in its forecast. |
+| A tie in the ranking | Any tie-break | Miles are compared to 0.1, average risk to 0.01 and travel time to whole minutes; then the shorter distance wins, then the order the routing provider returned (`RR-25`) | Rounding noise cannot decide a close call. Two routes within the same whole minute are a tie on time. |
+| The departure date and time | Browser time or UTC | Read in the origin's time zone; every time on screen carries its zone letters (`RR-18`) | A driver in Seattle planning a trip to Salt Lake City sees the departure in Pacific time and the arrival in Mountain time. |
 
 ## How it is built
 
