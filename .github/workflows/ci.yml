@@ -41,8 +41,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   e2e:
-    # Playwright's dependency installer does not support Ubuntu 26 (the new ubuntu-latest) yet.
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -53,7 +53,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: cd backend && uv sync --frozen
       - run: cd frontend && npm ci
-      - run: cd frontend && npx playwright install --with-deps chromium
+      - run: cd frontend && npx playwright install chromium
       - run: cd frontend && npm run e2e
       - uses: actions/upload-artifact@v4
         if: failure()
