@@ -12,7 +12,11 @@ from domain.types import GeoPoint
 from providers.http import make_client
 from providers.weather.budget import BudgetLimit, WeatherBudget
 from providers.weather.cache import WindowCache
-from providers.weather.open_meteo import POINTS_PER_REQUEST, OpenMeteoWeather
+from providers.weather.open_meteo import (
+    POINTS_PER_REQUEST,
+    WEATHER_TOTAL_TIMEOUT_S,
+    OpenMeteoWeather,
+)
 from providers.weather.port import WeatherBusy, WeatherUnavailable
 
 NOW = datetime(2026, 11, 11, 14, 25, tzinfo=UTC)
@@ -231,6 +235,69 @@ def test_very_large_requests_are_split_to_keep_the_address_short() -> None:
 
     assert len(result) == len(points)
     assert len(service.requests) == 2
+
+
+class FakeStopwatch:
+    """Stands in for the monotonic clock; every provider call can move it forward."""
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self.seconds = 0.0
+        monkeypatch.setattr("providers.weather.open_meteo.monotonic", lambda: self.seconds)
+
+    def respond_taking(self, seconds: float) -> Callable[[httpx.Request], httpx.Response]:
+        def respond(request: httpx.Request) -> httpx.Response:
+            self.seconds += seconds
+            return one_location_per_point(request)
+
+        return respond
+
+
+def two_chunks_of_points() -> list[GeoPoint]:
+    return [GeoPoint(30 + index / 10, -90.0) for index in range(POINTS_PER_REQUEST + 1)]
+
+
+def test_time_running_out_between_chunks_keeps_the_cells_already_fetched(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RR-11: cells that never arrived are simply absent, so they rate as no data"""
+    stopwatch = FakeStopwatch(monkeypatch)
+    service = Service(stopwatch.respond_taking(WEATHER_TOTAL_TIMEOUT_S))
+    points = two_chunks_of_points()
+
+    result = service.weather.forecast(points)
+
+    assert len(service.requests) == 1
+    assert len(result) == POINTS_PER_REQUEST
+    assert POINT not in result
+
+
+def test_cells_kept_from_an_earlier_chunk_are_cached_for_the_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stopwatch = FakeStopwatch(monkeypatch)
+    service = Service(stopwatch.respond_taking(WEATHER_TOTAL_TIMEOUT_S))
+    points = two_chunks_of_points()
+    service.weather.forecast(points)
+    stopwatch.seconds = 0.0
+
+    retried = service.weather.forecast(points)
+
+    assert len(retried) == len(points)
+    assert len(service.requests) == 2
+
+
+def test_too_little_time_for_even_the_first_chunk_means_unavailable_and_no_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PERF-05"""
+    FakeStopwatch(monkeypatch)
+    monkeypatch.setattr("providers.weather.open_meteo.WEATHER_TOTAL_TIMEOUT_S", 1.0)
+    service = Service()
+
+    with pytest.raises(WeatherUnavailable):
+        service.weather.forecast([POINT])
+
+    assert service.requests == []
 
 
 def test_too_many_requests_is_its_own_case() -> None:

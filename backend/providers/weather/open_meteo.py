@@ -1,9 +1,9 @@
 import json
 import threading
-import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from time import monotonic
 from typing import Any
 
 import httpx
@@ -51,7 +51,7 @@ class OpenMeteoWeather:
         return self
 
     def forecast(self, points: Sequence[GeoPoint]) -> Mapping[GeoPoint, HourlyWeather]:
-        deadline = time.monotonic() + WEATHER_TOTAL_TIMEOUT_S
+        deadline = monotonic() + WEATHER_TOTAL_TIMEOUT_S
         cell_of_point = {point: _cell(point) for point in points}
         cells = set(cell_of_point.values())
         windows = self._cached(cells)
@@ -69,22 +69,30 @@ class OpenMeteoWeather:
     def _fetch_missing(self, cells: set[CellKey], deadline: float) -> dict[CellKey, str]:
         """Only one fetch at a time, and the cache is read again inside the lock, so identical
         concurrent requests share one provider call while fully cached ones never wait."""
-        if not self._fetch_lock.acquire(timeout=max(deadline - time.monotonic(), 0)):
+        if not self._fetch_lock.acquire(timeout=max(deadline - monotonic(), 0)):
             raise WeatherUnavailable("The weather service is too slow")
         try:
             windows = self._cached(cells)
-            missing = sorted(cells - windows.keys())
-            if missing and deadline - time.monotonic() < OPEN_METEO_READ_TIMEOUT_S:
-                raise WeatherUnavailable("The weather service is too slow")
-            for chunk in _chunks(missing, POINTS_PER_REQUEST):
-                if not self._budget.try_spend(len(chunk)):
-                    raise WeatherBusy("The weather allowance is spent for now")
-                for cell, text in self._fetch(chunk).items():
-                    self._cache.put(cell, text)
-                    windows[cell] = text
+            self._fetch_chunks(sorted(cells - windows.keys()), windows, deadline)
             return windows
         finally:
             self._fetch_lock.release()
+
+    def _fetch_chunks(
+        self, missing: Sequence[CellKey], windows: dict[CellKey, str], deadline: float
+    ) -> None:
+        """Stops when time runs out and keeps what earlier chunks brought; cells left unfetched
+        stay absent, which the ratings show as no data (RR-11)."""
+        for index, chunk in enumerate(_chunks(missing, POINTS_PER_REQUEST)):
+            if deadline - monotonic() < OPEN_METEO_READ_TIMEOUT_S:
+                if index == 0:
+                    raise WeatherUnavailable("The weather service is too slow")
+                return
+            if not self._budget.try_spend(len(chunk)):
+                raise WeatherBusy("The weather allowance is spent for now")
+            for cell, text in self._fetch(chunk).items():
+                self._cache.put(cell, text)
+                windows[cell] = text
 
     def _fetch(self, cells: Sequence[CellKey]) -> dict[CellKey, str]:
         try:
