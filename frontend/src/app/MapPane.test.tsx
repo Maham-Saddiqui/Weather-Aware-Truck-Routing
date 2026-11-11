@@ -16,6 +16,7 @@ vi.mock('../features/map/RouteMapCanvas', () => ({
 }))
 
 const planner = {
+  run: null,
   results: { ...EMPTY_RESULTS, routes: TWO_ROUTES },
   selectedRouteId: null,
   selectedCheckpointIndex: null,
