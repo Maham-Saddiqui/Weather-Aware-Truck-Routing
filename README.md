@@ -71,9 +71,9 @@ Routing providers do more work the longer a route is, and asking for alternative
 
 The server therefore adapts to the trip's size, which it measures before calling anyone from the straight-line distance between the two places (the cut-off is 1,000 straight-line miles, roughly 1,200 road miles):
 
-- **Normal trips:** ask for two alternatives and wait up to about 12 seconds.
-- **Long trips:** ask for one alternative, wait up to about 22 seconds, skip the extra eco-route request, and allow the whole request up to 40 seconds.
-- **If alternatives still do not arrive:** ask TomTom once for the fastest route without alternatives and show that single route with the note "Only one route could be found for this trip". The backup router is tried only after that, and only works for shorter trips.
+- **Normal trips:** ask for two alternatives (and an economy route in parallel) and wait up to about 12 seconds.
+- **Long trips:** ask for two alternatives and wait up to about 22 seconds, with a separate economy route requested in parallel, and allow the whole request up to 40 seconds. Live, a 1,570-mile and a 3,300-mile trip each returned three distinct routes.
+- **If alternatives still do not arrive:** a long trip steps down to one alternative, then to a single route without alternatives (shown with the note "Only one route could be found for this trip"). The backup router is tried only after that, and only works for shorter trips.
 
 The first route is always on screen within a few seconds, because the page asks for it separately and in parallel, so the longer wait for alternatives does not hold the driver up. The cut-off and the timeouts are named constants, and the request log records the trip's size class and how long the alternatives call really took, so they can be tuned from real data.
 
