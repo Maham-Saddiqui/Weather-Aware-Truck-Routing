@@ -4,6 +4,8 @@ import type { Heatmap, Route } from '../../shared/types'
 import { TruckBadge } from './TruckBadge'
 import { truckPositionAt } from './truckPosition'
 
+const LIFT_ABOVE_ROUTE: [number, number] = [0, -14]
+
 interface TruckMarkerProps {
   route: Route
   heatmap: Heatmap
@@ -21,7 +23,12 @@ export function TruckMarker({ route, heatmap, hourOffset }: TruckMarkerProps) {
   const clock = formatClockTime(instant.toISOString(), timeZone)
   const label = truck.hasArrived ? `Truck arrived, ${clock}` : `Truck at ${clock}`
   return (
-    <Marker longitude={truck.position.lon} latitude={truck.position.lat} anchor="center">
+    <Marker
+      longitude={truck.position.lon}
+      latitude={truck.position.lat}
+      anchor="bottom"
+      offset={LIFT_ABOVE_ROUTE}
+    >
       <TruckBadge label={label} hasArrived={truck.hasArrived} />
     </Marker>
   )
