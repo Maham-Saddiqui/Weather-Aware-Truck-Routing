@@ -111,6 +111,8 @@ The first route is always on screen within a few seconds, because the page asks 
 Requirements: Python 3.13 with [uv](https://docs.astral.sh/uv/), Node 26 (see `.nvmrc`).
 
 ```bash
+(cd backend && uv sync --frozen)    # one time: the server's packages
+(cd frontend && npm ci)             # one time: the front end's packages
 make rehearsal-server      # terminal 1: the real server with synthetic routes and weather, no network
 make rehearsal-frontend    # terminal 2: the app at http://localhost:5173
 ```
@@ -119,7 +121,7 @@ That runs the whole product without any key or external service. To use the real
 
 ```bash
 make check    # backend lint, formatting, types, import boundaries and tests with coverage floors; front-end lint, formatting, types and tests with coverage floors; bundle-size budgets; contract sync; rule coverage; secret scan
-make e2e      # browser tests (Playwright with an accessibility scan) against the built app and the rehearsal server; CI runs them as a separate job
+make e2e      # browser tests (Playwright with an accessibility scan) against the built app and the rehearsal server; CI runs them as a separate job. First time only: cd frontend && npx playwright install chromium
 ```
 
 With DEBUG off the server refuses to start unless `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS` and `ALLOWED_ORIGINS` are set. Without `TOMTOM_API_KEY` it starts but uses the backup router for every trip. Optional limits: `API_THROTTLE_RATE`, `TRIP_THROTTLE_RATE`, `ATTRIBUTION_THROTTLE_RATE`, `TOMTOM_DAILY_CALL_LIMIT`.
@@ -149,7 +151,7 @@ The server runs on Render (gunicorn with exactly one worker process and eight th
 
 Decisions about the product, the risk rules and the scope were the owner's. Smaller implementation choices inside those decisions were made by the agents and are recorded, with the reasons, in [`docs/changelog.md`](docs/changelog.md) wherever they changed an approved document. Every commit carries a `Co-Authored-By: Claude` line.
 
-**Time (all times Pakistan Standard Time, PKT):** the repository was created on 11 November 2026 at 00:18 and the owner started working on the project at about 02:30. Research, planning and project set-up (requirements, risk rules, standards, architecture, hosting) took about **3 hours 50 minutes** (02:30 to about 06:20), after which the agents started building in parallel. Counting that phase and the implementation together, the project took about **15 hours of working time**. The clock stopped whenever work was waiting for the owner (for example for an approval) or blocked by the weather service's rate limit, so the calendar span is longer, and the history shows quiet gaps and bursts of many commits in one hour, which are several agents working in parallel. The number of commits is therefore not a measure of hours.
+**Time (all times Pakistan Standard Time, PKT):** the repository was created on 10 November 2026 at 23:54 and the owner started working on the project at about 02:30. Research, planning and project set-up (requirements, risk rules, standards, architecture, hosting) took about **3 hours 50 minutes** (02:30 to about 06:20), after which the agents started building in parallel. Counting that phase and the implementation together, the project took about **15 hours of working time**. The clock stopped whenever work was waiting for the owner (for example for an approval) or blocked by the weather service's rate limit, so the calendar span is longer, and the history shows quiet gaps and bursts of many commits in one hour, which are several agents working in parallel. The number of commits is therefore not a measure of hours.
 
 ## Credits
 

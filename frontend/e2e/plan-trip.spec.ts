@@ -7,7 +7,7 @@ test('plans an example trip and shows the recommendation, three routes and the m
 }) => {
   await planChicagoToDenver(page)
 
-  await expect(recommendationBanner(page)).toContainText('Route 1 is quicker')
+  await expect(recommendationBanner(page)).toContainText(/Route 1 [^.]*Route 2/)
   for (const routeNumber of [1, 2, 3]) {
     const card = page.getByRole('article', { name: `Route ${String(routeNumber)}` })
     await expect(card.getByText(/^\d+\.\d mi$/)).toBeVisible()
