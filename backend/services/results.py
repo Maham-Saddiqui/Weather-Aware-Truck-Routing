@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
-from domain.checkpoints import Stop
+from domain.checkpoints import Checkpoint
 from domain.ranking import Recommendation
 from domain.rating import CheckpointRating, Measurements
 from domain.summary import RouteSummary
@@ -18,8 +18,8 @@ class WeatherStatus(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class RatedCheckpoint:
-    stop: Stop
+class RouteCheckpoint:
+    checkpoint: Checkpoint
     measurements: Measurements
     rating: CheckpointRating
     time_zone: str
@@ -31,7 +31,7 @@ class RatedRoute:
 
     route_id: str
     route: ProviderRoute
-    checkpoints: tuple[RatedCheckpoint, ...]
+    checkpoints: tuple[RouteCheckpoint, ...]
     summary: RouteSummary
     rank: int | None = None
 
