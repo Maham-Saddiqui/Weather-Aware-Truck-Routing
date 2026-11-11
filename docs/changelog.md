@@ -1,8 +1,10 @@
 # Changes since approval
 
-These documents were approved before implementation began. Where building and testing taught us something, the document was amended with the owner's approval on 2026-11-11 and the reason is recorded here. No risk rule (RR-01 to RR-31), band, threshold or number was changed; only assumptions the code had to make were written down.
+How to read this page: the tables are grouped by document and by batch, not in strict time order. Each row has its date or says which batch it belongs to. The newest changes are in the last section, "Handover review, 12 November 2026".
 
-A later batch (the heatmap `worst_level_by_hour` field) is listed at the end.
+These documents were approved before implementation began. Where building and testing taught us something, the document was amended with the owner's approval and the reason is recorded here. No risk threshold, band or number was changed. Some rule wording was corrected to match what is built (the RR-26 sentence and FE-09 wording in the batches below; RR-25's last tie-break and RR-31 in the handover review at the end), and assumptions the code had to make were written down.
+
+Four later batches follow the document tables: "Applied after the first batch", "Applied after the owner's second round of decisions", "Applied later: the heatmap `worst_level_by_hour` field" and the handover review.
 
 ## docs/architecture.md
 
@@ -28,7 +30,7 @@ A later batch (the heatmap `worst_level_by_hour` field) is listed at the end.
 
 | Date | Section | What changed | Why | Code |
 |---|---|---|---|---|
-| 2026-11-11 | 1 Budgets | Map chunk budget 300 KB to 350 KB; note on the shell size. | MapLibre alone is about 299 KB gzip (measured 298.84 KB) and its worker about 147 KB; it cannot be reduced without dropping the library. The eager shell was brought to about 193 KB. | `frontend/src/features/map/` |
+| 2026-11-11 | 1 Budgets | Map chunk budget 300 KB to 350 KB; note on the shell size. | MapLibre alone is about 299 KB gzip (measured 298.84 KB) and its worker about 147 KB; it cannot be reduced without dropping the library. The eager shell was brought to about 193 KB. (These two figures are superseded by the 2026-11-11 measurement below: map library about 294 KB, shell about 198 KB.) | `frontend/src/features/map/` |
 | 2026-11-11 | 1a Measured | Timings measured on the live free instance. | The standard said budgets are adjusted with measurements after the first deploy. | live runs |
 
 ## docs/standards/frontend.md
@@ -59,7 +61,7 @@ A later batch (the heatmap `worst_level_by_hour` field) is listed at the end.
 
 ## Deviations recorded after the standards audit (2026-11-11)
 
-An independent audit checked every rule against the code (139 rows). Where the code or tooling deliberately differs from a document, the reason is recorded here; items still to be done are marked.
+An independent audit checked every rule against the code (139 rows). The audit notes are kept in the owner's private notes, not in the repository; this page is the repository record. Where the code or tooling deliberately differs from a document, the reason is recorded here; items still to be done are marked.
 
 | Document / rule | What differs | Why it is accepted | Status |
 |---|---|---|---|
@@ -70,7 +72,7 @@ An independent audit checked every rule against the code (139 rows). Where the c
 | FE-13, FE-07, NFR-03 (end-to-end tests, automated accessibility scan) | Done: Playwright browser tests run against the built app and the rehearsal server (synthetic data, no network) with an axe accessibility scan on the first screen and the results; `make e2e` locally and a separate `e2e` job in CI so a browser flake cannot hide the main check. | The owner approved the three developer-only packages on 2026-11-11 and installed them. | done |
 | GEN-15 (coverage floors) | Enforced on both sides since 2026-11-11. Server: 85 percent overall, 100 percent branch on the risk rules (measured 99 and 100). Front end: floors of 90 percent statements, lines and functions and 85 percent branches, enforced by `npm run check` (measured 97, 97, 97 and 91); the standard's 80 percent is the minimum, these are stricter. | The front-end coverage tool is a developer-only package the owner approved. | done |
 | PERF-09 (bundle-size check in the check command) | Added: `scripts/check_bundle_size.py` builds the front end and fails past 200 KB (first load) or 350 KB (map chunk), gzip. | Closes the audit finding. | done |
-| GEN-03 (rules duplicated in the browser) | The "How risk works" dialog repeats the band edges and limits by hand. | It is explanatory text; a test cites RR-03 to RR-08 and RR-22 to RR-24 against its numbers. A test tying it to the server constants is still to be written. | to do |
+| GEN-03 (rules duplicated in the browser) | The "How risk works" dialog repeats the band edges and limits by hand. | It is explanatory text; a test cites RR-03 to RR-08 and RR-22 to RR-24 against its numbers. A test tying it to the server constants is still to be written. | partly done: the numbers are named (`frontend/src/app/riskRuleNumbers.ts`) and tested against copies of the rules (`RiskInfoNumbers.test.tsx`); a test against the server constants is still open |
 
 ## Developer-only packages added (owner approved and installed, 2026-11-11)
 
@@ -108,7 +110,7 @@ An independent read of the documents against the code found places where a docum
 | GEN-04 | The three backend test files over 300 lines were split by topic; the test count did not drop (811 collected, 4 of them new). | Keeps files short and focused. | `backend/tests/` |
 | SEC (dependencies) | The server's production dependencies were scanned with pip-audit on 2026-11-11: "No known vulnerabilities found". The CI job repeats this as a report-only step. | Recorded for the audit trail. | `.github/workflows/ci.yml` |
 
-## Applied after the first batch (owner approved on 2026-11-11)
+## Applied after the first batch: travel-time text, RR-26 and FE-09 wording (owner approved on 2026-11-11)
 
 | Date | Section | What changed | Why | Code |
 |---|---|---|---|---|
@@ -122,8 +124,31 @@ An independent read of the documents against the code found places where a docum
 |---|---|---|---|---|
 | 2026-11-11 | openapi `RouteSummary` | New required nullable string `travel_time_difference_text` ("3 h 1 min quicker than Route 1", "2 h 31 min slower than Route 1", "Same travel time as Route 1"; null for the first route). Made on the server from the two whole-minute travel times (RR-25). | A live Seattle to Salt Lake City trip showed Route 3 (12 h 5 min) faster than the recommended Route 1 (15 h 6 min) with no explanation on the cards; the UX re-review also listed the missing "x slower" line. The owner approved it on 2026-11-11. | `backend/domain/units.py`, `backend/trips/presenters.py`, `frontend/src/features/route-results/RouteStats.tsx` |
 
-## Applied after the first batch
+## Applied later: the heatmap `worst_level_by_hour` field
 
 | Date | Section | What changed | Why | Code |
 |---|---|---|---|---|
 | 2026-11-11 | openapi `Heatmap` | New required string `worst_level_by_hour` (one character per hour: the highest risk digit over all points, or x). | The status line under the map ("All clear along these routes at this time" / "Worst along these routes: High") was computed in the browser from the server's risk digits. It only read server strings, but a derived aggregate belongs on the server (GEN-03), and the line is the text equivalent of the heatmap. | `backend/domain/heatmap.py`, `backend/trips/presenters.py`, `frontend/src/features/map/` |
+
+## Handover review, 12 November 2026
+
+A read-only review of the documents against the code found places where a document said more, less or something different from what is built. The owner approved the fixes below. No risk threshold, band or number changed. Where a rule text was corrected, it was made true to what is built; nothing was loosened. The contract change removes answers the server never sent (`502` and `weather_unavailable`); the lead regenerated the TypeScript types.
+
+| Ref | What changed | Why | Files |
+|---|---|---|---|
+| B1 | Removed the two `502` answers and the `weather_unavailable` problem code from the contract. Added the `500` answer (`internal_error`) on both trip endpoints. Descriptions of `RateLimited` (also used when the server is busy with other trips) and `ProviderUnavailable` (also used when the trip deadline passes) now say so. | The server never sends 502 or `weather_unavailable` (weather trouble is a normal 200 with `weather.status`); it does send 500 `internal_error`, 429 when its trip slots are full, and 503 at the deadline. | `docs/api/openapi.yaml` |
+| B2 | The "lower 48 states" wording now says the server accepts only places inside a rectangle that also contains parts of Canada, Mexico and the sea (for example Toronto), and that it is not a precise border. | The check is a bounding box (24.4 to 49.4 N, -125.0 to -66.9 E). | `docs/requirements.md` (REQ-02), `docs/architecture.md`, `docs/api/openapi.yaml`, `docs/standards/security.md` (SEC-03), `docs/standards/backend.md` (BE-06) |
+| B3 | Architecture section 15 became closed items with the answer beside each. "After the first deploy" sentences now say what was found, or that it was checked on the live deployment. Status words fixed: performance budgets are "approved", "(draft 6)" removed, section 13 of the risk rules renamed, "24-hour build" became "build". | These were open when written and are resolved; the status words contradicted the approval header. Only results already recorded elsewhere (README, changelog, performance section 1a) were quoted. | `docs/architecture.md`, `docs/standards/backend.md` (BE-13, BE-17), `docs/standards/security.md` (SEC-05), `docs/standards/performance.md`, `docs/domain/risk-rules.md`, `docs/coding-standards.md` |
+| B4 | One keep-awake story: an outside scheduler calls the health address every 5 minutes, a GitHub workflow every 10 minutes as a backup. Workflow comment brought in line (cron line unchanged). | Three documents told three stories. | `docs/architecture.md`, `.github/workflows/keep-warm.yml` |
+| B5 | Fixed cross-references: digits are in architecture section 8; route-shape cells are in section 6; the logging memory note cites BE-12. SEC-07 now also names the in-memory weather budget (550 per minute, 4,500 per hour, 9,000 per day). | The references pointed at the wrong places. The SEC-07 sentence adds a true statement to a standard; it loosens nothing. | `docs/architecture.md`, `docs/standards/security.md`, `backend/domain/constants.py`, `backend/config/request_logging.py` |
+| B6 | This page: a "how to read" paragraph, an accurate opening statement, renamed batch headings, the GEN-03 row set to "partly done", the 299 KB and 193 KB figures marked superseded, the private-notes note on the audit. | The opening said no rule text changed while later rows changed wording; two headings were identical. | `docs/changelog.md` |
+| B7 | `CLAUDE.md`: `backend/.python-version`, how Node 26 is picked, the changelog in the "Where to look" table. "Search" removed from the list of TomTom data the server never stores (the server has no search endpoint; address search is Photon in the browser). | Small drift from the repository. TomTom data is still never stored. | `CLAUDE.md`, `docs/architecture.md`, `docs/standards/security.md` (SEC-08), `docs/standards/backend.md` (BE-13), `backend/trips/responses.py` |
+| B8 | "Editing two settings" now lists the four places a host move touches. One sentence for the long-trip evidence. The layer table says the api layer may also import read-only helpers from the domain and the provider ports (the import checker already allows it). REQ-13 says "TomTom credit text". | Wording said less than the truth, or differed between documents. | `docs/architecture.md`, `docs/requirements.md` |
+| C1 | New assumption 21 in the risk rules: the last RR-25 tie-break is the order the routes are listed before ranking (the fastest by exact seconds, then the route sharing the least road with those already listed), not the provider's order. The RR-25 sentence points to it. | Rule text corrected to match what is built; thresholds and ranking are unchanged. The code comment and the contract value `provider_order` still use the old name (waiting for the lead). | `docs/domain/risk-rules.md` |
+| C2 | SEC-06 now names the weakest parts of the Content-Security-Policy: inline styles allowed (`'unsafe-inline'`, Material UI), `font-src data:`, `child-src blob:`. | The standard did not mention them; `frontend/vercel.json` has them. | `docs/standards/security.md` |
+| C3 | Where documents point to evidence a reviewer cannot see (the security review result, the requirement checklist, the audit), they now say it is kept in the owner's private notes and that this page is the repository record. The claim that every requirement has a test now says what is true. | The review results are not in the repository. The REQ ids cited by tests do not include every requirement, so the old sentence could not be checked. | `docs/requirements.md`, `docs/standards/security.md` (SEC-13), `docs/changelog.md` |
+| C4 | RR-31 now describes what `scripts/check_rule_coverage.py` does: a rule counts as covered when its id appears in a test file; the build fails if a rule has none or a test cites an unknown id; RR-16 and RR-27 are in the script's allowlist. | Rule text corrected to match the check; the check was not changed. | `docs/domain/risk-rules.md` |
+| E1 | Added an MIT `LICENSE` file; the README ends with a licence line. | A public repository without a licence is "all rights reserved". | `LICENSE`, `README.md` |
+| E2 | `pyyaml` moved from the server's production packages to the developer group (only the contract test reads the contract file). The lock file changed in those two lines only; no version changed. | The deployed server installs one package fewer. | `backend/pyproject.toml`, `backend/uv.lock` |
+| E3 | The gap against GEN-16 (44 commit subjects over 72 characters; one bundled commit) is recorded as a GitHub issue, not by changing the rule. The twelve existing issues now carry the labels `standards-gap` or `enhancement`. | Known gaps are listed in one place, and the standards stay as written. | GitHub issues |
+| E4 | The page has its own favicon, a description, a theme colour and share tags; the "Run it locally" steps now install the packages first; the README states the first commit's real time (10 November 2026, 23:54). | A reviewer's first impressions and first commands. | `frontend/index.html`, `frontend/public/favicon.svg`, `README.md` |

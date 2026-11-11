@@ -1059,7 +1059,6 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "gunicorn" },
     { name = "httpx" },
-    { name = "pyyaml" },
     { name = "tzfpy" },
 ]
 
@@ -1075,6 +1074,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-django" },
     { name = "pytest-env" },
+    { name = "pyyaml" },
     { name = "ruff" },
     { name = "types-pyyaml" },
 ]
@@ -1086,7 +1086,6 @@ requires-dist = [
     { name = "djangorestframework", specifier = ">=3.18.3" },
     { name = "gunicorn", specifier = ">=27.0.0" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "tzfpy", specifier = ">=2.1.2" },
 ]
 
@@ -1102,6 +1101,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "pytest-django", specifier = ">=4.14.0" },
     { name = "pytest-env", specifier = ">=1.8.5" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "ruff", specifier = ">=0.17.4" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20261103" },
 ]

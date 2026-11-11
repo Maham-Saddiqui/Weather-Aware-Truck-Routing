@@ -8,7 +8,6 @@ dependencies = [
     "djangorestframework>=3.18.3",
     "gunicorn>=27.0.0",
     "httpx>=0.28.1",
-    "pyyaml>=6.0.3",
     "tzfpy>=2.1.2",
 ]
 
@@ -75,6 +74,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-django>=4.14.0",
     "pytest-env>=1.8.5",
+    "pyyaml>=6.0.3",
     "ruff>=0.17.4",
     "types-pyyaml>=6.0.12.20261103",
 ]

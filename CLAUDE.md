@@ -10,7 +10,7 @@ A web app. A truck driver enters origin, destination, departure time and cargo w
 
 1. **`docs/domain/risk-rules.md` wins over code.** If code and that file disagree, the code is wrong. Tests cite rule IDs (`RR-nn`) in their names.
 2. **Secrets:** never commit keys, `.env` files or tokens, and never print them. API keys live in server environment variables only.
-3. **TomTom terms:** never cache or store TomTom results (routes, search, copyright text) on the server or in git. Route endpoints send `Cache-Control: no-store`. Test fixtures for TomTom are synthetic, never recorded real responses. Never publish speed or quality comparisons of TomTom against other providers.
+3. **TomTom terms:** never cache or store TomTom results (routes and copyright text) on the server or in git. Route endpoints send `Cache-Control: no-store`. Test fixtures for TomTom are synthetic, never recorded real responses. Never publish speed or quality comparisons of TomTom against other providers.
 4. **Numbers:** ratings and distances use exact decimals (Python `Decimal`), rounded once on the server. The screen displays the server's strings and never rounds again.
 5. **Tool configuration is owned by the lead** (ESLint, TypeScript, Prettier, ruff, mypy, pytest, CI). Do not loosen or disable a rule, and do not add `eslint-disable`, `noqa` or `type: ignore` without a written reason approved by the lead.
 6. **Git:** work only in your own worktree and branch. Commit small, with a message ending in the `Co-Authored-By` line. **Never push, merge, rebase, open pull requests or touch other branches** unless the lead tells you to.
@@ -29,12 +29,13 @@ A web app. A truck driver enters origin, destination, departure time and cargo w
 | Request and response shapes | `docs/api/openapi.yaml` |
 | Risk and ranking logic | `docs/domain/risk-rules.md` |
 | General code rules, definition of done | `docs/coding-standards.md` |
+| What changed after approval, and why | `docs/changelog.md` |
 | Server, screen, security, speed rules | `docs/standards/backend.md`, `frontend.md`, `security.md`, `performance.md` |
 
 ## Environment
 
-- Python 3.13 through `uv`, in `backend/.venv` (see `.python-version`).
-- Node 26 through nvm (see `.nvmrc`). Project-local settings put Node 26 first on `PATH`; check that `node -v` prints v26. If it prints v20, run `. "$HOME/.nvm/nvm.sh" && nvm use` first.
+- Python 3.13 through `uv`, in `backend/.venv` (see `backend/.python-version`).
+- Node 26 through nvm (see `.nvmrc`). `make` picks Node 26 by itself; `node -v` should print v26. If it prints another version, run `. "$HOME/.nvm/nvm.sh" && nvm use` first.
 - Commands: `make check` (server, front end, bundle budgets, contract, rule coverage, secret scan: the definition of done), `make e2e` (browser tests with an accessibility scan, against the rehearsal server), `make rehearsal-server` and `make rehearsal-frontend` (the whole app on synthetic data, no keys).
 
 ## Unattended running (nights and long waits)

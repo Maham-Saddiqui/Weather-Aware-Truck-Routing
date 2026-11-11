@@ -18,7 +18,7 @@ PEAK_MEMORY_UNITS_PER_MB = 1024 * 1024 if sys.platform == "darwin" else 1024
 
 
 def peak_memory_mb() -> int:
-    """The free host shows no memory graph, so the log carries the process's peak (PERF-05)."""
+    """The free host shows no memory graph, so the log carries the process's peak (BE-12)."""
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // PEAK_MEMORY_UNITS_PER_MB
 
 

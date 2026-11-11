@@ -1,7 +1,8 @@
 name: keep-warm
 
-# The free server sleeps after 15 idle minutes and takes about a minute to wake;
-# a ping every 10 minutes keeps it awake. Scheduled runs are best effort.
+# The free server sleeps after 15 idle minutes and takes 20 to 50 seconds to wake.
+# This ping every 10 minutes is a best-effort backup to the outside scheduler (cron-job.org,
+# every 5 minutes, not part of this repository); scheduled runs can be late or skipped.
 on:
   schedule:
     - cron: "*/10 * * * *"

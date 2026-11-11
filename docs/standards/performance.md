@@ -1,8 +1,8 @@
 # Performance Standards
 
-Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval). Amended during implementation with the owner's approval on 2026-11-11; see docs/changelog.md. The numbers below are **proposed budgets, not measurements**. They are measured from the first deployment and adjusted with a written reason. Rule: no optimisation without a measurement.
+Status: APPROVED by the owner on 2026-11-11 (changes need the owner's approval). Amended during implementation with the owner's approval on 2026-11-11; see docs/changelog.md. The numbers below are approved budgets; section 1a lists what has been measured and what has not. Budgets are adjusted only with a written reason. Rule: no optimisation without a measurement.
 
-## 1. Budgets (proposed)
+## 1. Budgets (approved; section 1a lists what has been measured and what has not)
 
 | Area | Budget |
 |---|---|
@@ -40,7 +40,7 @@ Measured on the live page by an independent assessor: first contentful paint abo
 | PERF-06 | Front end: split code so the app shell loads first; lazy-load the map; self-host and preload the font; hashed assets are cached for a long time; API responses are never cached by the host. |
 | PERF-07 | No React re-render per slider tick; map layers update through the map API (`FE-08`). |
 | PERF-08 | No database in the request path. If one is ever added, every query is reviewed for count and indexes. |
-| PERF-09 | Measure, then adjust: one manual Lighthouse run and a manual API timing check (browser network panel or a small timing script) after the first deploy and again before submitting, and a bundle-size check in the check command. Load-test and frame-time scripts are optional extras if time remains. |
+| PERF-09 | Measure, then adjust: one manual Lighthouse run and a manual API timing check (browser network panel or a small timing script) on the deployed app and again before submitting, and a bundle-size check in the check command. Status: the timing check was done on the live deployment (section 1a); no Lighthouse run is recorded there. Load-test and frame-time scripts are optional extras if time remains. |
 | PERF-10 | An early throw-away spike proves the heatmap and slider with a realistic load (about 40 to 110 points per response after de-duplication, from the heatmap grid of the architecture) plus a stress case of about 1,000 points per route. It must also show that the colour reflects the risk level, not how closely points are packed (nearby points add up when zoomed out), and that stretches shared by several routes do not glow hotter; if it fails, the heatmap uses a non-additive layer. All of this is settled before the map track builds on it. |
 
 ## 3. Review checklist (performance reviewer)

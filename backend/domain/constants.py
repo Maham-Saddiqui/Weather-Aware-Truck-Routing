@@ -22,7 +22,7 @@ HEATMAP_HOURS = 49
 # 0.05 degree cells; weather points are snapped to them before fetching (architecture section 7).
 WEATHER_CELLS_PER_DEGREE = 20
 
-# 0.01 degree cells (about 1 km) used to compare route shapes (architecture section 5).
+# 0.01 degree cells (about 1 km) used to compare route shapes (architecture section 6).
 OVERLAP_CELLS_PER_DEGREE = 100
 # A route's cells are sampled this many times per cell along each segment, so no cell is skipped.
 OVERLAP_SAMPLES_PER_CELL = 3

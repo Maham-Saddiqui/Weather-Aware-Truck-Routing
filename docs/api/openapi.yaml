@@ -113,10 +113,10 @@ paths:
           $ref: "#/components/responses/NoRouteFound"
         "429":
           $ref: "#/components/responses/RateLimited"
-        "502":
-          $ref: "#/components/responses/ProviderUnavailable"
         "503":
           $ref: "#/components/responses/ProviderUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /trips/compare:
     post:
       operationId: compareTrip
@@ -149,10 +149,10 @@ paths:
           $ref: "#/components/responses/NoRouteFound"
         "429":
           $ref: "#/components/responses/RateLimited"
-        "502":
-          $ref: "#/components/responses/ProviderUnavailable"
         "503":
           $ref: "#/components/responses/ProviderUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   headers:
     NoStore:
@@ -196,7 +196,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     RateLimited:
-      description: Too many requests from this client
+      description: Too many requests from this client, or the server is busy with other trips; wait `Retry-After` seconds.
       headers:
         Retry-After:
           description: Seconds to wait
@@ -207,7 +207,13 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     ProviderUnavailable:
-      description: A required provider failed and no backup could answer
+      description: A required provider failed and no backup could answer, or the trip took longer than its deadline.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    InternalError:
+      description: Something unexpected went wrong on the server (code `internal_error`); no details are given to the client.
       content:
         application/problem+json:
           schema:
@@ -244,7 +250,7 @@ components:
               maxLength: 200
     TripRequest:
       type: object
-      description: Origin and destination must lie inside the lower 48 states (a bounding box checked on the server); anything else is a validation error.
+      description: Origin and destination must lie inside a rectangle around the lower 48 states, checked on the server; anything else is a validation error. The rectangle also contains parts of Canada, Mexico and the sea (for example Toronto). It stops far-away requests from spending provider quota and is not a precise border.
       additionalProperties: false
       required: [origin, destination, departure_utc, load_lb]
       properties:
@@ -511,7 +517,7 @@ components:
           type: string
         code:
           type: string
-          enum: [validation_error, rate_limited, routing_unavailable, no_route_found, weather_unavailable, internal_error]
+          enum: [validation_error, rate_limited, routing_unavailable, no_route_found, internal_error]
         field_errors:
           type: object
           additionalProperties:

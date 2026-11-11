@@ -8,7 +8,6 @@ const MESSAGES: Record<ProblemCode, string> = {
   rate_limited: 'The server is busy right now. Wait a few seconds and try again.',
   routing_unavailable: 'Routing is unavailable right now. Try again in a minute.',
   no_route_found: 'No truck route was found between these two places. Try different places.',
-  weather_unavailable: 'Weather data is unavailable right now. Try again in a minute.',
   internal_error: 'Something went wrong on our side. Try again in a minute.',
   network_error: 'The server could not be reached. Check your connection and try again.',
   unreadable_response: 'The server sent an answer the app could not read. Try again in a minute.',

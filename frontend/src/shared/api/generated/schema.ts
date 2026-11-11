@@ -103,7 +103,7 @@ export interface components {
         Place: components["schemas"]["LatLon"] & {
             label: string;
         };
-        /** @description Origin and destination must lie inside the lower 48 states (a bounding box checked on the server); anything else is a validation error. */
+        /** @description Origin and destination must lie inside a rectangle around the lower 48 states, checked on the server; anything else is a validation error. The rectangle also contains parts of Canada, Mexico and the sea (for example Toronto). It stops far-away requests from spending provider quota and is not a precise border. */
         TripRequest: {
             origin: components["schemas"]["Place"];
             destination: components["schemas"]["Place"];
@@ -254,7 +254,7 @@ export interface components {
             status: number;
             detail?: string;
             /** @enum {string} */
-            code: "validation_error" | "rate_limited" | "routing_unavailable" | "no_route_found" | "weather_unavailable" | "internal_error";
+            code: "validation_error" | "rate_limited" | "routing_unavailable" | "no_route_found" | "internal_error";
             field_errors?: {
                 [key: string]: string[];
             };
@@ -299,7 +299,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Too many requests from this client */
+        /** @description Too many requests from this client, or the server is busy with other trips; wait `Retry-After` seconds. */
         RateLimited: {
             headers: {
                 /** @description Seconds to wait */
@@ -310,8 +310,17 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description A required provider failed and no backup could answer */
+        /** @description A required provider failed and no backup could answer, or the trip took longer than its deadline. */
         ProviderUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Something unexpected went wrong on the server (code `internal_error`); no details are given to the client. */
+        InternalError: {
             headers: {
                 [name: string]: unknown;
             };
@@ -436,7 +445,7 @@ export interface operations {
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["NoRouteFound"];
             429: components["responses"]["RateLimited"];
-            502: components["responses"]["ProviderUnavailable"];
+            500: components["responses"]["InternalError"];
             503: components["responses"]["ProviderUnavailable"];
         };
     };
@@ -469,7 +478,7 @@ export interface operations {
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["NoRouteFound"];
             429: components["responses"]["RateLimited"];
-            502: components["responses"]["ProviderUnavailable"];
+            500: components["responses"]["InternalError"];
             503: components["responses"]["ProviderUnavailable"];
         };
     };

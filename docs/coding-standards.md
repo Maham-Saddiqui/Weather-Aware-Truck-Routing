@@ -52,7 +52,7 @@ Two independent reviewers, each with its own checklist, and they do not comment 
 1. **Quality reviewer:** correctness against `RR-nn` and `REQ-nn`; simplicity (could it be shorter?); naming; test meaning (would the test fail if the code were wrong?); layering; duplication; and the **comment-free read** (`GEN-20`): read the diff ignoring every comment. Anything still confusing gets renamed or split, not explained with a comment.
 2. **Speed and security reviewer:** `docs/standards/performance.md` budgets and `docs/standards/security.md` checklist; provider terms; secrets; input validation.
 
-Findings are listed by severity (must-fix, should-fix, note) with file, line and a concrete fix. The author fixes, then the reviewer re-checks. Repeat until no must-fix remains. Several rounds are expected. Cadence for the 24-hour build: each reviewer runs at every track milestone and once more on the integrated system, not on every commit; the automatic checks run on every change.
+Findings are listed by severity (must-fix, should-fix, note) with file, line and a concrete fix. The author fixes, then the reviewer re-checks. Repeat until no must-fix remains. Several rounds are expected. Cadence for the build: each reviewer runs at every track milestone and once more on the integrated system, not on every commit; the automatic checks run on every change.
 
 ## 5. Agent protocol
 

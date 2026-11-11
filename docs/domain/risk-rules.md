@@ -1,6 +1,6 @@
 # Risk Rules
 
-**Status: APPROVED by the owner on 2026-11-11 (draft 6). Any change needs the owner's approval.** Amended during implementation with the owner's approval on 2026-11-11 (assumptions 13 to 20 in section 13 only; no rule text changed); see docs/changelog.md. This file is the single source of truth for how weather becomes a risk rating and how routes are ranked. Code, tests and the UI must follow it; if code and this file disagree, this file wins and the code is a bug. Rules have stable IDs (`RR-nn`) that tests cite.
+**Status: APPROVED by the owner on 2026-11-11. Any change needs the owner's approval.** Amended with the owner's approval (assumptions 13 to 21 in section 13, and wording corrections recorded in docs/changelog.md; no threshold, band or number changed). This file is the single source of truth for how weather becomes a risk rating and how routes are ranked. Code, tests and the UI must follow it; if code and this file disagree, this file wins and the code is a bug. Rules have stable IDs (`RR-nn`) that tests cite.
 
 Source: the assessment brief (thresholds, load rules, ranking order). Everything marked **Assumption** is our reading where the brief is silent. Assumptions are listed again in section 13.
 
@@ -117,7 +117,7 @@ Worked example, route of 60 miles, spacing 25: checkpoints at 0, 25, 50, 60 cove
 2. fewest High miles
 3. lowest average risk
 4. shortest travel time
-**RR-25 Comparison precision** (so rounding noise cannot decide a tie): miles are compared rounded to 0.1 mile, average risk to 0.01, travel time to whole minutes. If still tied: shorter distance wins, then the order the provider returned the routes.
+**RR-25 Comparison precision** (so rounding noise cannot decide a tie): miles are compared rounded to 0.1 mile, average risk to 0.01, travel time to whole minutes. If still tied: shorter distance wins, then the order the routes were listed before ranking (see assumption 21).
 **RR-26** The app explains the recommendation in one plain sentence naming the first criterion that separated the winner from the runner-up, and says how many miles the rating is based on if any route has "No data" miles.
 **RR-27** Changing the spacing can change which route wins. This is expected and is stated in the README. *(review-only)*
 **RR-30 Exact arithmetic:** distances are in metres. The provider's distances are whole metres; checkpoint positions and midpoints are exact decimals (spacing in miles x 1,609.344 m, which is exact by definition, so a 25-mile checkpoint sits at 40,233.6 m and a 12.5-mile midpoint at 20,116.8 m). They are never rounded, so the covered stretches add up exactly to the route length (RR-19). All sums and comparisons use exact decimals, never binary floating point. Convert to miles only for display and for the 0.1-mile comparison in RR-25, also with exact decimals. The 10% test is written as: no-data distance x 10 is less than or equal to route distance. (The 100-mile examples are hand-built test cases, 160,934.4 m.)
@@ -131,7 +131,7 @@ Worked example, route of 60 miles, spacing 25: checkpoints at 0, 25, 50, 60 cove
 - load is a number from 0 to 80,000 lb (our limit; the brief gives none; 0 is allowed for an empty trailer). The form shows a gentle, non-blocking note above 45,000 lb ("above typical legal cargo") but accepts the value;
 - origin and destination must be different places.
 
-**RR-31 Traceability:** every rule in this file has at least one test that cites its ID in its name or description, except rules marked *(review-only)*. A build check fails if a rule has no citing test, if a test cites an ID that does not exist, or if a rule is marked review-only without being listed in the check's allowlist with a reason. The check scans **both the Python tests and the front-end tests** (several rules are verified in the browser, such as the driving-factor wording RR-10, the heatmap using the same rating RR-28 and the slider label), and it is part of the normal test command, never a separate step. This is what makes "this file wins" enforceable: a test cannot quietly disappear and a rule cannot quietly change without a test noticing.
+**RR-31 Traceability:** every rule in this file is covered by at least one test. A rule counts as covered when its id appears in at least one test file; the build fails if a rule has none, or if a test cites an ID that does not exist. RR-16 and RR-27 are checked in review and listed in the script's allowlist (`scripts/check_rule_coverage.py`). The check scans **both the Python tests and the front-end tests** (several rules are verified in the browser, such as the driving-factor wording RR-10, the heatmap using the same rating RR-28 and the slider label), and it is part of `make check`. This is what makes "this file wins" enforceable: a test cannot quietly disappear and a rule cannot quietly change without a test noticing.
 
 ## 12. Worked examples (these become the first unit tests)
 
@@ -177,7 +177,7 @@ Least-bad pick: route A is 100 miles with 60 no-data miles and no No Travel; rou
 
 Average risk on a route with no rated miles shows "—" (never a number, never an error).
 
-## 13. Assumptions to confirm
+## 13. Assumptions (13 to 20 confirmed by the owner; 21 added at the handover review)
 
 1. Where bands touch, the higher (more cautious) band applies (0.25 in/hr is High, 1.00 is Severe).
 2. Ratings use the numbers rounded once on the server, as shown on screen (RR-02).
@@ -199,3 +199,4 @@ Average risk on a route with no rated miles shows "—" (never a number, never a
 18. RR-25: travel time is rounded to whole minutes half up (30 seconds rounds to the next minute).
 19. RR-02: if only one of rain or showers is missing for an hour, their sum is treated as missing, and RR-11 then applies to rain.
 20. RR-25 and RR-30: Severe miles of 10.04 and 10.06 do not tie, because they round to 10.0 and 10.1 before the comparison.
+21. RR-25: if still tied after distance, the route listed first before ranking wins: the fastest route by exact seconds, then the route sharing the least road with the routes already listed (this order is built by the route-variety choice; the provider's own order is not kept).

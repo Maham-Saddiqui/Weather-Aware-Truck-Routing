@@ -11,7 +11,7 @@ Help a truck driver choose the safest route for a trip, balancing weather risk, 
 | ID | Requirement |
 |---|---|
 | REQ-01 | The driver enters origin, destination, departure date and time, and cargo weight in pounds, and chooses a checkpoint spacing of 10, 25 or 50 miles (default 25). Limits are in RR-29. |
-| REQ-02 | Origin and destination are chosen from address suggestions that appear while typing (after 3 characters, US results only; the server also rejects places outside the lower 48 states). Free text without a chosen suggestion is not accepted. Each suggestion shows the kind of place (state, county, city), so "New York" the state and "New York" the city can be told apart. |
+| REQ-02 | Origin and destination are chosen from address suggestions that appear while typing (after 3 characters, US results only; the server accepts only places inside a rectangle around the lower 48 states, which also contains parts of Canada, Mexico and the sea, for example Toronto; it stops far-away requests from spending provider quota and is not a precise border). Free text without a chosen suggestion is not accepted. Each suggestion shows the kind of place (state, county, city), so "New York" the state and "New York" the city can be told apart. |
 | REQ-03 | The app produces up to 3 distinct truck route options for the trip, chosen for variety (the fastest, then the routes that overlap least), so the weather ranking has real alternatives to compare. If fewer exist, it shows what exists. Very long trips are given more time and fewer alternatives per request (architecture section 6); the three routes are still the target and the screen says so when only one or two exist. |
 | REQ-04 | For every route, weather is sampled at the checkpoints (RR-12, RR-13) at the truck's estimated arrival time (RR-15, RR-17). |
 | REQ-05 | Every checkpoint gets a risk rating exactly as defined in RR-01 to RR-11. |
@@ -22,7 +22,7 @@ Help a truck driver choose the safest route for a trip, balancing weather risk, 
 | REQ-10 | Results appear progressively: the main route first, then alternatives and the recommendation, with placeholders while waiting. |
 | REQ-11 | Three or four one-click example trips fill the form. They call the services live. Their departure is relative (for example tomorrow at 08:00 in the origin's time zone), so they never fall into the past. |
 | REQ-12 | Clear states for: unknown address, no route found, a service unavailable, backup routing mode (possibly fewer routes), weather without data, no recommended route, a sleeping server waking up. Messages are plain language. |
-| REQ-13 | Required credits are always reachable: (c) TomTom, OpenStreetMap and OpenMapTiles, and "Weather data by Open-Meteo.com". |
+| REQ-13 | Required credits are always reachable: TomTom credit text, OpenStreetMap and OpenMapTiles, and "Weather data by Open-Meteo.com". |
 | REQ-14 | The trip is kept in the page address so a refresh or a shared link restores it. |
 | REQ-15 | A short "how risk is calculated" explanation is available in the app, and the app states that ETAs are driving time only (RR-16). |
 | REQ-16 | The driver can copy or share a link that restores the trip (buttons "Share trip" and "Copy link"); the link keeps the exact coordinates. Extends REQ-14. |
@@ -51,7 +51,7 @@ User accounts, saved trips, rest-break and driving-hour modelling, computed "bet
 
 ## 5. Acceptance
 
-The risk rules are covered by tests that cite their IDs (RR-31). Every requirement above has at least one automated test or a checklist item in the final review. The walkthrough can be followed using only the one-click examples.
+The risk rules are covered by tests that cite their IDs (RR-31). Rules RR-01 to RR-31 are each tied to a test by `make rule-coverage` (RR-16 and RR-27 are checked in review). The requirements are covered by the browser and unit tests that cite them (REQ and NFR ids) and by the owner's private review checklist, which is not part of the repository; `docs/changelog.md` is the repository record of what changed after approval. The walkthrough can be followed using only the one-click examples.
 
 ## 6. Assumptions
 
