@@ -4,6 +4,8 @@ from decimal import Decimal
 from itertools import accumulate
 from typing import overload
 
+FIELD_SEPARATOR = ","
+
 
 class CompactSeries(Sequence[Decimal | None]):
     """One forecast series kept as its text; a reading becomes a Decimal only when it is read.
@@ -13,7 +15,7 @@ class CompactSeries(Sequence[Decimal | None]):
 
     def __init__(self, row: str) -> None:
         self._row = row
-        self._ends = array("I", accumulate(len(field) + 1 for field in row.split(",")))
+        self._ends = array("I", accumulate(len(field) + 1 for field in row.split(FIELD_SEPARATOR)))
 
     def __len__(self) -> int:
         return len(self._ends)
