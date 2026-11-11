@@ -1,9 +1,13 @@
+import logging
 import threading
+import time
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from contextvars import copy_context
 
+from providers.event_log import elapsed_ms, log_event
 from providers.routing.port import RoutingUnavailable
+from providers.trip_notes import current_notes
 
 MAX_TRIPS_IN_FLIGHT = 4
 QUEUE_WAIT_S = 1.0
@@ -31,17 +35,31 @@ class TripRunner:
         queue_wait_s: float = QUEUE_WAIT_S,
         deadline_s: float = TRIP_DEADLINE_S,
     ) -> None:
+        self._limit = limit
         self._slots = threading.BoundedSemaphore(limit)
         self._pool = ThreadPoolExecutor(limit, thread_name_prefix="trip")
         self._queue_wait_s = queue_wait_s
         self._deadline_s = deadline_s
 
     def run[T](self, work: Callable[[], T]) -> T:
+        queued_at = time.monotonic()
         if not self._slots.acquire(timeout=self._queue_wait_s):
+            log_event(
+                logging.WARNING,
+                "trip_cap_rejected",
+                waited_ms=elapsed_ms(queued_at),
+                limit=self._limit,
+            )
             raise TripsBusy("All trip slots are taken")
         trip: Future[T] = self._pool.submit(copy_context().run, work)
         trip.add_done_callback(lambda _: self._slots.release())
         done, _ = wait([trip], timeout=self._deadline_s)
         if not done:
+            log_event(
+                logging.WARNING,
+                "trip_deadline_exceeded",
+                stage=current_notes().running_stage or "between_stages",
+                deadline_s=self._deadline_s,
+            )
             raise TripTookTooLong("The trip took too long")
         return trip.result()

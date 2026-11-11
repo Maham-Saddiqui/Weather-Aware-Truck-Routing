@@ -13,6 +13,7 @@ request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 
 logger = logging.getLogger("trips.requests")
 
+UNFORMATTABLE_MESSAGE = "log line could not be formatted"
 PEAK_MEMORY_UNITS_PER_MB = 1024 * 1024 if sys.platform == "darwin" else 1024
 
 
@@ -28,19 +29,30 @@ class RequestIdFilter(logging.Filter):
 
 
 class JsonFormatter(logging.Formatter):
-    """One JSON object per line (BE-12): no secrets, bodies or precise coordinates in messages."""
+    """One JSON object per line (BE-12): no secrets, bodies or precise coordinates in messages.
+
+    A log call may attach named fields with extra={"fields": {...}}; each becomes a JSON key.
+    Logging must never break a request, so a line that cannot be formatted becomes a short note.
+    """
 
     def format(self, record: logging.LogRecord) -> str:
-        entry = {
-            "time": self.formatTime(record),
-            "level": record.levelname,
-            "logger": record.name,
-            "request_id": getattr(record, "request_id", "-"),
-            "message": record.getMessage(),
-        }
+        try:
+            return json.dumps(self._entry(record), default=str)
+        except Exception:
+            return json.dumps({"level": record.levelname, "message": UNFORMATTABLE_MESSAGE})
+
+    def _entry(self, record: logging.LogRecord) -> dict[str, object]:
+        entry: dict[str, object] = dict(getattr(record, "fields", {}))
+        entry.update(
+            time=self.formatTime(record),
+            level=record.levelname,
+            logger=record.name,
+            request_id=getattr(record, "request_id", None) or request_id_var.get(),
+            message=record.getMessage(),
+        )
         if record.exc_info:
             entry["exception"] = self.formatException(record.exc_info)
-        return json.dumps(entry)
+        return entry
 
 
 class RequestIdMiddleware:

@@ -4,6 +4,8 @@ from collections.abc import Callable, Mapping, Sequence
 
 import httpx
 
+from providers.provider_call import ProviderCall
+
 USER_AGENT = "weather-aware-truck-routing/1.0"
 CONNECT_TIMEOUT_S = 3.0
 MAX_CONNECTIONS = 16
@@ -27,17 +29,24 @@ def make_client(
 
 
 def get_with_one_retry(
-    client: httpx.Client,
-    url: str,
-    params: QueryParams,
+    client: httpx.Client, url: str, params: QueryParams, call: ProviderCall
 ) -> httpx.Response:
-    return send_with_one_retry(lambda: client.get(url, params=params))
+    return send_with_one_retry(lambda: client.get(url, params=params), call)
 
 
-def send_with_one_retry(send: Callable[[], httpx.Response]) -> httpx.Response:
+def send_with_one_retry(send: Callable[[], httpx.Response], call: ProviderCall) -> httpx.Response:
     """Retries once, after a short random pause, and only for network errors (architecture 10)."""
     try:
-        return send()
+        return _attempt(send, call)
     except httpx.TransportError:
         time.sleep(_jitter.uniform(*RETRY_PAUSE_RANGE_S))
-    return send()
+    return _attempt(send, call)
+
+
+def _attempt(send: Callable[[], httpx.Response], call: ProviderCall) -> httpx.Response:
+    call.start_attempt()
+    try:
+        return send()
+    except httpx.RequestError as error:
+        call.transport_failed(error)
+        raise

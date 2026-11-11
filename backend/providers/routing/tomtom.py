@@ -6,6 +6,13 @@ import httpx
 
 from domain.types import GeoPoint, ProgressEntry, ProviderRoute, RouteGeometry
 from providers.http import QueryParams, get_with_one_retry
+from providers.provider_call import (
+    ATTRIBUTION,
+    NO_ROUTE_FOUND,
+    TOMTOM,
+    UNREADABLE_ANSWER,
+    ProviderCall,
+)
 from providers.routing.polyline import decode_polyline
 from providers.routing.port import (
     NoRouteFound,
@@ -31,14 +38,17 @@ class TomTomRouting:
 
     def routes(self, query: RouteQuery) -> tuple[ProviderRoute, ...]:
         waypoints = f"{_waypoint(query.origin)}:{_waypoint(query.destination)}"
+        call = ProviderCall(TOMTOM)
         body = self._http.get_json(
-            f"/routing/1/calculateRoute/{waypoints}/json", _route_params(query)
+            f"/routing/1/calculateRoute/{waypoints}/json", _route_params(query), call
         )
         try:
             routes = tuple(_parse_route(raw) for raw in body["routes"])
         except (KeyError, IndexError, TypeError, ValueError):
+            call.failed(UNREADABLE_ANSWER)
             raise RoutingUnavailable("TomTom sent a route answer we cannot read") from None
         if not routes:
+            call.failed(NO_ROUTE_FOUND)
             raise NoRouteFound("TomTom found no route")
         return routes
 
@@ -50,9 +60,11 @@ class TomTomAttribution:
         self._http = _TomTomHttp(api_key, client, base_url)
 
     def routing_copyright(self) -> str:
-        body = self._http.get_json("/map/2/copyrights/caption.json", {})
+        call = ProviderCall(ATTRIBUTION)
+        body = self._http.get_json("/map/2/copyrights/caption.json", {}, call)
         caption = body.get("copyrightsCaption")
         if not isinstance(caption, str) or not caption:
+            call.failed(UNREADABLE_ANSWER)
             raise RoutingUnavailable("TomTom sent a copyright answer we cannot read")
         return caption
 
@@ -65,21 +77,23 @@ class _TomTomHttp:
         self._client = client
         self._base_url = base_url
 
-    def get_json(self, path: str, params: QueryParams) -> JsonObject:
+    def get_json(self, path: str, params: QueryParams, call: ProviderCall) -> JsonObject:
         if not self._api_key:
             raise RoutingUnavailable("No TomTom key is configured")
         try:
             response = get_with_one_retry(
-                self._client, self._base_url + path, {**params, "key": self._api_key}
+                self._client, self._base_url + path, {**params, "key": self._api_key}, call
             )
         except httpx.RequestError:
             raise RoutingUnavailable("TomTom could not be reached") from None
-        _raise_for_failure(response)
+        _raise_for_failure(response, call)
         try:
             body = json.loads(response.text)
         except ValueError:
+            call.failed(UNREADABLE_ANSWER)
             raise RoutingUnavailable("TomTom sent an answer that is not JSON") from None
         if not isinstance(body, dict):
+            call.failed(UNREADABLE_ANSWER)
             raise RoutingUnavailable("TomTom sent an answer that is not a JSON object")
         return body
 
@@ -101,11 +115,13 @@ def _route_params(query: RouteQuery) -> QueryParams:
     }
 
 
-def _raise_for_failure(response: httpx.Response) -> None:
+def _raise_for_failure(response: httpx.Response, call: ProviderCall) -> None:
     if response.status_code == HTTP_OK:
         return
     if _says_no_route(response):
+        call.failed(NO_ROUTE_FOUND)
         raise NoRouteFound("TomTom found no route")
+    call.status_failed(response.status_code)
     raise RoutingUnavailable(f"TomTom answered with status {response.status_code}")
 
 

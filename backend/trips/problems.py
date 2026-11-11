@@ -7,10 +7,12 @@ from django.http import JsonResponse
 from rest_framework.exceptions import APIException, Throttled, ValidationError
 from rest_framework.response import Response
 
+from providers.event_log import log_event
 from providers.routing.port import NoRouteFound, RoutingUnavailable
 from providers.timezone.offline import TimeZoneNotFound
 from services.trip_runner import TripsBusy
 from trips.responses import no_store
+from trips.serializers import UNKNOWN_FIELD
 
 logger = logging.getLogger("trips.problems")
 
@@ -23,6 +25,7 @@ HTTP_INTERNAL_ERROR = 500
 HTTP_SERVICE_UNAVAILABLE = 503
 DEFAULT_RETRY_AFTER_S = 60
 BUSY_RETRY_AFTER_S = 5
+ANONYMOUS_SCOPE = "anon"
 UNUSABLE_REQUEST_DETAIL = "The request could not be used. Check it and try again."
 
 
@@ -85,14 +88,28 @@ INTERNAL = Problem(
 def problem_response(exc: Exception, context: dict[str, Any]) -> Response:
     """The one place where errors become problem responses (BE-07, RFC 9457 style)."""
     if isinstance(exc, ValidationError):
-        return _respond(VALIDATION, field_errors=flatten_errors(exc.detail))
+        field_errors = flatten_errors(exc.detail)
+        _log_validation_failure(field_errors)
+        return _respond(VALIDATION, field_errors=field_errors)
     if isinstance(exc, Throttled):
+        scope = getattr(context.get("view"), "throttle_scope", None) or ANONYMOUS_SCOPE
+        log_event(logging.WARNING, "throttled", scope=scope)
         return _respond(RATE_LIMITED, retry_after_s=_seconds_to_wait(exc))
     if isinstance(exc, APIException) and exc.status_code < HTTP_INTERNAL_ERROR:
+        log_event(logging.INFO, "request_not_usable", status=exc.status_code)
         return _respond(replace(VALIDATION, status=exc.status_code, detail=UNUSABLE_REQUEST_DETAIL))
     if isinstance(exc, TripsBusy):
         return _respond(BUSY, retry_after_s=BUSY_RETRY_AFTER_S)
     return _respond(_problem_of(exc))
+
+
+def _log_validation_failure(field_errors: dict[str, list[str]]) -> None:
+    """Names of fields the server declares only: an unknown name is whatever the client typed."""
+    declared = sorted(name for name, errors in field_errors.items() if errors != [UNKNOWN_FIELD])
+    unknown_count = len(field_errors) - len(declared)
+    log_event(
+        logging.INFO, "validation_failed", invalid_fields=declared, unknown_fields=unknown_count
+    )
 
 
 def _problem_of(exc: Exception) -> Problem:

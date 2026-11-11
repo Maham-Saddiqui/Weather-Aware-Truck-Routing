@@ -12,6 +12,7 @@ import httpx
 from domain.types import GeoPoint, ProgressEntry, ProviderRoute, RouteGeometry
 from domain.units import WHOLE_NUMBER, round_half_up
 from providers.http import send_with_one_retry
+from providers.provider_call import NO_ROUTE_FOUND, UNREADABLE_ANSWER, VALHALLA, ProviderCall
 from providers.routing.polyline import decode_polyline
 from providers.routing.port import (
     NoRouteFound,
@@ -66,26 +67,17 @@ class ValhallaRouting:
 
     def routes(self, query: RouteQuery) -> tuple[ProviderRoute, ...]:
         body = _request_body(query)
+        call = ProviderCall(VALHALLA)
         try:
-            response = send_with_one_retry(lambda: self._post(body))
+            response = send_with_one_retry(lambda: self._post(body), call)
         except httpx.RequestError as error:
             raise RoutingUnavailable("The backup routing service did not answer.") from error
-        return _routes_from(self._payload_of(response))
+        return _routes_from(_payload_of(response, call), call)
 
     def _post(self, body: dict[str, Any]) -> httpx.Response:
         """Every attempt, a retry included, waits for its turn at the limiter."""
         self._limiter.wait_for_turn()
         return self._client.post(self._url, json=body)
-
-    def _payload_of(self, response: httpx.Response) -> dict[str, Any]:
-        payload = _parse(response.text)
-        if response.is_success:
-            return payload
-        if payload.get("error_code") in NO_ROUTE_ERROR_CODES:
-            raise NoRouteFound("The backup routing service found no truck route.")
-        raise RoutingUnavailable(
-            f"The backup routing service failed (HTTP {response.status_code})."
-        )
 
 
 def _request_body(query: RouteQuery) -> dict[str, Any]:
@@ -103,17 +95,34 @@ def _location(point: GeoPoint) -> dict[str, float]:
     return {"lat": point.lat, "lon": point.lon}
 
 
-def _parse(text: str) -> dict[str, Any]:
-    try:
-        payload = json.loads(text, parse_float=Decimal)
-    except ValueError as error:
-        raise RoutingUnavailable("The backup routing service sent an unreadable answer.") from error
-    if not isinstance(payload, dict):
+def _payload_of(response: httpx.Response, call: ProviderCall) -> dict[str, Any]:
+    if response.is_success:
+        return _parse(response.text, call)
+    if _json_object(response.text).get("error_code") in NO_ROUTE_ERROR_CODES:
+        call.failed(NO_ROUTE_FOUND)
+        raise NoRouteFound("The backup routing service found no truck route.")
+    call.status_failed(response.status_code)
+    raise RoutingUnavailable(f"The backup routing service failed (HTTP {response.status_code}).")
+
+
+def _parse(text: str, call: ProviderCall) -> dict[str, Any]:
+    payload = _json_object(text)
+    if not payload:
+        call.failed(UNREADABLE_ANSWER)
         raise RoutingUnavailable("The backup routing service sent an unreadable answer.")
     return payload
 
 
-def _routes_from(payload: dict[str, Any]) -> tuple[ProviderRoute, ...]:
+def _json_object(text: str) -> dict[str, Any]:
+    """Anything that is not a JSON object counts as empty, which no caller accepts as an answer."""
+    try:
+        payload = json.loads(text, parse_float=Decimal)
+    except ValueError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _routes_from(payload: dict[str, Any], call: ProviderCall) -> tuple[ProviderRoute, ...]:
     try:
         trips = [
             payload["trip"],
@@ -121,6 +130,7 @@ def _routes_from(payload: dict[str, Any]) -> tuple[ProviderRoute, ...]:
         ]
         return tuple(_route_from(trip) for trip in trips)
     except (KeyError, IndexError, TypeError, ValueError, InvalidOperation) as error:
+        call.failed(UNREADABLE_ANSWER)
         raise RoutingUnavailable("The backup routing service sent an unreadable answer.") from error
 
 

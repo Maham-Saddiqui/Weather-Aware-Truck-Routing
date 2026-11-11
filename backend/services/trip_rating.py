@@ -8,6 +8,7 @@ from domain.rating import measurements_at, rate_checkpoint
 from domain.summary import RatedCheckpoint, summarize
 from domain.types import CheckpointSpacing, GeoPoint, HourlyWeather, ProviderRoute
 from providers.timezone.port import TimeZoneLookup
+from providers.trip_notes import current_notes, stage
 from providers.weather.port import WeatherBusy, WeatherError
 from services.environment import TripEnvironment
 from services.results import (
@@ -36,26 +37,39 @@ def rate_routes(
     env: TripEnvironment, request: TripRequest, routes: Sequence[ProviderRoute]
 ) -> RatedTrip:
     """One batched weather call for every checkpoint and heatmap cell of every route (PERF-01)."""
-    planned = _plans(routes, request.spacing_miles, request)
-    grid_cells = _unique_cells(
-        checkpoint.position
-        for _, checkpoints in _grid_plans(planned, request)
-        for checkpoint in checkpoints
-    )
-    checkpoint_cells = _unique_cells(
-        checkpoint.position for _, checkpoints in planned for checkpoint in checkpoints
-    )
-    windows, failure = _fetch_weather(env, [*checkpoint_cells, *grid_cells])
-    rater = _Rater(windows, env.timezone, request)
-    rated = tuple(rater.rate_route(route, checkpoints) for route, checkpoints in planned)
-    return RatedTrip(
-        routes=rated,
-        heatmap=Heatmap(request.departure_utc, rater.heatmap_points(grid_cells)),
-        weather_status=failure or _status_from_ratings(rated),
-    )
+    with stage("rating"):
+        planned = _plans(routes, request.spacing_miles, request)
+        grid_cells = _unique_cells(_positions(_grid_plans(planned, request)))
+        cells = tuple(dict.fromkeys([*_unique_cells(_positions(planned)), *grid_cells]))
+    with stage("weather"):
+        windows, failure = _fetch_weather(env, cells)
+    with stage("rating"):
+        rater = _Rater(windows, env.timezone, request)
+        rated = tuple(rater.rate_route(route, checkpoints) for route, checkpoints in planned)
+        heatmap = Heatmap(request.departure_utc, rater.heatmap_points(grid_cells))
+    status = failure or _status_from_ratings(rated)
+    _note_rating(rated, status, cells, windows)
+    return RatedTrip(rated, heatmap, status)
 
 
 type Plans = list[tuple[ProviderRoute, tuple[Checkpoint, ...]]]
+
+
+def _positions(plans: Plans) -> Iterable[GeoPoint]:
+    return (checkpoint.position for _, checkpoints in plans for checkpoint in checkpoints)
+
+
+def _note_rating(
+    routes: Sequence[RatedRoute], status: WeatherStatus, cells: Sequence[GeoPoint], windows: Windows
+) -> None:
+    levels = [c.rating.level for route in routes for c in route.checkpoints]
+    notes = current_notes()
+    notes.routes = len(routes)
+    notes.weather_status = status.value
+    notes.checkpoints = len(levels)
+    notes.checkpoints_rated = sum(level is not None for level in levels)
+    notes.cells_requested = len(cells)
+    notes.cells_missing = sum(cell not in windows for cell in cells)
 
 
 def _plans(
@@ -81,7 +95,7 @@ def _fetch_weather(
     env: TripEnvironment, cells: Sequence[GeoPoint]
 ) -> tuple[Windows, WeatherStatus | None]:
     try:
-        return env.weather.forecast(tuple(dict.fromkeys(cells))), None
+        return env.weather.forecast(tuple(cells)), None
     except WeatherError as error:
         busy = isinstance(error, WeatherBusy)
         return {}, WeatherStatus.BUSY if busy else WeatherStatus.UNAVAILABLE

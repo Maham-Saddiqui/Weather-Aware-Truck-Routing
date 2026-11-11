@@ -1,7 +1,9 @@
+import logging
 from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
 
+from providers.event_log import log_event
 from trips.limits import MAX_BODY_BYTES
 from trips.problems import too_large_response
 
@@ -17,6 +19,7 @@ class BodyLimitMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         if request.method in BODY_METHODS and _is_too_large(request):
+            log_event(logging.WARNING, "request_body_too_large", limit_bytes=MAX_BODY_BYTES)
             return too_large_response()
         return self._get_response(request)
 

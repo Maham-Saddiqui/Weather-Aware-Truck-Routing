@@ -10,6 +10,7 @@ import pytest
 
 from domain.types import GeoPoint
 from providers.http import make_client
+from providers.trip_notes import recording_trip
 from providers.weather.budget import BudgetLimit, WeatherBudget
 from providers.weather.cache import WindowCache
 from providers.weather.open_meteo import (
@@ -429,3 +430,13 @@ def test_an_answer_without_any_hourly_data_leaves_the_point_absent() -> None:
     service = Service(lambda request: httpx.Response(200, text="{}"))
 
     assert service.weather.forecast([POINT]) == {}
+
+
+def test_the_trip_notes_count_the_cells_the_cache_already_held() -> None:
+    service = Service()
+    service.weather.forecast([POINT])
+
+    with recording_trip() as notes:
+        service.weather.forecast([POINT, OTHER_POINT])
+
+    assert notes.weather_cache_hits == 1
