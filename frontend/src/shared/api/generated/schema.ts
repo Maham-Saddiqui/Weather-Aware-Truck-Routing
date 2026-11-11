@@ -255,6 +255,26 @@ export interface components {
         };
     };
     responses: {
+        /** @description The request body is larger than 8 KB; refused unread (code `validation_error`) */
+        PayloadTooLarge: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The request is not JSON (code `validation_error`) */
+        UnsupportedMediaType: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
         /** @description The request is invalid (see RR-29) */
         ValidationError: {
             headers: {
@@ -299,6 +319,8 @@ export interface components {
     headers: {
         /** @description Always `no-store` */
         NoStore: "no-store";
+        /** @description Identifier of this request, also written to the server log lines of the request */
+        RequestId: string;
     };
     pathItems: never;
 }
@@ -340,6 +362,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["NoStore"];
+                    "X-Request-ID": components["headers"]["RequestId"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -395,6 +418,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["NoStore"];
+                    "X-Request-ID": components["headers"]["RequestId"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -402,6 +426,8 @@ export interface operations {
                 };
             };
             400: components["responses"]["ValidationError"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["NoRouteFound"];
             429: components["responses"]["RateLimited"];
             502: components["responses"]["ProviderUnavailable"];
@@ -425,6 +451,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["NoStore"];
+                    "X-Request-ID": components["headers"]["RequestId"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -432,6 +459,8 @@ export interface operations {
                 };
             };
             400: components["responses"]["ValidationError"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["NoRouteFound"];
             429: components["responses"]["RateLimited"];
             502: components["responses"]["ProviderUnavailable"];

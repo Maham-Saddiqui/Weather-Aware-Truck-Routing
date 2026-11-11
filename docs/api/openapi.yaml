@@ -3,7 +3,7 @@ info:
   title: Weather-Aware Truck Routing API
   version: 1.0.0
   description: |
-    Status: approved by the owner on 2026-11-11 (changes need the owner's approval).
+    Status: approved by the owner on 2026-11-11 (changes need the owner's approval). Amended during implementation with the owner's approval on 2026-11-11; see docs/changelog.md.
     Contract between the front end and the server. The server owns every rating (docs/domain/risk-rules.md).
     Decimals are strings, already rounded as the rules require; clients display them unchanged and never parse them to floats.
     Responses that contain TomTom data carry `Cache-Control: no-store` (provider terms). Nothing is stored server-side.
@@ -36,6 +36,8 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -95,12 +97,18 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PrimaryTripResponse"
         "400":
           $ref: "#/components/responses/ValidationError"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
         "422":
           $ref: "#/components/responses/NoRouteFound"
         "429":
@@ -125,12 +133,18 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CompareTripResponse"
         "400":
           $ref: "#/components/responses/ValidationError"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
         "422":
           $ref: "#/components/responses/NoRouteFound"
         "429":
@@ -146,7 +160,29 @@ components:
       schema:
         type: string
         const: no-store
+    RequestId:
+      description: Identifier of this request, also written to the server log lines of the request
+      schema:
+        type: string
   responses:
+    PayloadTooLarge:
+      description: The request body is larger than 8 KB; refused unread (code `validation_error`)
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnsupportedMediaType:
+      description: The request is not JSON (code `validation_error`)
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     ValidationError:
       description: The request is invalid (see RR-29)
       content:
