@@ -79,7 +79,7 @@ export function RouteMapCanvas({
         <NavigationControl position="top-right" showCompass={false} />
         <BlankMissingImages />
         {heatmap && <HeatmapLayer heatmap={heatmap} hourOffset={hourOffset} />}
-        <RouteScene {...scene} />
+        <RouteScene {...scene} onSelectRoute={onSelectRoute} />
         <RouteMarkers
           {...scene}
           heatmap={heatmap}

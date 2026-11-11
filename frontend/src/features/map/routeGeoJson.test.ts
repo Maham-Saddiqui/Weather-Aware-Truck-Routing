@@ -12,6 +12,14 @@ describe('routeLines (REQ-08: one line per route)', () => {
     ])
   })
 
+  it('gives each route position its own line colour so alternatives can be told apart', () => {
+    const colours = routeLines([NORTH_ROUTE, NORTH_ROUTE, NORTH_ROUTE]).features.map(
+      (feature) => feature.properties.colour,
+    )
+
+    expect(new Set(colours).size).toBe(3)
+  })
+
   it('decodes each line with the precision stated in its own geometry', () => {
     const points: [number, number][] = [
       [-87.123456, 41.654321],
