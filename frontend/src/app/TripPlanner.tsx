@@ -12,7 +12,8 @@ export function TripPlanner() {
       form={
         <ErrorBoundary area="the trip form">
           <TripForm
-            initialTrip={planner.run?.trip ?? null}
+            initialTrip={planner.restored?.trip ?? null}
+            needsReview={planner.restored?.isPlannable === false}
             isBusy={planner.results.isPending}
             onSubmit={planner.submit}
           />

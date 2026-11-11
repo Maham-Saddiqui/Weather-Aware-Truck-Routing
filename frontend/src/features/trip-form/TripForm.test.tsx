@@ -32,7 +32,7 @@ function answerWithPlaces(onRequest?: (url: URL) => void) {
 function renderForm(onSubmit = vi.fn()) {
   render(
     <Providers>
-      <TripForm initialTrip={null} isBusy={false} onSubmit={onSubmit} />
+      <TripForm initialTrip={null} needsReview={false} isBusy={false} onSubmit={onSubmit} />
     </Providers>,
   )
   return onSubmit

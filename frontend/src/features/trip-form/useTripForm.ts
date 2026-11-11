@@ -27,12 +27,13 @@ function valuesFromTrip(trip: TripRequest): TripFormValues {
 
 export function useTripForm(
   initialTrip: TripRequest | null,
+  needsReview: boolean,
   onSubmit: (trip: TripRequest) => void,
 ) {
   const [values, setValues] = useState(() =>
     initialTrip ? valuesFromTrip(initialTrip) : defaultValues(),
   )
-  const [hasAttempted, setHasAttempted] = useState(false)
+  const [hasAttempted, setHasAttempted] = useState(needsReview)
   const originZone = useOriginTimeZone(values.origin)
 
   const check = checkTripForm(values, dayjs())

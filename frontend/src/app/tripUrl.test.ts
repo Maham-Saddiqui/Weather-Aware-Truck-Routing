@@ -38,6 +38,8 @@ describe('trip in the page address (REQ-14, FE-16)', () => {
     ['a negative weight', { load: '-1' }],
     ['a decimal weight', { load: '10.5' }],
     ['an unreadable departure', { dep: 'tomorrow' }],
+    ['a departure that is only a year', { dep: '2026' }],
+    ['a departure without a time zone', { dep: '2026-11-12T14:00:00' }],
     ['an empty origin label', { o: '' }],
   ])('rejects %s', (_name, changes) => {
     expect(parseTrip(withChange(changes))).toBeNull()

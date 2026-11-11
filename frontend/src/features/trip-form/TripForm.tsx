@@ -9,14 +9,15 @@ import { useTripForm } from './useTripForm'
 
 interface TripFormProps {
   initialTrip: TripRequest | null
+  needsReview: boolean
   isBusy: boolean
   onSubmit: (trip: TripRequest) => void
 }
 
-export function TripForm({ initialTrip, isBusy, onSubmit }: TripFormProps) {
+export function TripForm({ initialTrip, needsReview, isBusy, onSubmit }: TripFormProps) {
   const isPhone = useMediaQuery(useTheme().breakpoints.down('md'))
-  const [isCollapsed, setIsCollapsed] = useState(initialTrip !== null)
-  const form = useTripForm(initialTrip, (trip) => {
+  const [isCollapsed, setIsCollapsed] = useState(initialTrip !== null && !needsReview)
+  const form = useTripForm(initialTrip, needsReview, (trip) => {
     setIsCollapsed(true)
     onSubmit(trip)
   })

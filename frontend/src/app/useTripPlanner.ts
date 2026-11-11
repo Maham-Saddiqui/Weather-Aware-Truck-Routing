@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useTripResults } from '../features/route-results'
+import { departureError } from '../features/trip-form'
+import { dayjs } from '../shared/time'
 import type { TripRequest, TripRun } from '../shared/types'
 import { encodeTrip, parseTrip } from './tripUrl'
 
@@ -8,13 +10,22 @@ interface Selection {
   checkpointIndex: number | null
 }
 
-function restoreRun(): TripRun | null {
+interface RestoredTrip {
+  trip: TripRequest
+  isPlannable: boolean
+}
+
+function restoreTrip(): RestoredTrip | null {
   const trip = parseTrip(window.location.search)
-  return trip && { trip, runId: 1 }
+  if (!trip) return null
+  return { trip, isPlannable: departureError(dayjs(trip.departure_utc), dayjs()) === undefined }
 }
 
 export function useTripPlanner() {
-  const [run, setRun] = useState<TripRun | null>(restoreRun)
+  const [restored] = useState(restoreTrip)
+  const [run, setRun] = useState<TripRun | null>(
+    restored?.isPlannable ? { trip: restored.trip, runId: 1 } : null,
+  )
   const [selection, setSelection] = useState<Selection>({ routeId: null, checkpointIndex: null })
   const results = useTripResults(run)
 
@@ -30,6 +41,7 @@ export function useTripPlanner() {
 
   return {
     run,
+    restored,
     results,
     selectedRouteId,
     selectedCheckpointIndex:

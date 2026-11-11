@@ -35,7 +35,7 @@ function destinationError(origin: Place | null, destination: Place | null): stri
   return isSamePlace ? 'Origin and destination must be different places.' : undefined
 }
 
-function departureError(departure: Dayjs | null, now: Dayjs): string | undefined {
+export function departureError(departure: Dayjs | null, now: Dayjs): string | undefined {
   if (!departure?.isValid()) return 'Pick a departure date and time.'
   if (departure.isBefore(now.startOf('hour'))) return 'Departure cannot be in the past.'
   if (departure.isAfter(now.add(MAX_DEPARTURE_DAYS_AHEAD, 'day'))) {
