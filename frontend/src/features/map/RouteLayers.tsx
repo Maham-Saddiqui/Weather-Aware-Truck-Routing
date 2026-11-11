@@ -1,13 +1,7 @@
 import { Layer, Source } from '@vis.gl/react-maplibre'
 import type { ExpressionSpecification } from 'maplibre-gl'
-import {
-  ROUTE_CASING_COLOUR,
-  ROUTE_COLOUR_MUTED,
-  ROUTE_COLOUR_SELECTED,
-  ROUTE_HIT_LAYER_ID,
-  ROUTE_HIT_WIDTH_PX,
-  ROUTE_LINE_LAYER_ID,
-} from './mapConstants'
+import { ROUTE_COLOURS } from '../../shared/colours'
+import { ROUTE_HIT_LAYER_ID, ROUTE_HIT_WIDTH_PX, ROUTE_LINE_LAYER_ID } from './mapConstants'
 import type { RouteLines } from './routeGeoJson'
 
 interface RouteLayersProps {
@@ -34,7 +28,7 @@ export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
         type="line"
         layout={{ ...ROUND_LINES, 'line-sort-key': whenSelected(selectedRouteId, 1, 0) }}
         paint={{
-          'line-color': ROUTE_CASING_COLOUR,
+          'line-color': ROUTE_COLOURS.casing,
           'line-width': whenSelected(selectedRouteId, 10, 7),
         }}
       />
@@ -43,7 +37,7 @@ export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
         type="line"
         layout={{ ...ROUND_LINES, 'line-sort-key': whenSelected(selectedRouteId, 1, 0) }}
         paint={{
-          'line-color': whenSelected(selectedRouteId, ROUTE_COLOUR_SELECTED, ROUTE_COLOUR_MUTED),
+          'line-color': whenSelected(selectedRouteId, ROUTE_COLOURS.selected, ROUTE_COLOURS.muted),
           'line-width': whenSelected(selectedRouteId, 6, 4),
         }}
       />
@@ -52,7 +46,7 @@ export function RouteLayers({ lines, selectedRouteId }: RouteLayersProps) {
         type="line"
         layout={ROUND_LINES}
         paint={{
-          'line-color': ROUTE_CASING_COLOUR,
+          'line-color': ROUTE_COLOURS.casing,
           'line-opacity': 0,
           'line-width': ROUTE_HIT_WIDTH_PX,
         }}

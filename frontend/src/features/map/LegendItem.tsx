@@ -1,18 +1,18 @@
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { RiskIcon } from './RiskIcon'
-import { RISK_COLOURS, RISK_WORDS } from './riskScale'
-import type { RiskLevel } from './riskScale'
+import { RISK_COLOURS } from '../../shared/colours'
+import { LEVEL_LABELS, RiskIcon } from '../../shared/risk'
+import type { CheckpointLevel } from '../../shared/types'
 
 interface LegendItemProps {
-  level: RiskLevel
+  level: CheckpointLevel
 }
 
 export function LegendItem({ level }: LegendItemProps) {
   return (
     <Stack component="li" direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
       <RiskIcon level={level} fontSize="small" sx={{ color: RISK_COLOURS[level] }} />
-      <Typography variant="caption">{RISK_WORDS[level]}</Typography>
+      <Typography variant="caption">{LEVEL_LABELS[level]}</Typography>
     </Stack>
   )
 }
