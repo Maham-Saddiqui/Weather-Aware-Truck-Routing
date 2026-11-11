@@ -83,6 +83,7 @@ The server runs on Render (gunicorn with exactly one worker process and eight th
 ## Trade-offs and limits
 
 - The free server tiers are small (a tenth of a processor, 512 MB, sleep after 15 minutes idle). The page shows a "waking the server" state, and the design keeps work per request small.
+- The backup router (Valhalla's public server) refuses truck routes longer than about 930 miles, so if TomTom is down, longer trips show a plain "routing unavailable" message instead of a backup route.
 - Weather comes from a free service with per-minute and per-day limits; weather is fetched in one batched call per request and cached per map cell for about an hour. When the service is busy the routes are still shown, without ratings, with a plain message.
 - TomTom's free key is for evaluation. Nothing from TomTom is cached or stored, its credit text is shown in the app, and no comparison with other providers is published.
 - The weather service gives hourly values, so ratings reflect the hour, not minute-level weather.
