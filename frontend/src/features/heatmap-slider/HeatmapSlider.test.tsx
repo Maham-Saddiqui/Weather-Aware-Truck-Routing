@@ -6,6 +6,8 @@ import { HeatmapSlider } from './HeatmapSlider'
 
 const START_UTC = '2026-11-12T23:00:00Z'
 const PLAYBACK_STEP_MS = 1000
+const PLAY = 'Play the 48-hour forecast'
+const REPLAY = 'Replay the 48-hour forecast'
 
 interface SliderWithStateProps {
   initialHour?: number
@@ -89,6 +91,7 @@ describe('HeatmapSlider keyboard (NFR-03: keyboard operable)', () => {
 
     await userEvent.tab()
     await userEvent.tab()
+    await userEvent.tab()
     expect(screen.getByRole('slider')).toHaveFocus()
     await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowLeft}')
 
@@ -126,54 +129,100 @@ describe('HeatmapSlider play button (FE-07: reduced motion respected, no autopla
     const onChange = vi.fn()
     render(<SliderWithState onChange={onChange} />)
 
-    pressButton('Play forecast')
+    pressButton(PLAY)
     advanceTime(PLAYBACK_STEP_MS)
     advanceTime(PLAYBACK_STEP_MS)
     expect(hoursReported(onChange)).toEqual([1, 2])
 
-    pressButton('Pause forecast')
+    pressButton('Pause')
     advanceTime(3 * PLAYBACK_STEP_MS)
     expect(onChange).toHaveBeenCalledTimes(2)
   })
 
-  it('stops by itself at the last hour', () => {
+  it('stops by itself at the last hour and offers to replay', () => {
     const onChange = vi.fn()
     render(<SliderWithState initialHour={47} onChange={onChange} />)
 
-    pressButton('Play forecast')
+    pressButton(PLAY)
     advanceTime(5 * PLAYBACK_STEP_MS)
 
     expect(hoursReported(onChange)).toEqual([48])
-    expect(screen.getByRole('button', { name: 'Play forecast' })).toBeVisible()
+    expect(screen.getByRole('button', { name: REPLAY })).toBeVisible()
+    expect(screen.queryByRole('button', { name: PLAY })).not.toBeInTheDocument()
   })
 
-  it('starts again from hour 0 when play is pressed at the last hour', () => {
+  it('starts again from hour 0 when replay is pressed at the last hour', () => {
     const onChange = vi.fn()
     render(<SliderWithState initialHour={48} onChange={onChange} />)
 
-    pressButton('Play forecast')
+    pressButton(REPLAY)
 
     expect(onChange).toHaveBeenCalledWith(0)
-    expect(screen.getByRole('button', { name: 'Pause forecast' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeVisible()
   })
 
   it('stops playing when the user takes the slider', async () => {
     vi.useRealTimers()
     render(<SliderWithState />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Play forecast' }))
+    await userEvent.click(screen.getByRole('button', { name: PLAY }))
     screen.getByRole('slider').focus()
     await userEvent.keyboard('{ArrowRight}')
 
-    expect(screen.getByRole('button', { name: 'Play forecast' })).toBeVisible()
+    expect(screen.getByRole('button', { name: PLAY })).toBeVisible()
+  })
+
+  it('shows the play tooltip when the button gets keyboard focus', async () => {
+    vi.useRealTimers()
+    render(<SliderWithState />)
+
+    await userEvent.tab()
+    await userEvent.tab()
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(PLAY)
   })
 })
 
 describe('HeatmapSlider with reduced motion (FE-07)', () => {
-  it('turns play off and says why', () => {
+  it('turns play off but keeps it focusable, with the reason in its tooltip', async () => {
     mockReducedMotion(true)
     render(<SliderWithState />)
+    const button = screen.getByRole('button', { name: /reduced motion is on/ })
 
-    expect(screen.getByRole('button', { name: /reduced motion is on/ })).toBeDisabled()
+    button.focus()
+
+    expect(button).toHaveAttribute('aria-disabled', 'true')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Play is off because reduced motion is on',
+    )
+  })
+
+  it('does not play when the button is pressed', async () => {
+    mockReducedMotion(true)
+    const onChange = vi.fn()
+    render(<SliderWithState onChange={onChange} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /reduced motion is on/ }))
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('HeatmapSlider caption (REQ-09, FE-07: self-explanatory controls)', () => {
+  it('names the slider "Forecast time" in visible text', () => {
+    render(<SliderWithState />)
+
+    expect(screen.getByText('Forecast time')).toBeVisible()
+  })
+
+  it('explains map, truck and dots in a tooltip reachable by keyboard', async () => {
+    render(<SliderWithState />)
+
+    await userEvent.tab()
+
+    const tooltip = await screen.findByRole('tooltip')
+    expect(tooltip).toHaveTextContent('Weather along the whole corridor at this time.')
+    expect(tooltip).toHaveTextContent('The truck marker shows where the truck would be.')
+    expect(tooltip).toHaveTextContent('Checkpoint dots show conditions when the truck arrives.')
   })
 })

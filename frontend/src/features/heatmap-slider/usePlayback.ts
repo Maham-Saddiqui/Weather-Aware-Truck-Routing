@@ -12,6 +12,7 @@ interface PlaybackInput {
 export interface Playback {
   isPlaying: boolean
   isUnavailable: boolean
+  isFinished: boolean
   togglePlaying: () => void
   stopPlaying: () => void
 }
@@ -46,6 +47,7 @@ export function usePlayback({ hourOffset, lastHour, onChangeHourOffset }: Playba
   return {
     isPlaying,
     isUnavailable,
+    isFinished: hourOffset >= lastHour,
     togglePlaying,
     stopPlaying: () => {
       setWantsToPlay(false)
