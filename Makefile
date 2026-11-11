@@ -1,4 +1,4 @@
-.PHONY: check backend-check frontend-check merge-check secret-scan contract-sync rule-coverage
+.PHONY: rehearsal-server rehearsal-frontend check backend-check frontend-check merge-check secret-scan contract-sync rule-coverage
 
 # Use the project's Node (see .nvmrc) even when the shell starts on another version.
 NODE26 := $(lastword $(sort $(wildcard $(HOME)/.nvm/versions/node/v26.*)))
@@ -27,3 +27,10 @@ contract-sync:
 
 rule-coverage:
 	python3 -I scripts/check_rule_coverage.py
+
+# Local end-to-end rehearsal with synthetic providers (no network): run both, then open http://localhost:5173
+rehearsal-server:
+	cd backend && uv run python ../scripts/run_fake_server.py
+
+rehearsal-frontend:
+	cd frontend && VITE_API_BASE_URL=http://127.0.0.1:8000 npm run dev
