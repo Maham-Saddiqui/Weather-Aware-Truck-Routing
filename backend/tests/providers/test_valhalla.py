@@ -1,12 +1,13 @@
 import json
 import threading
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 import httpx
 import pytest
 
 from domain.types import GeoPoint
+from providers.routing.polyline import decode_polyline
 from providers.routing.port import (
     NoRouteFound,
     RoutePreference,
@@ -14,7 +15,8 @@ from providers.routing.port import (
     RoutingProviderName,
     RoutingUnavailable,
 )
-from providers.routing.valhalla import RequestLimiter, ValhallaRouting, decode_polyline
+from providers.routing.valhalla import RequestLimiter, ValhallaRouting
+from tests.fakes.polyline import encode_polyline
 
 BASE_URL = "https://valhalla.example.test"
 QUERY = RouteQuery(
@@ -25,26 +27,6 @@ QUERY = RouteQuery(
     preference=RoutePreference.FASTEST,
     max_alternatives=1,
 )
-
-
-def encode_polyline(points: Sequence[GeoPoint], precision: int) -> str:
-    """Test-side encoder for building synthetic shapes."""
-    factor = 10**precision
-    encoded, last_lat, last_lon = "", 0, 0
-    for point in points:
-        lat, lon = round(point.lat * factor), round(point.lon * factor)
-        encoded += _encode_number(lat - last_lat) + _encode_number(lon - last_lon)
-        last_lat, last_lon = lat, lon
-    return encoded
-
-
-def _encode_number(change: int) -> str:
-    value = ~(change << 1) if change < 0 else change << 1
-    text = ""
-    while value >= 0x20:
-        text += chr((0x20 | (value & 0x1F)) + 63)
-        value >>= 5
-    return text + chr(value + 63)
 
 
 def line_of(point_count: int) -> list[GeoPoint]:
@@ -94,25 +76,6 @@ def test_the_adapter_names_itself_as_the_backup_provider() -> None:
     assert adapter(answering(200, success_body())).name is RoutingProviderName.VALHALLA
 
 
-def test_the_polyline_decoder_reads_the_documented_example() -> None:
-    points = decode_polyline("_p~iF~ps|U_ulLnnqC_mqNvxq`@", 5)
-
-    assert points == (
-        GeoPoint(38.5, -120.2),
-        GeoPoint(40.7, -120.95),
-        GeoPoint(43.252, -126.453),
-    )
-
-
-def test_the_polyline_decoder_reverses_the_test_encoder_at_precision_6() -> None:
-    points = tuple(
-        GeoPoint((30_123_456 + step * 1000) / 10**6, (-97_654_321 - step * 2000) / 10**6)
-        for step in range(5)
-    )
-
-    assert decode_polyline(encode_polyline(points, 6), 6) == points
-
-
 def test_the_request_asks_for_a_truck_route_with_the_weight_in_tonnes() -> None:
     seen: list[httpx.Request] = []
 
@@ -153,6 +116,9 @@ def test_a_trip_becomes_a_route_with_whole_metres_and_seconds() -> None:
     assert route.geometry.precision == 6
     assert route.geometry.encoded == encode_polyline(line_of(25), 6)
     assert route.path == decode_polyline(route.geometry.encoded, 6)
+    assert [point.lon for point in route.path] == pytest.approx(
+        [point.lon for point in line_of(25)], abs=1e-6
+    )
 
 
 def test_alternates_follow_the_main_route_in_the_provider_order() -> None:
@@ -206,6 +172,7 @@ def test_be07_valhalla_saying_no_path_exists_is_no_route_found(error_code: int) 
         (200, '{"unexpected": true}'),
         (200, '{"trip": {"legs": [], "summary": {"length": 1.0, "time": 2}}}'),
         (200, '{"trip": {"legs": [{"shape": "??"}], "summary": {"length": "x", "time": 2}}}'),
+        (200, '{"trip": {"legs": [{"shape": "_"}], "summary": {"length": 1.0, "time": 2}}}'),
     ],
 )
 def test_be07_failures_and_unreadable_answers_are_routing_unavailable(
