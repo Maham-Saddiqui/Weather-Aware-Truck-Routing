@@ -5,7 +5,7 @@ const PLAYBACK_STEP_MS = 1000
 
 interface PlaybackInput {
   hourOffset: number
-  lastHour: number
+  playUntilHour: number
   onChangeHourOffset: (hourOffset: number) => void
 }
 
@@ -17,11 +17,17 @@ export interface Playback {
   stopPlaying: () => void
 }
 
-// Plays only when the user presses play, one hour per step, and never when reduced motion is requested (FE-07).
-export function usePlayback({ hourOffset, lastHour, onChangeHourOffset }: PlaybackInput): Playback {
+// Plays the trip, not the whole forecast: one hour per step from departure to just after arrival, only when the
+// user presses play, and never when reduced motion is requested (FE-07). The slider itself still spans every hour.
+export function usePlayback({
+  hourOffset,
+  playUntilHour,
+  onChangeHourOffset,
+}: PlaybackInput): Playback {
   const isUnavailable = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [wantsToPlay, setWantsToPlay] = useState(false)
-  const isPlaying = wantsToPlay && !isUnavailable && hourOffset < lastHour
+  const isFinished = hourOffset >= playUntilHour
+  const isPlaying = wantsToPlay && !isUnavailable && !isFinished
 
   useEffect(() => {
     if (!isPlaying) {
@@ -29,14 +35,15 @@ export function usePlayback({ hourOffset, lastHour, onChangeHourOffset }: Playba
     }
     const timer = setTimeout(() => {
       onChangeHourOffset(hourOffset + 1)
+      setWantsToPlay(hourOffset + 1 < playUntilHour)
     }, PLAYBACK_STEP_MS)
     return () => {
       clearTimeout(timer)
     }
-  }, [isPlaying, hourOffset, onChangeHourOffset])
+  }, [isPlaying, hourOffset, playUntilHour, onChangeHourOffset])
 
   const togglePlaying = () => {
-    if (hourOffset >= lastHour) {
+    if (isFinished) {
       onChangeHourOffset(0)
       setWantsToPlay(true)
       return
@@ -47,7 +54,7 @@ export function usePlayback({ hourOffset, lastHour, onChangeHourOffset }: Playba
   return {
     isPlaying,
     isUnavailable,
-    isFinished: hourOffset >= lastHour,
+    isFinished,
     togglePlaying,
     stopPlaying: () => {
       setWantsToPlay(false)

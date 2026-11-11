@@ -21,6 +21,7 @@ export interface HeatmapSliderProps {
   timeZone: string
   hours: number
   hourOffset: number
+  playUntilHour: number
   onChangeHourOffset: (hourOffset: number) => void
   status?: ReactNode
 }
