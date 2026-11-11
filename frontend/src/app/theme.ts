@@ -115,6 +115,18 @@ export const theme = createTheme({
     MuiToggleButton: {
       styleOverrides: { root: { minWidth: MIN_TOUCH_TARGET_PX, minHeight: MIN_TOUCH_TARGET_PX } },
     },
+    MuiDialog: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          [theme.breakpoints.down('sm')]: {
+            margin: 16,
+            width: 'calc(100% - 32px)',
+            maxWidth: 'calc(100% - 32px)',
+          },
+        }),
+      },
+    },
+    MuiTableCell: { styleOverrides: { sizeSmall: { padding: '6px 8px' } } },
     MuiTextField: { defaultProps: { fullWidth: true } },
     MuiChip: { styleOverrides: { root: { fontWeight: 600 } } },
   },
