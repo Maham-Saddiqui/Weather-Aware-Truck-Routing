@@ -66,6 +66,18 @@ def test_arrival_times_are_exact_utc_instants_with_the_zone_name_beside_them(
     assert body["heatmap"]["start_utc"] == "2026-11-11T17:25:00Z"
 
 
+def test_both_responses_carry_the_worst_level_per_hour_of_their_own_heatmap(
+    client: Client, use_fakes: UseFakes
+) -> None:
+    """RR-28"""
+    use_fakes(with_trips(default_fakes(), routing=tomtom_answering((route_bent(0.0),))))
+
+    for path in ("/trips/primary", "/trips/compare"):
+        _, body = post(client, path)
+
+        assert body["heatmap"]["worst_level_by_hour"] == "0" * 49
+
+
 def test_the_compare_response_names_the_deciding_criterion_and_the_provider(
     client: Client, use_fakes: UseFakes
 ) -> None:

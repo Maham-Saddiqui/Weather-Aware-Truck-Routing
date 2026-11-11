@@ -190,6 +190,8 @@ export interface components {
             start_utc: string;
             /** @constant */
             hours: 49;
+            /** @description One character per hour, same indexing as the point `risk` strings. The highest risk digit (0 to 4, Low to No Travel) over all points at that hour, or x when no point has data that hour. Computed on the server so the screen never derives a rating (GEN-03). */
+            worst_level_by_hour: string;
             points: components["schemas"]["HeatmapPoint"][];
         };
         Route: {

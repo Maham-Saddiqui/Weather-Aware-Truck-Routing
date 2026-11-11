@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from domain.heatmap import cell_of, risk_digits
+from domain.heatmap import cell_of, risk_digits, worst_digit_by_hour
 from domain.types import GeoPoint, HourlyWeather
 
 DEPARTURE = datetime(2026, 11, 12, 8, 0, tzinfo=UTC)
@@ -75,3 +75,47 @@ def test_cell_of_keeps_points_in_different_cells_apart() -> None:
 
 def test_cell_of_rounds_a_point_exactly_between_two_cells_up() -> None:
     assert cell_of(GeoPoint(35.125, -35.125)) == GeoPoint(35.15, -35.1)
+
+
+def digits_with(hour: int, digit: str, filler: str = "0") -> str:
+    return filler * hour + digit + filler * (48 - hour)
+
+
+def test_rr28_worst_by_hour_of_all_low_points_is_all_low() -> None:
+    """RR-28."""
+    assert worst_digit_by_hour(["0" * 49, "0" * 49]) == "0" * 49
+
+
+def test_rr28_worst_by_hour_takes_the_highest_digit_over_all_points_at_each_hour() -> None:
+    """RR-28."""
+    first, second = digits_with(3, "2"), digits_with(5, "4")
+
+    worst = worst_digit_by_hour([first, second])
+
+    assert worst == "0" * 3 + "2" + "0" + "4" + "0" * 43
+
+
+def test_rr28_worst_by_hour_ignores_points_without_data_at_that_hour() -> None:
+    """RR-28."""
+    no_data_at_hour_7 = digits_with(7, "x")
+    low_at_hour_7 = digits_with(7, "1")
+
+    assert worst_digit_by_hour([no_data_at_hour_7, low_at_hour_7])[7] == "1"
+
+
+def test_rr28_worst_by_hour_is_x_where_no_point_has_data() -> None:
+    """RR-28."""
+    worst = worst_digit_by_hour([digits_with(7, "x"), digits_with(7, "x", filler="2")])
+
+    assert worst[7] == "x"
+    assert worst.count("x") == 1
+
+
+def test_rr28_worst_by_hour_without_points_is_49_x() -> None:
+    """RR-28."""
+    assert worst_digit_by_hour([]) == "x" * 49
+
+
+def test_rr28_worst_by_hour_has_one_character_per_hour() -> None:
+    """RR-28."""
+    assert len(worst_digit_by_hour(["3" * 49])) == 49

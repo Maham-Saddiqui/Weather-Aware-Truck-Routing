@@ -2,7 +2,7 @@
 
 These documents were approved before implementation began. Where building and testing taught us something, the document was amended with the owner's approval on 2026-11-11 and the reason is recorded here. No risk rule (RR-01 to RR-31), band, threshold or number was changed; only assumptions the code had to make were written down.
 
-One proposed change is deliberately not applied yet: adding a `worst_level_by_hour` field to the heatmap schema so the "Heatmap now: worst X" line is computed on the server instead of read from the server's risk digits in the browser (decision pending; see "Pending" at the end).
+A later batch (the heatmap `worst_level_by_hour` field) is listed at the end.
 
 ## docs/architecture.md
 
@@ -57,6 +57,8 @@ One proposed change is deliberately not applied yet: adding a `worst_level_by_ho
 |---|---|---|---|---|
 | 2026-11-11 | trip endpoints, components | 413 and 415 problem responses and the `X-Request-ID` response header. | The server refuses bodies above 8 KB and non-JSON bodies, and returns a request id on every response so a visitor can quote it. | `trips/body_limit.py`, `config/request_logging.py` |
 
-## Pending
+## Applied after the first batch
 
-- Heatmap `worst_level_by_hour`: not applied. Proposed so that every rating stays on the server (GEN-03); until decided, the browser takes the highest risk digit of the server's strings for the current hour (display only).
+| Date | Section | What changed | Why | Code |
+|---|---|---|---|---|
+| 2026-11-11 | openapi `Heatmap` | New required string `worst_level_by_hour` (one character per hour: the highest risk digit over all points, or x). | The status line under the map ("All clear along these routes at this time" / "Worst along these routes: High") was computed in the browser from the server's risk digits. It only read server strings, but a derived aggregate belongs on the server (GEN-03), and the line is the text equivalent of the heatmap. | `backend/domain/heatmap.py`, `backend/trips/presenters.py`, `frontend/src/features/map/` |

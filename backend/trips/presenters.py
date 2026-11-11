@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import Any
 
 from domain.constants import HEATMAP_HOURS
+from domain.heatmap import worst_digit_by_hour
 from domain.levels import Level
 from domain.ranking import Recommendation
 from domain.rating import Measurements
@@ -106,6 +107,7 @@ def _heatmap(heatmap: Heatmap) -> Json:
     return {
         "start_utc": _instant(heatmap.start_utc),
         "hours": HEATMAP_HOURS,
+        "worst_level_by_hour": worst_digit_by_hour(point.risk for point in heatmap.points),
         "points": [
             {"position": _position(point.position), "risk": point.risk} for point in heatmap.points
         ],
