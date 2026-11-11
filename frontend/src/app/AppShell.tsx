@@ -1,7 +1,6 @@
 import { styled } from '@mui/material/styles'
-import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
-import { api } from '../shared/api/client'
+import { useHealth } from '../shared/api/useHealth'
 import { Header } from './Header'
 import type { OpenDialog } from './LazyDialogs'
 import { LazyDialogs } from './LazyDialogs'
@@ -16,7 +15,7 @@ const Root = styled('div')(({ theme }) => ({
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [openDialog, setOpenDialog] = useState<OpenDialog>(null)
-  useQuery({ queryKey: ['health'], queryFn: api.getHealth })
+  useHealth()
   useRoutingCopyright()
   const close = () => {
     setOpenDialog(null)

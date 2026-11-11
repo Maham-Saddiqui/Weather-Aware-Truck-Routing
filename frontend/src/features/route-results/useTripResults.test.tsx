@@ -1,8 +1,9 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { delay, http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Providers } from '../../app/Providers'
+import { useHealth } from '../../shared/api/useHealth'
 import { problemResponse } from '../../shared/testing/handlers'
 import { makeCompareResponse, makePrimaryResponse } from '../../shared/testing/fixtures'
 import { server } from '../../shared/testing/server'
@@ -107,5 +108,53 @@ describe('the two parallel trip requests (FE-18, REQ-10)', () => {
     await waitFor(() => {
       expect(result.current.phase).toBe('failed')
     })
+  })
+})
+
+describe('the server is waking up (REQ-12)', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  async function loadingFor(seconds: number, healthAnswers: boolean) {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    server.use(
+      http.get('*/api/v1/health', async () => {
+        if (!healthAnswers) await delay('infinite')
+        return HttpResponse.json({ status: 'ok' })
+      }),
+      http.post('*/api/v1/trips/primary', () => delay('infinite')),
+      http.post('*/api/v1/trips/compare', () => delay('infinite')),
+    )
+    const { result } = renderHook(
+      () => {
+        useHealth()
+        return useTripResults(RUN)
+      },
+      { wrapper },
+    )
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(seconds * 1000)
+    })
+    return result
+  }
+
+  it('says so when the health ping has not been answered 3 seconds into planning', async () => {
+    const result = await loadingFor(3, false)
+
+    expect(result.current.isServerWaking).toBe(true)
+  })
+
+  it('does not say so while planning is slow but the server has answered the health ping', async () => {
+    const result = await loadingFor(5, true)
+
+    expect(result.current.phase).toBe('loading')
+    expect(result.current.isServerWaking).toBe(false)
+  })
+
+  it('does not say so before 3 seconds have passed', async () => {
+    const result = await loadingFor(2, false)
+
+    expect(result.current.isServerWaking).toBe(false)
   })
 })
