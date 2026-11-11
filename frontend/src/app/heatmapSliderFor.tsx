@@ -1,4 +1,3 @@
-import Stack from '@mui/material/Stack'
 import type { ReactNode } from 'react'
 import { HeatmapSlider } from '../features/heatmap-slider'
 import { HeatmapStatus } from '../features/map'
@@ -30,19 +29,13 @@ export function heatmapSliderFor(
         // A status line must never take the page down, for example while the server and the page
         // briefly disagree right after a deploy: it simply disappears.
         <ErrorBoundary area="the forecast status" fallback={<></>}>
-          <Stack
-            direction="row"
-            useFlexGap
-            sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 1.5 }}
-          >
-            <HeatmapStatus heatmap={heatmap} hourOffset={hourOffset} timeZone={timeZone} />
-            <ArrivalNote
-              route={selectedRoute}
-              heatmap={heatmap}
-              hourOffset={hourOffset}
-              timeZone={timeZone}
-            />
-          </Stack>
+          <HeatmapStatus heatmap={heatmap} hourOffset={hourOffset} timeZone={timeZone} />
+          <ArrivalNote
+            route={selectedRoute}
+            heatmap={heatmap}
+            hourOffset={hourOffset}
+            timeZone={timeZone}
+          />
         </ErrorBoundary>
       }
     />
