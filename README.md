@@ -7,6 +7,23 @@ A truck driver enters an origin, a destination, a departure time and a cargo wei
 - Live app: https://maham-spotter.vercel.app (the free server is kept awake by an outside scheduler and a backup GitHub workflow, described under "How it performs on a free server"; after a restart or a missed check, the first request can still take 20 to 50 seconds, rarely a minute)
 - Four example buttons fill the form and plan a trip in one click, without typing an address. They depend on the live routing and weather services; if the weather service is busy the routes appear without ratings.
 
+## Contents
+
+- [How risk is calculated](#how-risk-is-calculated): the rating table, the rules and the recommendation
+  - [A worked example](#a-worked-example-the-faster-route-is-not-always-the-safer-one): when the faster route is not the safer one
+- [Assumptions](#assumptions): what we assumed where the brief is silent
+  - [Where the brief can be read two ways](#where-the-brief-can-be-read-two-ways-and-what-we-chose): and what we chose
+- [How it is built](#how-it-is-built): the parts of the system and how they fit
+- [Code tour (reading order)](#code-tour-reading-order): the files that matter, in the order to read them
+- [Growing the system](#growing-the-system): what would change at larger scale
+- [Very long trips](#very-long-trips): how routes of 1,000 miles and more are handled
+- [How it performs on a free server](#how-it-performs-on-a-free-server): speed, limits and the keep-awake check
+- [Run it locally](#run-it-locally): install, run and test
+- [Deployment](#deployment): where it runs and how
+- [Trade-offs and limits](#trade-offs-and-limits): known gaps and privacy
+- [How this was built, and the time it took](#how-this-was-built-and-the-time-it-took): the agents, the roles and the hours
+- [Credits](#credits): data sources and licence
+
 ## How risk is calculated
 
 The single source of truth is [`docs/domain/risk-rules.md`](docs/domain/risk-rules.md) (rules `RR-01` to `RR-31`). Every rule except two statements checked in review (`RR-16` driving time only, `RR-27` spacing can change the winner) is cited by an automated test; the build fails if one loses its test.
